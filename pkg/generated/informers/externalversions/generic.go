@@ -23,7 +23,7 @@ import (
 
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	v1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/apis/science/v1"
+	v1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other

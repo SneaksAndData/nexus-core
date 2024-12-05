@@ -1,16 +1,16 @@
-module science.sneaksanddata.com/nexus-configuration-controller
+module science.sneaksanddata.com/nexus-core
 
 go 1.23.1
 
 require (
-	github.com/DataDog/datadog-api-client-go/v2 v2.11.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.33.0
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/samber/slog-datadog/v2 v2.8.0
 	github.com/samber/slog-multi v1.2.4
-	k8s.io/api v0.31.1
-	k8s.io/apimachinery v0.31.1
-	k8s.io/client-go v0.31.1
-	k8s.io/code-generator v0.31.1
+	k8s.io/api v0.31.3
+	k8s.io/apimachinery v0.31.3
+	k8s.io/client-go v0.31.3
+	k8s.io/code-generator v0.31.3
 )
 
 require (
@@ -23,6 +23,7 @@ require (
 	github.com/go-openapi/jsonpointer v0.19.6 // indirect
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
+	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect

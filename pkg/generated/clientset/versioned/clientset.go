@@ -25,7 +25,7 @@ import (
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
-	sciencev1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/clientset/versioned/typed/science/v1"
+	sciencev1 "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
 )
 
 type Interface interface {

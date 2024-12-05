@@ -25,8 +25,8 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
-	v1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/apis/science/v1"
-	scheme "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/clientset/versioned/scheme"
+	v1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
+	scheme "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/scheme"
 )
 
 // MachineLearningAlgorithmsGetter has a method to return a MachineLearningAlgorithmInterface.

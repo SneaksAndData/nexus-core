@@ -19,7 +19,7 @@ limitations under the License.
 package v1
 
 import (
-	internalinterfaces "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/informers/externalversions/internalinterfaces"
+	internalinterfaces "science.sneaksanddata.com/nexus-core/pkg/generated/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to all the informers in this group version.

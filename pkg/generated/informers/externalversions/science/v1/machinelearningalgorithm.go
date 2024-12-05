@@ -26,10 +26,10 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
 	cache "k8s.io/client-go/tools/cache"
-	sciencev1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/apis/science/v1"
-	versioned "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/clientset/versioned"
-	internalinterfaces "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/informers/externalversions/internalinterfaces"
-	v1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/listers/science/v1"
+	sciencev1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
+	versioned "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned"
+	internalinterfaces "science.sneaksanddata.com/nexus-core/pkg/generated/informers/externalversions/internalinterfaces"
+	v1 "science.sneaksanddata.com/nexus-core/pkg/generated/listers/science/v1"
 )
 
 // MachineLearningAlgorithmInformer provides access to a shared informer and lister for

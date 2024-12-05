@@ -18,4 +18,4 @@
 // +groupName=science.sneaksanddata.com
 
 // Package v1 is the v1 version of the API.
-package v1 // import "science.sneaksanddata.com/nexus-configuration-controller/pkg/apis/science/v1"
+package v1 // import "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"

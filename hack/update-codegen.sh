@@ -23,7 +23,7 @@ CODEGEN_PKG=${CODEGEN_PKG:-$(cd "${SCRIPT_ROOT}"; ls -d -1 ./vendor/k8s.io/code-
 
 source "${CODEGEN_PKG}/kube_codegen.sh"
 
-THIS_PKG="science.sneaksanddata.com/nexus-configuration-controller"
+THIS_PKG="science.sneaksanddata.com/nexus-core"
 
 kube::codegen::gen_helpers \
     --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt" \

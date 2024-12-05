@@ -24,9 +24,9 @@ import (
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
-	clientset "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/clientset/versioned"
-	sciencev1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/clientset/versioned/typed/science/v1"
-	fakesciencev1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/clientset/versioned/typed/science/v1/fake"
+	clientset "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned"
+	sciencev1 "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
+	fakesciencev1 "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/typed/science/v1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

@@ -24,7 +24,7 @@ import (
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
-	sciencev1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/apis/science/v1"
+	sciencev1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
 )
 
 var Scheme = runtime.NewScheme()

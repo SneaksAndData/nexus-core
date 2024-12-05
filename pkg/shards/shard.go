@@ -24,10 +24,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	v1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/apis/science/v1"
-	clientset "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/clientset/versioned"
-	nexusinformers "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/informers/externalversions/science/v1"
-	nexuslisters "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/listers/science/v1"
+	v1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
+	clientset "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned"
+	nexusinformers "science.sneaksanddata.com/nexus-core/pkg/generated/informers/externalversions/science/v1"
+	nexuslisters "science.sneaksanddata.com/nexus-core/pkg/generated/listers/science/v1"
 )
 
 type Shard struct {

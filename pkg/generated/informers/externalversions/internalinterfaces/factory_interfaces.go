@@ -24,7 +24,7 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	cache "k8s.io/client-go/tools/cache"
-	versioned "science.sneaksanddata.com/nexus-configuration-controller/pkg/generated/clientset/versioned"
+	versioned "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned"
 )
 
 // NewInformerFunc takes versioned.Interface and time.Duration to return a SharedIndexInformer.

@@ -26,7 +26,7 @@ import (
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
-	v1 "science.sneaksanddata.com/nexus-configuration-controller/pkg/apis/science/v1"
+	v1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
 )
 
 // FakeMachineLearningAlgorithms implements MachineLearningAlgorithmInterface
