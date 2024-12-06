@@ -34,7 +34,7 @@ type fixture struct {
 	configLister []*corev1.ConfigMap
 
 	// actions to expect on the Kubernetes API
-	//kubeActions  []core.Action
+	kubeActions  []core.Action
 	nexusActions []core.Action
 
 	// Objects from here preloaded into NewSimpleFake for controller and a shard.
@@ -224,11 +224,6 @@ func (f *fixture) newShard() (*Shard, *FakeInformers) {
 	}
 }
 
-//func getRef(mla *nexusv1.MachineLearningAlgorithm) cache.ObjectName {
-//	ref := cache.MetaObjectToName(mla)
-//	return ref
-//}
-
 func newShardMla() *nexusv1.MachineLearningAlgorithm {
 	mla := &nexusv1.MachineLearningAlgorithm{
 		TypeMeta: metav1.TypeMeta{APIVersion: nexusv1.SchemeGroupVersion.String()},
@@ -279,7 +274,7 @@ func newShardMla() *nexusv1.MachineLearningAlgorithm {
 }
 
 // TestCreateMachineLearningAlgorithm tests that resource creation action happens correctly
-func TestCreateMachineLearningAlgorithm(t *testing.T) {
+func TestShard_CreateMachineLearningAlgorithm(t *testing.T) {
 	f := newFixture(t)
 	mla := newShardMla()
 	_, ctx := ktesting.NewTestContext(t)
@@ -302,4 +297,155 @@ func TestCreateMachineLearningAlgorithm(t *testing.T) {
 
 	f.checkActions(f.nexusActions, f.nexusClient.Actions())
 	t.Log("Shard client created a new MLA resource")
+}
+
+// TestUpdateMachineLearningAlgorithm tests that resource update action happens correctly
+func TestShard_UpdateMachineLearningAlgorithm(t *testing.T) {
+	f := newFixture(t)
+	mla := newShardMla()
+	updatedMla := mla.DeepCopy()
+	updatedMla.Spec.CpuLimit = "2000m"
+
+	_, ctx := ktesting.NewTestContext(t)
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f = f.configure(
+		&ApiFixture{
+			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingMlaObjects:   []runtime.Object{mla},
+		},
+	)
+
+	f.nexusActions = append(f.nexusActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "machinelearningalgorithms"}, mla.Namespace, updatedMla))
+	_, _ = shard.UpdateMachineLearningAlgorithm(mla, updatedMla.Spec, "test")
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client update an existing MLA resource")
+}
+
+// TestDeleteMachineLearningAlgorithm tests that resource delete action happens correctly
+func TestShard_DeleteMachineLearningAlgorithm(t *testing.T) {
+	f := newFixture(t)
+	mla := newShardMla()
+
+	_, ctx := ktesting.NewTestContext(t)
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f = f.configure(
+		&ApiFixture{
+			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingMlaObjects:   []runtime.Object{mla},
+		},
+	)
+
+	f.nexusActions = append(f.nexusActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "machinelearningalgorithms"}, mla.Namespace, mla.Name))
+	_ = shard.DeleteMachineLearningAlgorithm(mla)
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client deleted an existing MLA resource")
+}
+
+// TestShard_CreateSecret tests that resource delete action happens correctly
+func TestShard_CreateSecret(t *testing.T) {
+	f := newFixture(t)
+	mla := newShardMla()
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: mla.Namespace,
+		},
+		Data: map[string][]byte{
+			"key": []byte("value"),
+		},
+		StringData: map[string]string{},
+	}
+
+	_, ctx := ktesting.NewTestContext(t)
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	expectedSecret := secret.DeepCopy()
+	expectedSecret.ObjectMeta.Labels = shard.GetReferenceLabels()
+	expectedSecret.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+		{
+			APIVersion: nexusv1.SchemeGroupVersion.String(),
+			Kind:       "MachineLearningAlgorithm",
+			Name:       mla.Name,
+			UID:        mla.UID,
+		},
+	}
+
+	f = f.configure(
+		&ApiFixture{
+			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingMlaObjects:   []runtime.Object{mla},
+		},
+	)
+
+	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, mla.Namespace, secret))
+	_, _ = shard.CreateSecret(mla, secret, "test")
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client created a Secret from controller cluster secret")
+}
+
+// TestShard_CreateConfigMap tests that resource delete action happens correctly
+func TestShard_CreateConfigMap(t *testing.T) {
+	f := newFixture(t)
+	mla := newShardMla()
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: mla.Namespace,
+		},
+		Data: map[string]string{
+			"key": "value",
+		},
+	}
+
+	_, ctx := ktesting.NewTestContext(t)
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	expectedConfigMap := configMap.DeepCopy()
+	expectedConfigMap.ObjectMeta.Labels = shard.GetReferenceLabels()
+	expectedConfigMap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+		{
+			APIVersion: nexusv1.SchemeGroupVersion.String(),
+			Kind:       "MachineLearningAlgorithm",
+			Name:       mla.Name,
+			UID:        mla.UID,
+		},
+	}
+
+	f = f.configure(
+		&ApiFixture{
+			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingMlaObjects:   []runtime.Object{mla},
+		},
+	)
+
+	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, mla.Namespace, expectedConfigMap))
+	_, _ = shard.CreateConfigMap(mla, expectedConfigMap, "test")
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client created a configmap from controller cluster configmap")
 }
