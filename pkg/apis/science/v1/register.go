@@ -17,10 +17,10 @@
 package v1
 
 import (
+	nexusapi "github.com/SneaksAndData/nexus-core/pkg/apis/science"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	nexusapi "science.sneaksanddata.com/nexus-core/pkg/apis/science"
 )
 
 // SchemeGroupVersion is group version used to register these objects

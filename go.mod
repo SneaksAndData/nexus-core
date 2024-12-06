@@ -1,4 +1,4 @@
-module science.sneaksanddata.com/nexus-core
+module github.com/SneaksAndData/nexus-core
 
 go 1.23.1
 

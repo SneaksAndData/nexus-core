@@ -19,9 +19,9 @@ limitations under the License.
 package fake
 
 import (
+	v1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
 	rest "k8s.io/client-go/rest"
 	testing "k8s.io/client-go/testing"
-	v1 "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
 )
 
 type FakeScienceV1 struct {
