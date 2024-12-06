@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func newMla(withConfigs bool) *MachineLearningAlgorithm {
+func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
 	var envFrom []corev1.EnvFromSource
 
 	if withConfigs {
@@ -82,7 +82,7 @@ func newMla(withConfigs bool) *MachineLearningAlgorithm {
 }
 
 func TestMachineLearningAlgorithm_GetSecretNamesNames(t *testing.T) {
-	secretsNames := newMla(true).GetSecretNames()
+	secretsNames := newFakeMla(true).GetSecretNames()
 	expectedSecretNames := []string{
 		"test-secret",
 	}
@@ -94,7 +94,7 @@ func TestMachineLearningAlgorithm_GetSecretNamesNames(t *testing.T) {
 }
 
 func TestMachineLearningAlgorithm_GetSecretNamesNames_Empty(t *testing.T) {
-	secretsNames := newMla(false).GetSecretNames()
+	secretsNames := newFakeMla(false).GetSecretNames()
 
 	if secretsNames != nil {
 		t.Errorf("GetSecretNames returns non-empty result when algorithm has no secret references")
@@ -103,7 +103,7 @@ func TestMachineLearningAlgorithm_GetSecretNamesNames_Empty(t *testing.T) {
 }
 
 func TestMachineLearningAlgorithm_GetConfigMapNames_Empty(t *testing.T) {
-	configMapNames := newMla(false).GetConfigMapNames()
+	configMapNames := newFakeMla(false).GetConfigMapNames()
 
 	if configMapNames != nil {
 		t.Errorf("GetConfigMapNames returns non-empty result when algorithm has no configmap references")
