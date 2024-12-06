@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/diff"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -106,6 +107,9 @@ func TestMachineLearningAlgorithm_GetSecretNames(t *testing.T) {
 		"test-secret",
 	}
 
+	slices.Sort(secretsNames)
+	slices.Sort(expectedSecretNames)
+
 	if !reflect.DeepEqual(expectedSecretNames, secretsNames) {
 		t.Errorf("Incorrect secrets %s returned for the algorithm", diff.ObjectGoPrintSideBySide(expectedSecretNames, secretsNames))
 	}
@@ -119,6 +123,9 @@ func TestMachineLearningAlgorithm_GetConfigMapNames(t *testing.T) {
 		"test-cfg2",
 		"test-cfg3",
 	}
+
+	slices.Sort(configMapNames)
+	slices.Sort(expectedConfigMapNames)
 
 	if !reflect.DeepEqual(expectedConfigMapNames, configMapNames) {
 		t.Errorf("Incorrect configmaps %s returned for the algorithm", diff.ObjectGoPrintSideBySide(expectedConfigMapNames, configMapNames))
