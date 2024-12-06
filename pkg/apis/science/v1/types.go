@@ -88,6 +88,7 @@ type MachineLearningAlgorithmList struct {
 	Items []MachineLearningAlgorithm `json:"items"`
 }
 
+// GetSecretNames retrieves a list of unique secret names for this MLA
 func (mla *MachineLearningAlgorithm) GetSecretNames() []string {
 	subset := map[string]bool{}
 	for _, ref := range mla.Spec.EnvFrom {
@@ -105,6 +106,7 @@ func (mla *MachineLearningAlgorithm) GetSecretNames() []string {
 	return slices.Collect(maps.Keys(subset))
 }
 
+// GetConfigMapNames retrieves a list of unique config names for this MLA
 func (mla *MachineLearningAlgorithm) GetConfigMapNames() []string {
 	subset := map[string]bool{}
 	for _, ref := range mla.Spec.EnvFrom {
@@ -121,3 +123,7 @@ func (mla *MachineLearningAlgorithm) GetConfigMapNames() []string {
 
 	return slices.Collect(maps.Keys(subset))
 }
+
+// Int32Ptr converts int32 type to int32 pointer type
+// Method from sample-controller
+func Int32Ptr(i int32) *int32 { return &i }
