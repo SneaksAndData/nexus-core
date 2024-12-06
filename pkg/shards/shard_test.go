@@ -396,10 +396,10 @@ func TestShard_CreateSecret(t *testing.T) {
 		},
 	)
 
-	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, mla.Namespace, secret))
+	f.kubeActions = append(f.kubeActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, mla.Namespace, expectedSecret))
 	_, _ = shard.CreateSecret(mla, secret, "test")
 
-	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	f.checkActions(f.kubeActions, f.kubeClient.Actions())
 	t.Log("Shard client created a Secret from controller cluster secret")
 }
 
@@ -443,9 +443,112 @@ func TestShard_CreateConfigMap(t *testing.T) {
 		},
 	)
 
-	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, mla.Namespace, expectedConfigMap))
+	f.kubeActions = append(f.kubeActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, mla.Namespace, expectedConfigMap))
 	_, _ = shard.CreateConfigMap(mla, expectedConfigMap, "test")
 
-	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	f.checkActions(f.kubeActions, f.kubeClient.Actions())
 	t.Log("Shard client created a configmap from controller cluster configmap")
+}
+
+// TestShard_UpdateConfigMap tests that config update action happens correctly
+func TestShard_UpdateConfigMap(t *testing.T) {
+	f := newFixture(t)
+	mla := newShardMla()
+
+	_, ctx := ktesting.NewTestContext(t)
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: mla.Namespace,
+			Labels:    shard.GetReferenceLabels(),
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: nexusv1.SchemeGroupVersion.String(),
+					Kind:       "MachineLearningAlgorithm",
+					Name:       mla.Name,
+					UID:        mla.UID,
+				},
+			},
+		},
+		Data: map[string]string{
+			"key": "value",
+		},
+	}
+
+	expectedConfigMap := configMap.DeepCopy()
+	expectedConfigMap.Data = map[string]string{
+		"key": "new-value",
+	}
+
+	f = f.configure(
+		&ApiFixture{
+			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{configMap},
+			existingCoreObjects:  []runtime.Object{},
+			existingMlaObjects:   []runtime.Object{mla},
+		},
+	)
+
+	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, mla.Namespace, expectedConfigMap))
+	_, _ = shard.UpdateConfigMap(configMap, expectedConfigMap.Data, nil, "test")
+
+	f.checkActions(f.kubeActions, f.kubeClient.Actions())
+	t.Log("Shard client updated an existing configmap")
+}
+
+// TestShard_UpdateSecret tests that secret update action happens correctly
+func TestShard_UpdateSecret(t *testing.T) {
+	f := newFixture(t)
+	mla := newShardMla()
+
+	_, ctx := ktesting.NewTestContext(t)
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: mla.Namespace,
+			Labels:    shard.GetReferenceLabels(),
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: nexusv1.SchemeGroupVersion.String(),
+					Kind:       "MachineLearningAlgorithm",
+					Name:       mla.Name,
+					UID:        mla.UID,
+				},
+			},
+		},
+		Data: map[string][]byte{
+			"key": []byte("value"),
+		},
+		StringData: map[string]string{},
+	}
+
+	expectedSecret := secret.DeepCopy()
+	expectedSecret.Data = map[string][]byte{
+		"key": []byte("new-value"),
+	}
+
+	f = f.configure(
+		&ApiFixture{
+			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{secret},
+			existingMlaObjects:   []runtime.Object{mla},
+		},
+	)
+
+	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, mla.Namespace, expectedSecret))
+	_, _ = shard.UpdateSecret(secret, expectedSecret.Data, nil, "test")
+
+	f.checkActions(f.kubeActions, f.kubeClient.Actions())
+	t.Log("Shard client updated an existing secret")
 }
