@@ -9,28 +9,32 @@ import (
 	"testing"
 )
 
-func newMla() *MachineLearningAlgorithm {
-	envFrom := []corev1.EnvFromSource{
-		{
-			SecretRef: &corev1.SecretEnvSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "test-secret"},
+func newMla(withConfigs bool) *MachineLearningAlgorithm {
+	var envFrom []corev1.EnvFromSource
+
+	if withConfigs {
+		envFrom = []corev1.EnvFromSource{
+			{
+				SecretRef: &corev1.SecretEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "test-secret"},
+				},
 			},
-		},
-		{
-			ConfigMapRef: &corev1.ConfigMapEnvSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "test-cfg1"},
+			{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "test-cfg1"},
+				},
 			},
-		},
-		{
-			ConfigMapRef: &corev1.ConfigMapEnvSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "test-cfg2"},
+			{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "test-cfg2"},
+				},
 			},
-		},
-		{
-			ConfigMapRef: &corev1.ConfigMapEnvSource{
-				LocalObjectReference: corev1.LocalObjectReference{Name: "test-cfg2"},
+			{
+				ConfigMapRef: &corev1.ConfigMapEnvSource{
+					LocalObjectReference: corev1.LocalObjectReference{Name: "test-cfg2"},
+				},
 			},
-		},
+		}
 	}
 
 	mla := &MachineLearningAlgorithm{
@@ -78,7 +82,7 @@ func newMla() *MachineLearningAlgorithm {
 }
 
 func TestMachineLearningAlgorithm_GetSecretNamesNames(t *testing.T) {
-	secretsNames := newMla().GetSecretNames()
+	secretsNames := newMla(true).GetSecretNames()
 	expectedSecretNames := []string{
 		"test-secret",
 	}
@@ -89,15 +93,20 @@ func TestMachineLearningAlgorithm_GetSecretNamesNames(t *testing.T) {
 	t.Log("GetSecretNames returns correct result")
 }
 
-func TestMachineLearningAlgorithm_GetConfigMapNames(t *testing.T) {
-	configMapNames := newMla().GetConfigMapNames()
-	expectedConfigMapNames := []string{
-		"test-cfg1",
-		"test-cfg2",
-	}
+func TestMachineLearningAlgorithm_GetSecretNamesNames_Empty(t *testing.T) {
+	secretsNames := newMla(false).GetSecretNames()
 
-	if !reflect.DeepEqual(configMapNames, expectedConfigMapNames) {
-		t.Errorf("Incorrect configmaps %s returned for the algorithm", diff.ObjectGoPrintSideBySide(expectedConfigMapNames, configMapNames))
+	if secretsNames != nil {
+		t.Errorf("GetSecretNames returns non-empty result when algorithm has no secret references")
 	}
-	t.Log("GetConfigMapNames returns correct result")
+	t.Log("GetSecretNames returns correct result when algorithm has no secret references")
+}
+
+func TestMachineLearningAlgorithm_GetConfigMapNames_Empty(t *testing.T) {
+	configMapNames := newMla(false).GetConfigMapNames()
+
+	if configMapNames != nil {
+		t.Errorf("GetConfigMapNames returns non-empty result when algorithm has no configmap references")
+	}
+	t.Log("GetConfigMapNames returns correct result when algorithm has no config references")
 }

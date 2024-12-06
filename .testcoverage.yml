@@ -12,5 +12,5 @@ exclude:
     - \.pb\.go$           # excludes all protobuf generated files
     - ^pkg/generated      # exclude generated code
     - ^pkg/signals        # exclude signal handlers from sample controller
+    - ^pkg/telemetry      # exclude logging and telemetry wrappers
     - hack/*.go           # exclude hack folder
-    - main.go             # exclude main file
