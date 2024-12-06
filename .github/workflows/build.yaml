@@ -41,6 +41,11 @@ jobs:
         with:
           version: v1.60
           
+      - name: Verify generated code
+        run: |
+          set -e
+          hack/verify-codegen.sh
+          
       - name: Test
         run: go test ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
         
