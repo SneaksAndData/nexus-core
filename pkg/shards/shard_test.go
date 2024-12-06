@@ -9,7 +9,6 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	core "k8s.io/client-go/testing"
-	"k8s.io/client-go/tools/cache"
 	ktesting "k8s.io/klog/v2/ktesting"
 	"reflect"
 	nexusv1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
@@ -35,7 +34,7 @@ type fixture struct {
 	configLister []*corev1.ConfigMap
 
 	// actions to expect on the Kubernetes API
-	kubeActions  []core.Action
+	//kubeActions  []core.Action
 	nexusActions []core.Action
 
 	// Objects from here preloaded into NewSimpleFake for controller and a shard.
@@ -225,10 +224,10 @@ func (f *fixture) newShard() (*Shard, *FakeInformers) {
 	}
 }
 
-func getRef(mla *nexusv1.MachineLearningAlgorithm) cache.ObjectName {
-	ref := cache.MetaObjectToName(mla)
-	return ref
-}
+//func getRef(mla *nexusv1.MachineLearningAlgorithm) cache.ObjectName {
+//	ref := cache.MetaObjectToName(mla)
+//	return ref
+//}
 
 func newShardMla() *nexusv1.MachineLearningAlgorithm {
 	mla := &nexusv1.MachineLearningAlgorithm{
