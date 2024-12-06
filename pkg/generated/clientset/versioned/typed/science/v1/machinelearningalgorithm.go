@@ -21,12 +21,12 @@ package v1
 import (
 	"context"
 
+	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	scheme "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	gentype "k8s.io/client-go/gentype"
-	v1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
-	scheme "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/scheme"
 )
 
 // MachineLearningAlgorithmsGetter has a method to return a MachineLearningAlgorithmInterface.

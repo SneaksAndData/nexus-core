@@ -19,8 +19,8 @@ limitations under the License.
 package science
 
 import (
-	internalinterfaces "science.sneaksanddata.com/nexus-core/pkg/generated/informers/externalversions/internalinterfaces"
-	v1 "science.sneaksanddata.com/nexus-core/pkg/generated/informers/externalversions/science/v1"
+	internalinterfaces "github.com/SneaksAndData/nexus-core/pkg/generated/informers/externalversions/internalinterfaces"
+	v1 "github.com/SneaksAndData/nexus-core/pkg/generated/informers/externalversions/science/v1"
 )
 
 // Interface provides access to each of this group's versions.

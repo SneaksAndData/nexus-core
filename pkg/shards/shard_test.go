@@ -1,6 +1,9 @@
 package shards
 
 import (
+	nexusv1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	"github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/fake"
+	informers "github.com/SneaksAndData/nexus-core/pkg/generated/informers/externalversions"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -11,9 +14,6 @@ import (
 	core "k8s.io/client-go/testing"
 	ktesting "k8s.io/klog/v2/ktesting"
 	"reflect"
-	nexusv1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
-	"science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/fake"
-	informers "science.sneaksanddata.com/nexus-core/pkg/generated/informers/externalversions"
 	"testing"
 	"time"
 )

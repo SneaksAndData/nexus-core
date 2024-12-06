@@ -18,16 +18,16 @@ package shards
 
 import (
 	"context"
+	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	clientset "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned"
+	nexusinformers "github.com/SneaksAndData/nexus-core/pkg/generated/informers/externalversions/science/v1"
+	nexuslisters "github.com/SneaksAndData/nexus-core/pkg/generated/listers/science/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
-	v1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
-	clientset "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned"
-	nexusinformers "science.sneaksanddata.com/nexus-core/pkg/generated/informers/externalversions/science/v1"
-	nexuslisters "science.sneaksanddata.com/nexus-core/pkg/generated/listers/science/v1"
 )
 
 type Shard struct {

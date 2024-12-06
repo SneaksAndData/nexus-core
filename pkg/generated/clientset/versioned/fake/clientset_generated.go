@@ -19,14 +19,14 @@ limitations under the License.
 package fake
 
 import (
+	clientset "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
+	fakesciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
 	fakediscovery "k8s.io/client-go/discovery/fake"
 	"k8s.io/client-go/testing"
-	clientset "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned"
-	sciencev1 "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
-	fakesciencev1 "science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/typed/science/v1/fake"
 )
 
 // NewSimpleClientset returns a clientset that will respond with the provided objects.

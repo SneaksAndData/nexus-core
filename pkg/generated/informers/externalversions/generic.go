@@ -21,9 +21,9 @@ package externalversions
 import (
 	"fmt"
 
+	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	cache "k8s.io/client-go/tools/cache"
-	v1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
 )
 
 // GenericInformer is type of SharedIndexInformer which will locate and delegate to other

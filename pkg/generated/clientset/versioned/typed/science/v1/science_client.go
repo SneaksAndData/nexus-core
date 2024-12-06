@@ -21,9 +21,9 @@ package v1
 import (
 	"net/http"
 
+	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	"github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/scheme"
 	rest "k8s.io/client-go/rest"
-	v1 "science.sneaksanddata.com/nexus-core/pkg/apis/science/v1"
-	"science.sneaksanddata.com/nexus-core/pkg/generated/clientset/versioned/scheme"
 )
 
 type ScienceV1Interface interface {
