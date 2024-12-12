@@ -20,20 +20,18 @@ type deepCloneable[T corev1.Secret | corev1.ConfigMap] interface {
 
 func RemoveOwner[T corev1.Secret | corev1.ConfigMap](ctx context.Context, obj deepCloneable[T], ownerUID types.UID, k8sApiRef kubernetes.Interface, fieldManager string) (int, error) {
 	updateOwners := func(obj interface{}, newOwners []metav1.OwnerReference) error {
-		switch obj.(type) {
+		switch obj := obj.(type) {
 		case *corev1.Secret:
-			objRef := obj.(*corev1.Secret)
-			objRef.SetOwnerReferences(newOwners)
-			_, err := k8sApiRef.CoreV1().Secrets(objRef.GetNamespace()).Update(ctx, objRef, metav1.UpdateOptions{FieldManager: fieldManager})
+			obj.SetOwnerReferences(newOwners)
+			_, err := k8sApiRef.CoreV1().Secrets(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{FieldManager: fieldManager})
 			if err != nil {
 				return err
 			}
 
 			return nil
 		case *corev1.ConfigMap:
-			objRef := obj.(*corev1.ConfigMap)
-			objRef.SetOwnerReferences(newOwners)
-			_, err := k8sApiRef.CoreV1().ConfigMaps(objRef.GetNamespace()).Update(ctx, objRef, metav1.UpdateOptions{FieldManager: fieldManager})
+			obj.SetOwnerReferences(newOwners)
+			_, err := k8sApiRef.CoreV1().ConfigMaps(obj.GetNamespace()).Update(ctx, obj, metav1.UpdateOptions{FieldManager: fieldManager})
 			if err != nil {
 				return err
 			}
