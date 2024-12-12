@@ -18,7 +18,7 @@ type deepCloneable[T corev1.Secret | corev1.ConfigMap] interface {
 	GetNamespace() string
 }
 
-func removeOwner[T corev1.Secret | corev1.ConfigMap](ctx context.Context, obj deepCloneable[T], ownerUID types.UID, k8sApiRef kubernetes.Interface, fieldManager string) error {
+func RemoveOwner[T corev1.Secret | corev1.ConfigMap](ctx context.Context, obj deepCloneable[T], ownerUID types.UID, k8sApiRef kubernetes.Interface, fieldManager string) (int, error) {
 	updateOwners := func(obj interface{}, newOwners []metav1.OwnerReference) error {
 		switch obj.(type) {
 		case *corev1.Secret:
@@ -28,6 +28,8 @@ func removeOwner[T corev1.Secret | corev1.ConfigMap](ctx context.Context, obj de
 			if err != nil {
 				return err
 			}
+
+			return nil
 		case *corev1.ConfigMap:
 			objRef := obj.(*corev1.ConfigMap)
 			objRef.SetOwnerReferences(newOwners)
@@ -50,7 +52,7 @@ func removeOwner[T corev1.Secret | corev1.ConfigMap](ctx context.Context, obj de
 		}
 	}
 
-	return updateOwners(objCopy, newReferences)
+	return len(newReferences), updateOwners(objCopy, newReferences)
 }
 
 func GetConfigResolverDiff(configResolver func() []string, otherConfigResolver func() []string) []string {

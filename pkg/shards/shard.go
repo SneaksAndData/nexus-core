@@ -22,6 +22,7 @@ import (
 	clientset "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned"
 	nexusinformers "github.com/SneaksAndData/nexus-core/pkg/generated/informers/externalversions/science/v1"
 	nexuslisters "github.com/SneaksAndData/nexus-core/pkg/generated/listers/science/v1"
+	"github.com/SneaksAndData/nexus-core/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -177,6 +178,20 @@ func (shard *Shard) UpdateSecret(secret *corev1.Secret, newData map[string][]byt
 	return shard.kubernetesclientset.CoreV1().Secrets(updatedSecret.Namespace).Update(context.TODO(), updatedSecret, metav1.UpdateOptions{FieldManager: fieldManager})
 }
 
+// DereferenceSecret removes provided algorithm as the owner of the secret, and optionally removes the secret if it has no owners
+func (shard *Shard) DereferenceSecret(secret *corev1.Secret, mla *v1.MachineLearningAlgorithm, fieldManager string) error {
+	remainingOwners, err := util.RemoveOwner[corev1.Secret](context.TODO(), secret, mla.UID, shard.kubernetesclientset, fieldManager)
+	if err != nil {
+		return err
+	}
+	// delete the secret if there are no remaining owners
+	if remainingOwners == 0 {
+		return shard.kubernetesclientset.CoreV1().Secrets(secret.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{})
+	}
+
+	return nil
+}
+
 // UpdateConfigMap updates the config map with new content
 func (shard *Shard) UpdateConfigMap(configMap *corev1.ConfigMap, newData map[string]string, newOwner *v1.MachineLearningAlgorithm, fieldManager string) (*corev1.ConfigMap, error) {
 	updatedConfigMap := configMap.DeepCopy()
@@ -192,4 +207,18 @@ func (shard *Shard) UpdateConfigMap(configMap *corev1.ConfigMap, newData map[str
 		})
 	}
 	return shard.kubernetesclientset.CoreV1().ConfigMaps(updatedConfigMap.Namespace).Update(context.TODO(), updatedConfigMap, metav1.UpdateOptions{FieldManager: fieldManager})
+}
+
+// DereferenceConfigMap removes provided algorithm as the owner of the secret, and optionally removes the secret if it has no owners
+func (shard *Shard) DereferenceConfigMap(configMap *corev1.ConfigMap, mla *v1.MachineLearningAlgorithm, fieldManager string) error {
+	remainingOwners, err := util.RemoveOwner[corev1.ConfigMap](context.TODO(), configMap, mla.UID, shard.kubernetesclientset, fieldManager)
+	if err != nil {
+		return err
+	}
+	// delete the secret if there are no remaining owners
+	if remainingOwners == 0 {
+		return shard.kubernetesclientset.CoreV1().ConfigMaps(configMap.Namespace).Delete(context.TODO(), configMap.Name, metav1.DeleteOptions{})
+	}
+
+	return nil
 }
