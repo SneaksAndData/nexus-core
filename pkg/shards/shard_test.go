@@ -186,6 +186,13 @@ func (f *fixture) configure(apiFixture *ApiFixture) *fixture {
 	return f
 }
 
+func fakeReferenceLabels() map[string]string {
+	return map[string]string{
+		"science.sneaksanddata.com/controller-app":      "nexus-configuration-controller",
+		"science.sneaksanddata.com/configuration-owner": "test-controller-cluster",
+	}
+}
+
 func (f *fixture) newShard() (*Shard, *FakeInformers) {
 	f.nexusClient = fake.NewSimpleClientset(f.nexusObjects...)
 	f.kubeClient = k8sfake.NewSimpleClientset(f.kubeObjects...)
@@ -278,9 +285,6 @@ func TestShard_CreateMachineLearningAlgorithm(t *testing.T) {
 	f := newFixture(t)
 	mla := newShardMla()
 	_, ctx := ktesting.NewTestContext(t)
-	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
 
 	f = f.configure(
 		&ApiFixture{
@@ -291,6 +295,10 @@ func TestShard_CreateMachineLearningAlgorithm(t *testing.T) {
 			existingMlaObjects:   []runtime.Object{},
 		},
 	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "machinelearningalgorithms"}, mla.Namespace, mla))
 	_, _ = shard.CreateMachineLearningAlgorithm(mla.Name, mla.Namespace, mla.Spec, "test")
@@ -307,9 +315,6 @@ func TestShard_UpdateMachineLearningAlgorithm(t *testing.T) {
 	updatedMla.Spec.CpuLimit = "2000m"
 
 	_, ctx := ktesting.NewTestContext(t)
-	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
 
 	f = f.configure(
 		&ApiFixture{
@@ -320,6 +325,10 @@ func TestShard_UpdateMachineLearningAlgorithm(t *testing.T) {
 			existingMlaObjects:   []runtime.Object{mla},
 		},
 	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "machinelearningalgorithms"}, mla.Namespace, updatedMla))
 	_, _ = shard.UpdateMachineLearningAlgorithm(mla, updatedMla.Spec, "test")
@@ -334,9 +343,6 @@ func TestShard_DeleteMachineLearningAlgorithm(t *testing.T) {
 	mla := newShardMla()
 
 	_, ctx := ktesting.NewTestContext(t)
-	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
 
 	f = f.configure(
 		&ApiFixture{
@@ -347,6 +353,10 @@ func TestShard_DeleteMachineLearningAlgorithm(t *testing.T) {
 			existingMlaObjects:   []runtime.Object{mla},
 		},
 	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "machinelearningalgorithms"}, mla.Namespace, mla.Name))
 	_ = shard.DeleteMachineLearningAlgorithm(mla)
@@ -371,12 +381,9 @@ func TestShard_CreateSecret(t *testing.T) {
 	}
 
 	_, ctx := ktesting.NewTestContext(t)
-	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
 
 	expectedSecret := secret.DeepCopy()
-	expectedSecret.ObjectMeta.Labels = shard.GetReferenceLabels()
+	expectedSecret.ObjectMeta.Labels = fakeReferenceLabels()
 	expectedSecret.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 		{
 			APIVersion: nexusv1.SchemeGroupVersion.String(),
@@ -395,6 +402,10 @@ func TestShard_CreateSecret(t *testing.T) {
 			existingMlaObjects:   []runtime.Object{mla},
 		},
 	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
 
 	f.kubeActions = append(f.kubeActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, mla.Namespace, expectedSecret))
 	_, _ = shard.CreateSecret(mla, secret, "test")
@@ -418,12 +429,9 @@ func TestShard_CreateConfigMap(t *testing.T) {
 	}
 
 	_, ctx := ktesting.NewTestContext(t)
-	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
 
 	expectedConfigMap := configMap.DeepCopy()
-	expectedConfigMap.ObjectMeta.Labels = shard.GetReferenceLabels()
+	expectedConfigMap.ObjectMeta.Labels = fakeReferenceLabels()
 	expectedConfigMap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 		{
 			APIVersion: nexusv1.SchemeGroupVersion.String(),
@@ -443,6 +451,10 @@ func TestShard_CreateConfigMap(t *testing.T) {
 		},
 	)
 
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
 	f.kubeActions = append(f.kubeActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, mla.Namespace, expectedConfigMap))
 	_, _ = shard.CreateConfigMap(mla, expectedConfigMap, "test")
 
@@ -456,15 +468,12 @@ func TestShard_UpdateConfigMap(t *testing.T) {
 	mla := newShardMla()
 
 	_, ctx := ktesting.NewTestContext(t)
-	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
 
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: mla.Namespace,
-			Labels:    shard.GetReferenceLabels(),
+			Labels:    fakeReferenceLabels(),
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: nexusv1.SchemeGroupVersion.String(),
@@ -494,6 +503,10 @@ func TestShard_UpdateConfigMap(t *testing.T) {
 		},
 	)
 
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
 	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, mla.Namespace, expectedConfigMap))
 	_, _ = shard.UpdateConfigMap(configMap, expectedConfigMap.Data, nil, "test")
 
@@ -507,15 +520,12 @@ func TestShard_UpdateSecret(t *testing.T) {
 	mla := newShardMla()
 
 	_, ctx := ktesting.NewTestContext(t)
-	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test",
 			Namespace: mla.Namespace,
-			Labels:    shard.GetReferenceLabels(),
+			Labels:    fakeReferenceLabels(),
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: nexusv1.SchemeGroupVersion.String(),
@@ -539,16 +549,121 @@ func TestShard_UpdateSecret(t *testing.T) {
 	f = f.configure(
 		&ApiFixture{
 			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
-			secretListResults:    []*corev1.Secret{},
+			secretListResults:    []*corev1.Secret{secret},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{secret},
 			existingMlaObjects:   []runtime.Object{mla},
 		},
 	)
 
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
 	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, mla.Namespace, expectedSecret))
 	_, _ = shard.UpdateSecret(secret, expectedSecret.Data, nil, "test")
 
 	f.checkActions(f.kubeActions, f.kubeClient.Actions())
 	t.Log("Shard client updated an existing secret")
+}
+
+// TestShard_DereferenceSecret tests that secret update action happens correctly
+func TestShard_DereferenceSecret(t *testing.T) {
+	f := newFixture(t)
+	mla := newShardMla()
+
+	_, ctx := ktesting.NewTestContext(t)
+	secret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-secret",
+			Namespace: mla.Namespace,
+			Labels:    fakeReferenceLabels(),
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: nexusv1.SchemeGroupVersion.String(),
+					Kind:       "MachineLearningAlgorithm",
+					Name:       mla.Name,
+					UID:        mla.UID,
+				},
+			},
+		},
+		Data: map[string][]byte{
+			"key": []byte("value"),
+		},
+		StringData: map[string]string{},
+	}
+
+	dereferencedSecret := secret.DeepCopy()
+	dereferencedSecret.OwnerReferences = []metav1.OwnerReference{}
+
+	f = f.configure(
+		&ApiFixture{
+			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			secretListResults:    []*corev1.Secret{secret},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{secret},
+			existingMlaObjects:   []runtime.Object{mla},
+		},
+	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, mla.Namespace, dereferencedSecret))
+	f.kubeActions = append(f.kubeActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, mla.Namespace, "test-secret"))
+	_ = shard.DereferenceSecret(secret, mla, "test")
+
+	f.checkActions(f.kubeActions, f.kubeClient.Actions())
+	t.Log("Shard client dereferenced an existing secret")
+}
+
+// TestShard_DereferenceConfigMap tests that secret update action happens correctly
+func TestShard_DereferenceConfigMap(t *testing.T) {
+	f := newFixture(t)
+	mla := newShardMla()
+
+	_, ctx := ktesting.NewTestContext(t)
+	configMap := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-cfg1",
+			Namespace: mla.Namespace,
+			Labels:    fakeReferenceLabels(),
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: nexusv1.SchemeGroupVersion.String(),
+					Kind:       "MachineLearningAlgorithm",
+					Name:       mla.Name,
+					UID:        mla.UID,
+				},
+			},
+		},
+		Data: map[string]string{
+			"key": "value",
+		},
+	}
+
+	dereferencedConfigMap := configMap.DeepCopy()
+	dereferencedConfigMap.OwnerReferences = []metav1.OwnerReference{}
+
+	f = f.configure(
+		&ApiFixture{
+			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{configMap},
+			existingCoreObjects:  []runtime.Object{configMap},
+			existingMlaObjects:   []runtime.Object{mla},
+		},
+	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, mla.Namespace, dereferencedConfigMap))
+	f.kubeActions = append(f.kubeActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, mla.Namespace, "test-cfg1"))
+	_ = shard.DereferenceConfigMap(configMap, mla, "test")
+
+	f.checkActions(f.kubeActions, f.kubeClient.Actions())
+	t.Log("Shard client dereferenced an existing configMap")
 }
