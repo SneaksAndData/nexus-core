@@ -21,9 +21,9 @@ var submissionBufferTable = table.New(table.Metadata{
 })
 
 type SubmissionBufferEntry struct {
-	Algorithm string
-	Id        string
-	Template  string
+	Algorithm string `json:"algorithm"`
+	Id        string `json:"id"`
+	Template  string `json:"template,omitempty"`
 }
 
 func (sbe *SubmissionBufferEntry) submissionTemplate() (*batchv1.Job, error) {
