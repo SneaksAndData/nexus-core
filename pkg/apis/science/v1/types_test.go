@@ -150,3 +150,32 @@ func TestMachineLearningAlgorithm_GetConfigMapNames_Empty(t *testing.T) {
 	}
 	t.Log("GetConfigMapNames returns correct result when algorithm has no config references")
 }
+
+func TestMachineLearningAlgorithm_GetConfigMapDiff(t *testing.T) {
+	mla1 := newFakeMla(true)
+	mla2 := mla1.DeepCopy()
+	// remove test-secret and test-cfg3 references
+	// however, test-secret is also referenced in EnvFrom, so we should only have test-cfg3 reported as diff
+	mla2.Spec.Env = []corev1.EnvVar{}
+	diffs := mla1.GetConfigmapDiff(mla2)
+
+	if !reflect.DeepEqual([]string{"test-cfg3"}, diffs) {
+		t.Errorf("Incorrect difference %s returned", diff.ObjectGoPrintSideBySide(diffs, diffs))
+	}
+	t.Log("GetConfigMapDiff evaluates difference in configmap references correctly")
+}
+
+func TestMachineLearningAlgorithm_GetSecretDiff(t *testing.T) {
+	mla1 := newFakeMla(true)
+	mla2 := mla1.DeepCopy()
+	// remove test-secret and test-cfg3 references
+	// however, test-secret is also referenced in EnvFrom, so we should only have test-cfg3 reported as diff
+	mla2.Spec.Env = []corev1.EnvVar{}
+	mla2.Spec.EnvFrom = []corev1.EnvFromSource{}
+	diffs := mla1.GetSecretDiff(mla2)
+
+	if !reflect.DeepEqual([]string{"test-secret"}, diffs) {
+		t.Errorf("Incorrect difference %s returned", diff.ObjectGoPrintSideBySide(diffs, diffs))
+	}
+	t.Log("GetSecretDiff evaluates difference in secret references correctly")
+}
