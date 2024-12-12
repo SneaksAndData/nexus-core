@@ -17,6 +17,7 @@
 package v1
 
 import (
+	"github.com/SneaksAndData/nexus-core/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"maps"
@@ -127,3 +128,13 @@ func (mla *MachineLearningAlgorithm) GetConfigMapNames() []string {
 // Int32Ptr converts int32 type to int32 pointer type
 // Method from sample-controller
 func Int32Ptr(i int32) *int32 { return &i }
+
+// GetSecretDiff resolves difference in secret references between two algorithms
+func (mla *MachineLearningAlgorithm) GetSecretDiff(other *MachineLearningAlgorithm) []string {
+	return util.GetConfigResolverDiff(mla.GetSecretNames, other.GetSecretNames)
+}
+
+// GetConfigmapDiff resolves difference in configmap references between two algorithms
+func (mla *MachineLearningAlgorithm) GetConfigmapDiff(other *MachineLearningAlgorithm) []string {
+	return util.GetConfigResolverDiff(mla.GetConfigMapNames, other.GetConfigMapNames)
+}
