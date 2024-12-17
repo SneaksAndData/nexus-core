@@ -1,8 +1,11 @@
 package payload
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type BlobStore interface {
-	SaveTextAsBlob(text string) (string, error)
-	GetBlobUri(blobPath string, validFor time.Duration) (string, error)
+	SaveTextAsBlob(ctx context.Context, text string, blobPath string) error
+	GetBlobUri(ctx context.Context, blobPath string, validFor time.Duration) (string, error)
 }
