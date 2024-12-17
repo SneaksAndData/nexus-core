@@ -59,31 +59,31 @@ type MachineLearningAlgorithmSpec struct {
 	FatalExitCodes       []int32                `json:"fatalExitCodes,omitempty"`
 	Command              string                 `json:"command"`
 	Args                 []string               `json:"args,omitempty"`
-	MountDatadogSocket   bool                   `json:"mountDatadogSocket,omitempty"`
+	MountDatadogSocket   *bool                  `json:"mountDatadogSocket,omitempty"`
 }
 
 func (spec *MachineLearningAlgorithmSpec) Merge(other *MachineLearningAlgorithmSpec) *MachineLearningAlgorithmSpec {
 	cloned := spec.DeepCopy()
 	otherCloned := other.DeepCopy()
 
-	cloned.ImageTag = util.Coalesce(otherCloned.ImageTag, cloned.ImageTag)
-	cloned.DeadlineSeconds = util.Coalesce(otherCloned.DeadlineSeconds, cloned.DeadlineSeconds)
-	cloned.MaximumRetries = util.Coalesce(otherCloned.MaximumRetries, cloned.MaximumRetries)
+	cloned.ImageTag = util.CoalesceString(otherCloned.ImageTag, cloned.ImageTag)
+	cloned.DeadlineSeconds = util.CoalescePointer(otherCloned.DeadlineSeconds, cloned.DeadlineSeconds)
+	cloned.MaximumRetries = util.CoalescePointer(otherCloned.MaximumRetries, cloned.MaximumRetries)
 	cloned.Env = util.CoalesceCollection[corev1.EnvVar](otherCloned.Env, cloned.Env)
 	cloned.EnvFrom = util.CoalesceCollection[corev1.EnvFromSource](otherCloned.EnvFrom, cloned.EnvFrom)
-	cloned.CpuLimit = util.Coalesce(otherCloned.CpuLimit, cloned.CpuLimit)
-	cloned.MemoryLimit = util.Coalesce(otherCloned.MemoryLimit, cloned.MemoryLimit)
-	cloned.WorkgroupHost = util.Coalesce(otherCloned.WorkgroupHost, cloned.WorkgroupHost)
-	cloned.Workgroup = util.Coalesce(otherCloned.Workgroup, cloned.Workgroup)
+	cloned.CpuLimit = util.CoalesceString(otherCloned.CpuLimit, cloned.CpuLimit)
+	cloned.MemoryLimit = util.CoalesceString(otherCloned.MemoryLimit, cloned.MemoryLimit)
+	cloned.WorkgroupHost = util.CoalesceString(otherCloned.WorkgroupHost, cloned.WorkgroupHost)
+	cloned.Workgroup = util.CoalesceString(otherCloned.Workgroup, cloned.Workgroup)
 	cloned.AdditionalWorkgroups = util.CoalesceCollection[string](otherCloned.AdditionalWorkgroups, cloned.AdditionalWorkgroups)
 	cloned.MonitoringParameters = util.CoalesceCollection[string](otherCloned.MonitoringParameters, cloned.MonitoringParameters)
 	cloned.CustomResources = util.CoalesceCollection[string](otherCloned.CustomResources, cloned.CustomResources)
-	cloned.SpeculativeAttempts = util.Coalesce(otherCloned.SpeculativeAttempts, cloned.SpeculativeAttempts)
+	cloned.SpeculativeAttempts = util.CoalescePointer(otherCloned.SpeculativeAttempts, cloned.SpeculativeAttempts)
 	cloned.TransientExitCodes = util.CoalesceCollection[int32](otherCloned.TransientExitCodes, cloned.TransientExitCodes)
 	cloned.FatalExitCodes = util.CoalesceCollection[int32](otherCloned.FatalExitCodes, cloned.FatalExitCodes)
-	cloned.Command = util.Coalesce(otherCloned.Command, cloned.Command)
+	cloned.Command = util.CoalesceString(otherCloned.Command, cloned.Command)
 	cloned.Args = util.CoalesceCollection[string](otherCloned.Args, cloned.Args)
-	cloned.MountDatadogSocket = util.Coalesce(otherCloned.MountDatadogSocket, cloned.MountDatadogSocket)
+	cloned.MountDatadogSocket = util.CoalescePointer(otherCloned.MountDatadogSocket, cloned.MountDatadogSocket)
 
 	return cloned
 }
@@ -169,6 +169,8 @@ func (mla *MachineLearningAlgorithm) GetConfigMapNames() []string {
 // Int32Ptr converts int32 type to int32 pointer type
 // Method from sample-controller
 func Int32Ptr(i int32) *int32 { return &i }
+
+func BoolPtr(b bool) *bool { return &b }
 
 // GetSecretDiff resolves difference in secret references between two algorithms
 func (mla *MachineLearningAlgorithm) GetSecretDiff(other *MachineLearningAlgorithm) []string {

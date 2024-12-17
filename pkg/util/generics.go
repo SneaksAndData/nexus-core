@@ -86,7 +86,15 @@ func DeepClone[T any](obj T) (*T, error) {
 	return cloned, nil
 }
 
-func Coalesce[T any](v1 T, v2 T) T {
+func CoalesceString(v1 string, v2 string) string {
+	if v1 == "" {
+		return v2
+	}
+
+	return v1
+}
+
+func CoalescePointer[T any](v1 *T, v2 *T) *T {
 	if v1 == nil {
 		return v2
 	}
