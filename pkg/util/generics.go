@@ -2,6 +2,7 @@ package util
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -70,4 +71,33 @@ func GetConfigResolverDiff(configResolver func() []string, otherConfigResolver f
 	}
 
 	return result
+}
+
+func DeepClone[T any](obj T) (*T, error) {
+	serialized, err := json.Marshal(obj)
+	if err != nil {
+		return nil, err
+	}
+	cloned := new(T)
+	if err = json.Unmarshal(serialized, *cloned); err != nil {
+		return nil, err
+	}
+
+	return cloned, nil
+}
+
+func Coalesce[T any](v1 T, v2 T) T {
+	if v1 == nil {
+		return v2
+	}
+
+	return v1
+}
+
+func CoalesceArray[T any](v1 []T, v2 []T) []T {
+	if v1 == nil || len(v1) == 0 {
+		return v2
+	}
+
+	return v1
 }
