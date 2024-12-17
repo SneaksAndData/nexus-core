@@ -103,7 +103,7 @@ func CoalescePointer[T any](v1 *T, v2 *T) *T {
 }
 
 func CoalesceCollection[T any, C []T | map[string]T](v1 C, v2 C) C {
-	if v1 == nil || len(v1) == 0 {
+	if len(v1) == 0 {
 		return v2
 	}
 
