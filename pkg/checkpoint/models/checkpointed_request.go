@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"github.com/scylladb/gocqlx/v3/table"
+	"time"
+)
 
 const (
 	LifecyclestageNew              = "NEW"
@@ -35,3 +38,33 @@ type CheckpointedRequest struct {
 	JobUid                  string                 `json:"job_uid"`
 	ParentJob               ParentJobReference     `json:"parent_job"`
 }
+
+var CheckpointedRequestTable = table.New(table.Metadata{
+	Name: "checkpoints",
+	Columns: []string{
+		"algorithm",
+		"id",
+		"lifecycle_stage",
+		"payload_uri",
+		"result_uri",
+		"algorithm_failure_code",
+		"algorithm_failure_cause",
+		"algorithm_failure_details",
+		"received_by_host",
+		"received_at",
+		"sent_at",
+		"applied_configuration",
+		"configuration_overrides",
+		"monitoring_metadata",
+		"content_hash",
+		"last_modified",
+		"tag",
+		"api_version",
+		"parent_job",
+	},
+	PartKey: []string{
+		"algorithm",
+		"id",
+	},
+	SortKey: []string{},
+})

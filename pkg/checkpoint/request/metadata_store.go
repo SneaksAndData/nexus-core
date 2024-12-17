@@ -131,9 +131,26 @@ func NewAstraCqlStore(logger klog.Logger) *CqlStore {
 }
 
 func (cqls *CqlStore) UpsertMetadata(entry *models.SubmissionBufferEntry) error {
+	var query = cqls.cqlSession.Query(models.SubmissionBufferTable.Insert()).BindStruct(*entry)
+	if err := query.ExecRelease(); err != nil {
+		cqls.logger.V(1).Error(err, "Error when inserting buffered checkpoint metadata", "algorithm", entry.Algorithm, "id", entry.Id)
+		return err
+	}
+
 	return nil
 }
 
 func (cqls *CqlStore) ReadMetadata(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
-	return nil, nil
+	result := &models.SubmissionBufferEntry{
+		Algorithm: checkpoint.Algorithm,
+		Id:        checkpoint.Id,
+	}
+
+	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Get()).BindStruct(*result)
+	if err := query.GetRelease(result); err != nil {
+		cqls.logger.V(1).Error(err, "Error when reading a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+		return nil, err
+	}
+
+	return result, nil
 }

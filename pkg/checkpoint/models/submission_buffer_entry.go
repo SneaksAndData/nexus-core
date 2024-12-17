@@ -6,7 +6,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 )
 
-var submissionBufferTable = table.New(table.Metadata{
+var SubmissionBufferTable = table.New(table.Metadata{
 	Name: "submission_buffer",
 	Columns: []string{
 		"algorithm",
