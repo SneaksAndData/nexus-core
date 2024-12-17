@@ -5,6 +5,7 @@ go 1.23.1
 require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.33.0
 	github.com/DataDog/datadog-go/v5 v5.5.0
+	github.com/gocql/gocql v0.0.0-20211015133455-b225f9b53fa1
 	github.com/samber/slog-datadog/v2 v2.8.0
 	github.com/samber/slog-multi v1.2.4
 	github.com/scylladb/gocqlx/v3 v3.0.1
@@ -26,7 +27,6 @@ require (
 	github.com/go-openapi/jsonreference v0.20.2 // indirect
 	github.com/go-openapi/swag v0.22.4 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
-	github.com/gocql/gocql v0.0.0-20211015133455-b225f9b53fa1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
