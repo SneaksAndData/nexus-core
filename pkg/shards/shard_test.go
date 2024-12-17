@@ -273,7 +273,7 @@ func newShardMla() *nexusv1.MachineLearningAlgorithm {
 			FatalExitCodes:       []int32{},
 			Command:              "python",
 			Args:                 []string{"job.py", "--request-id 111-222-333 --arg1 true"},
-			MountDatadogSocket:   true,
+			MountDatadogSocket:   nexusv1.BoolPtr(true),
 		},
 	}
 

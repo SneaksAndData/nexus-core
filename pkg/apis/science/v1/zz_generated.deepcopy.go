@@ -154,6 +154,11 @@ func (in *MachineLearningAlgorithmSpec) DeepCopyInto(out *MachineLearningAlgorit
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.MountDatadogSocket != nil {
+		in, out := &in.MountDatadogSocket, &out.MountDatadogSocket
+		*out = new(bool)
+		**out = **in
+	}
 	return
 }
 

@@ -85,7 +85,7 @@ func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
 			FatalExitCodes:       []int32{},
 			Command:              "python",
 			Args:                 []string{"job.py", "--request-id 111-222-333 --arg1 true"},
-			MountDatadogSocket:   true,
+			MountDatadogSocket:   BoolPtr(true),
 		},
 	}
 
