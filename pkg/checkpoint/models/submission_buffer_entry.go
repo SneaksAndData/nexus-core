@@ -26,7 +26,8 @@ type SubmissionBufferEntry struct {
 	Template  string `json:"template,omitempty"`
 }
 
-func (sbe *SubmissionBufferEntry) submissionTemplate() (*batchv1.Job, error) {
+// SubmissionTemplate returns a Kubernetes Job object generated for the algorithm request
+func (sbe *SubmissionBufferEntry) SubmissionTemplate() (*batchv1.Job, error) {
 	var result *batchv1.Job
 	err := json.Unmarshal([]byte(sbe.Template), result)
 	if err != nil {
