@@ -36,3 +36,11 @@ func (sbe *SubmissionBufferEntry) SubmissionTemplate() (*batchv1.Job, error) {
 
 	return result, nil
 }
+
+func FromCheckpoint(checkpoint *CheckpointedRequest) *SubmissionBufferEntry {
+	return &SubmissionBufferEntry{
+		Algorithm: checkpoint.Algorithm,
+		Id:        checkpoint.Id,
+		Template:  checkpoint.ToV1Job(),
+	}
+}

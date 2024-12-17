@@ -3,6 +3,8 @@ package models
 import (
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/scylladb/gocqlx/v3/table"
+	batchv1 "k8s.io/api/batch/v1"
+	"os"
 	"time"
 )
 
@@ -69,3 +71,27 @@ var CheckpointedRequestTable = table.New(table.Metadata{
 	},
 	SortKey: []string{},
 })
+
+func FromAlgorithmRequest(requestId string, request *AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) *CheckpointedRequest {
+	hostname, _ := os.Hostname()
+	return &CheckpointedRequest{
+		Algorithm:              request.AlgorithmName,
+		Id:                     requestId,
+		LifecycleStage:         LifecyclestageNew,
+		ReceivedByHost:         hostname,
+		ReceivedAt:             time.Now(),
+		LastModified:           time.Now(),
+		ConfigurationOverrides: request.CustomConfiguration,
+		Tag:                    request.Tag,
+		JobUid:                 "",
+		ParentJob:              ParentJobReference{}, // TODO: add support for parent job
+		MonitoringMetadata:     request.MonitoringMetadata,
+		ApiVersion:             request.RequestApiVersion,
+		AppliedConfiguration:   *config,
+	}
+}
+
+// TODO: implement
+func (req *CheckpointedRequest) ToV1Job() batchv1.Job {
+	return batchv1.Job{}
+}
