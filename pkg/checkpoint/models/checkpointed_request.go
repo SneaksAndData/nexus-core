@@ -1,6 +1,7 @@
 package models
 
 import (
+	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/scylladb/gocqlx/v3/table"
 	"time"
 )
@@ -17,26 +18,26 @@ const (
 )
 
 type CheckpointedRequest struct {
-	Algorithm               string                 `json:"algorithm"`
-	Id                      string                 `json:"id"`
-	LifecycleStage          string                 `json:"lifecycle_stage"`
-	PayloadUri              string                 `json:"payload_uri"`
-	ResultUri               string                 `json:"result_uri"`
-	AlgorithmFailureCode    string                 `json:"algorithm_failure_code"`
-	AlgorithmFailureCause   string                 `json:"algorithm_failure_cause"`
-	AlgorithmFailureDetails string                 `json:"algorithm_failure_details"`
-	ReceivedByHost          string                 `json:"received_by_host"`
-	ReceivedAt              time.Time              `json:"received_at"`
-	SentAt                  time.Time              `json:"sent_at"`
-	AppliedConfiguration    AlgorithmConfiguration `json:"applied_configuration"`
-	ConfigurationOverrides  AlgorithmConfiguration `json:"configuration_overrides"`
-	MonitoringMetadata      map[string][]string    `json:"monitoring_metadata"`
-	ContentHash             string                 `json:"content_hash"`
-	LastModified            time.Time              `json:"last_modified"`
-	Tag                     string                 `json:"tag"`
-	ApiVersion              string                 `json:"api_version"`
-	JobUid                  string                 `json:"job_uid"`
-	ParentJob               ParentJobReference     `json:"parent_job"`
+	Algorithm               string                          `json:"algorithm"`
+	Id                      string                          `json:"id"`
+	LifecycleStage          string                          `json:"lifecycle_stage"`
+	PayloadUri              string                          `json:"payload_uri"`
+	ResultUri               string                          `json:"result_uri"`
+	AlgorithmFailureCode    string                          `json:"algorithm_failure_code"`
+	AlgorithmFailureCause   string                          `json:"algorithm_failure_cause"`
+	AlgorithmFailureDetails string                          `json:"algorithm_failure_details"`
+	ReceivedByHost          string                          `json:"received_by_host"`
+	ReceivedAt              time.Time                       `json:"received_at"`
+	SentAt                  time.Time                       `json:"sent_at"`
+	AppliedConfiguration    v1.MachineLearningAlgorithmSpec `json:"applied_configuration"`
+	ConfigurationOverrides  v1.MachineLearningAlgorithmSpec `json:"configuration_overrides"`
+	MonitoringMetadata      map[string][]string             `json:"monitoring_metadata"`
+	ContentHash             string                          `json:"content_hash"`
+	LastModified            time.Time                       `json:"last_modified"`
+	Tag                     string                          `json:"tag"`
+	ApiVersion              string                          `json:"api_version"`
+	JobUid                  string                          `json:"job_uid"`
+	ParentJob               ParentJobReference              `json:"parent_job"`
 }
 
 var CheckpointedRequestTable = table.New(table.Metadata{

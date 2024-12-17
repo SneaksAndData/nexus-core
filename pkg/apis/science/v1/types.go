@@ -19,8 +19,10 @@ package v1
 import (
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"maps"
+	"math"
 	"slices"
 )
 
@@ -58,6 +60,45 @@ type MachineLearningAlgorithmSpec struct {
 	Command              string                 `json:"command"`
 	Args                 []string               `json:"args,omitempty"`
 	MountDatadogSocket   bool                   `json:"mountDatadogSocket,omitempty"`
+}
+
+func (spec *MachineLearningAlgorithmSpec) Merge(other *MachineLearningAlgorithmSpec) *MachineLearningAlgorithmSpec {
+	cloned := spec.DeepCopy()
+	otherCloned := other.DeepCopy()
+
+	cloned.ImageTag = util.Coalesce(otherCloned.ImageTag, cloned.ImageTag)
+	cloned.DeadlineSeconds = util.Coalesce(otherCloned.DeadlineSeconds, cloned.DeadlineSeconds)
+	cloned.MaximumRetries = util.Coalesce(otherCloned.MaximumRetries, cloned.MaximumRetries)
+	cloned.Env = util.CoalesceCollection[corev1.EnvVar](otherCloned.Env, cloned.Env)
+	cloned.EnvFrom = util.CoalesceCollection[corev1.EnvFromSource](otherCloned.EnvFrom, cloned.EnvFrom)
+	cloned.CpuLimit = util.Coalesce(otherCloned.CpuLimit, cloned.CpuLimit)
+	cloned.MemoryLimit = util.Coalesce(otherCloned.MemoryLimit, cloned.MemoryLimit)
+	cloned.WorkgroupHost = util.Coalesce(otherCloned.WorkgroupHost, cloned.WorkgroupHost)
+	cloned.Workgroup = util.Coalesce(otherCloned.Workgroup, cloned.Workgroup)
+	cloned.AdditionalWorkgroups = util.CoalesceCollection[string](otherCloned.AdditionalWorkgroups, cloned.AdditionalWorkgroups)
+	cloned.MonitoringParameters = util.CoalesceCollection[string](otherCloned.MonitoringParameters, cloned.MonitoringParameters)
+	cloned.CustomResources = util.CoalesceCollection[string](otherCloned.CustomResources, cloned.CustomResources)
+	cloned.SpeculativeAttempts = util.Coalesce(otherCloned.SpeculativeAttempts, cloned.SpeculativeAttempts)
+	cloned.TransientExitCodes = util.CoalesceCollection[int32](otherCloned.TransientExitCodes, cloned.TransientExitCodes)
+	cloned.FatalExitCodes = util.CoalesceCollection[int32](otherCloned.FatalExitCodes, cloned.FatalExitCodes)
+	cloned.Command = util.Coalesce(otherCloned.Command, cloned.Command)
+	cloned.Args = util.CoalesceCollection[string](otherCloned.Args, cloned.Args)
+	cloned.MountDatadogSocket = util.Coalesce(otherCloned.MountDatadogSocket, cloned.MountDatadogSocket)
+
+	return cloned
+}
+
+func (spec *MachineLearningAlgorithmSpec) SubmissionCost(utilisation float64, rateCost int32) (*int32, error) {
+	cores, err := resource.ParseQuantity(spec.CpuLimit)
+	if err != nil {
+		return nil, err
+	}
+	var computedCost = int32(math.Round(cores.AsApproximateFloat64() * math.Log2(1+utilisation) * float64(rateCost)))
+	if computedCost < 0 {
+		return &rateCost, nil
+	}
+
+	return &computedCost, nil
 }
 
 // NewResourceReadyCondition creates a new condition indicating an overall Mla synchronisation success or failure
