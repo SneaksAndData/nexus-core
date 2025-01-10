@@ -173,9 +173,9 @@ func (c *CheckpointedRequest) ToV1Job() batchv1.Job {
 	jobPodFailurePolicy := &batchv1.PodFailurePolicy{
 		Rules: []batchv1.PodFailurePolicyRule{
 			{
-				batchv1.PodFailurePolicyActionIgnore,
-				nil,
-				[]batchv1.PodFailurePolicyOnPodConditionsPattern{
+				Action:      batchv1.PodFailurePolicyActionIgnore,
+				OnExitCodes: nil,
+				OnPodConditions: []batchv1.PodFailurePolicyOnPodConditionsPattern{
 					{
 						Type:   corev1.DisruptionTarget,
 						Status: corev1.ConditionTrue,
