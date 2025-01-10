@@ -277,11 +277,11 @@ func (c *CheckpointedRequest) ToV1Job() batchv1.Job {
 							Args:    jobArgs,
 							Env: append(c.AppliedConfiguration.Env, []corev1.EnvVar{
 								{
-									Name:  fmt.Sprintf("NEXUS__ALGORITHM_NAME"),
+									Name:  "NEXUS__ALGORITHM_NAME",
 									Value: c.Algorithm,
 								},
 								{
-									Name:  fmt.Sprintf("NEXUS__BOUND_WORKGROUP"),
+									Name:  "NEXUS__BOUND_WORKGROUP",
 									Value: c.AppliedConfiguration.WorkgroupHost,
 								},
 							}...),

@@ -97,6 +97,7 @@ func (buffer *DefaultBuffer) Add(requestId string, request *models.AlgorithmRequ
 
 func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
 	telemetry.Increment(buffer.metrics, "incoming_requests", input.tags())
+	buffer.logger.V(4).Info("Persisting payload", "request", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
 
 	payloadPath := path.Join(
 		buffer.bufferConfig.PayloadStoragePath,
