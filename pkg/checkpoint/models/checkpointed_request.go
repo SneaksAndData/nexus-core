@@ -174,7 +174,7 @@ func (c *CheckpointedRequest) ToV1Job() batchv1.Job {
 		Rules: []batchv1.PodFailurePolicyRule{
 			{
 				batchv1.PodFailurePolicyActionIgnore,
-				&batchv1.PodFailurePolicyOnExitCodesRequirement{},
+				nil,
 				[]batchv1.PodFailurePolicyOnPodConditionsPattern{
 					{
 						Type:   corev1.DisruptionTarget,
@@ -223,6 +223,7 @@ func (c *CheckpointedRequest) ToV1Job() batchv1.Job {
 				Operator: batchv1.PodFailurePolicyOnExitCodesOpIn,
 				Values:   c.AppliedConfiguration.FatalExitCodes,
 			},
+			OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
 		})
 	}
 
@@ -233,6 +234,7 @@ func (c *CheckpointedRequest) ToV1Job() batchv1.Job {
 				Operator: batchv1.PodFailurePolicyOnExitCodesOpIn,
 				Values:   c.AppliedConfiguration.TransientExitCodes,
 			},
+			OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
 		})
 	}
 
