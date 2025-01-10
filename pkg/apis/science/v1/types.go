@@ -60,6 +60,7 @@ type MachineLearningAlgorithmSpec struct {
 	Command              string                 `json:"command"`
 	Args                 []string               `json:"args,omitempty"`
 	MountDatadogSocket   *bool                  `json:"mountDatadogSocket,omitempty"`
+	ServiceAccountName   string                 `json:"serviceAccountName,omitempty"`
 }
 
 func (spec *MachineLearningAlgorithmSpec) Merge(other *MachineLearningAlgorithmSpec) *MachineLearningAlgorithmSpec {
