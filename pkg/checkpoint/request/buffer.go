@@ -64,11 +64,27 @@ type DefaultBuffer struct {
 	checkpointStore CheckpointStore
 	metadataStore   MetadataStore
 	blobStore       payload.BlobStore
-	bufferConfig    BufferConfig
-	logger          klog.Logger
+	bufferConfig    *BufferConfig
+	logger          *klog.Logger
 	metrics         *statsd.Client
 	ctx             context.Context
 	actor           *pipeline.DefaultPipelineStageActor[*BufferInput, *BufferOutput]
+}
+
+func NewDefaultBuffer(ctx context.Context, config *BufferConfig) *DefaultBuffer {
+	logger := klog.FromContext(ctx)
+
+	cqlStore := NewAstraCqlStore(logger)
+	return &DefaultBuffer{
+		checkpointStore: cqlStore,
+		metadataStore:   cqlStore,
+		blobStore:       payload.NewS3PayloadStore(ctx, logger),
+		bufferConfig:    config,
+		logger:          &logger,
+		metrics:         ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
+		ctx:             ctx,
+		actor:           nil,
+	}
 }
 
 func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, types.UID]) {
