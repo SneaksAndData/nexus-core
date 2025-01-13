@@ -46,8 +46,8 @@ func (input *BufferInput) tags() map[string]string {
 	}
 }
 
-func newBufferInput(requestId string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*BufferInput, error) {
-	checkpoint, serializedPayload, err := models.FromAlgorithmRequest(requestId, request, config)
+func newBufferInput(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*BufferInput, error) {
+	checkpoint, serializedPayload, err := models.FromAlgorithmRequest(requestId, algorithmName, request, config)
 
 	if err != nil {
 		return nil, err
@@ -85,8 +85,8 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 	buffer.actor.Start(buffer.ctx)
 }
 
-func (buffer *DefaultBuffer) Add(requestId string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) error {
-	input, err := newBufferInput(requestId, request, config)
+func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) error {
+	input, err := newBufferInput(requestId, algorithmName, request, config)
 	if err != nil {
 		return err
 	}

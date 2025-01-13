@@ -8,7 +8,6 @@ type ParentAlgorithmRequest struct {
 }
 
 type AlgorithmRequest struct {
-	AlgorithmName       string                          `json:"algorithmName"`
 	AlgorithmParameters map[string]interface{}          `json:"algorithmParameters"`
 	CustomConfiguration v1.MachineLearningAlgorithmSpec `json:"customConfiguration"`
 	MonitoringMetadata  map[string][]string             `json:"monitoringMetadata"`

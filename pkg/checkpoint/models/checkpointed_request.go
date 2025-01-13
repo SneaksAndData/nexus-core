@@ -80,7 +80,7 @@ var CheckpointedRequestTable = table.New(table.Metadata{
 	SortKey: []string{},
 })
 
-func FromAlgorithmRequest(requestId string, request *AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
+func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
 	hostname, _ := os.Hostname()
 	serializedPayload, err := json.Marshal(request.AlgorithmParameters)
 
@@ -89,7 +89,7 @@ func FromAlgorithmRequest(requestId string, request *AlgorithmRequest, config *v
 	}
 
 	return &CheckpointedRequest{
-		Algorithm:              request.AlgorithmName,
+		Algorithm:              algorithmName,
 		Id:                     requestId,
 		LifecycleStage:         LifecyclestageNew,
 		ReceivedByHost:         hostname,
