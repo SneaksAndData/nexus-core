@@ -3,8 +3,8 @@ package models
 import v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 
 type ParentAlgorithmRequest struct {
-	RequestId     string `json:"requestId"`
-	AlgorithmName string `json:"algorithmName"`
+	RequestId     string `json:"requestId" binding:"required"`
+	AlgorithmName string `json:"algorithmName" binding:"required"`
 }
 
 type AlgorithmRequest struct {
