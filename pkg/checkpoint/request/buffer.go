@@ -36,8 +36,8 @@ type BufferInput struct {
 }
 
 type BufferOutput struct {
-	checkpoint *models.CheckpointedRequest
-	entry      *models.SubmissionBufferEntry
+	Checkpoint *models.CheckpointedRequest
+	Entry      *models.SubmissionBufferEntry
 }
 
 func (input *BufferInput) tags() map[string]string {
@@ -71,6 +71,7 @@ type DefaultBuffer struct {
 	actor           *pipeline.DefaultPipelineStageActor[*BufferInput, *BufferOutput]
 }
 
+// NewDefaultBuffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
 func NewDefaultBuffer(ctx context.Context, config *BufferConfig) *DefaultBuffer {
 	logger := klog.FromContext(ctx)
 
@@ -146,7 +147,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	telemetry.Increment(buffer.metrics, "checkpoint_requests", input.tags())
 
 	return &BufferOutput{
-		checkpoint: bufferedCheckpoint,
-		entry:      bufferedEntry,
+		Checkpoint: bufferedCheckpoint,
+		Entry:      bufferedEntry,
 	}, nil
 }
