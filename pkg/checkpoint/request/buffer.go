@@ -72,10 +72,10 @@ type DefaultBuffer struct {
 }
 
 // NewDefaultBuffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
-func NewDefaultBuffer(ctx context.Context, config *BufferConfig) *DefaultBuffer {
+func NewDefaultBuffer(ctx context.Context, config *BufferConfig, astraConfig *AstraBundleConfig) *DefaultBuffer {
 	logger := klog.FromContext(ctx)
 
-	cqlStore := NewAstraCqlStore(logger)
+	cqlStore := NewAstraCqlStore(logger, astraConfig)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
 		metadataStore:   cqlStore,
