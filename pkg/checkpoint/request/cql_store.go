@@ -10,13 +10,18 @@ import (
 	"github.com/scylladb/gocqlx/v3"
 	"io"
 	"k8s.io/klog/v2"
-	"os"
 )
 
 type CqlStore struct {
 	cluster    *gocql.ClusterConfig
 	cqlSession gocqlx.Session
 	logger     klog.Logger
+}
+
+type AstraBundleConfig struct {
+	SecureConnectionBundleBase64 string
+	GatewayUser                  string
+	GatewayPassword              string
 }
 
 type AstraCqlStoreConfig struct {
@@ -40,14 +45,8 @@ func getContent(zipFile *zip.File) ([]byte, error) {
 	return io.ReadAll(handle)
 }
 
-func NewAstraCqlStoreConfig(logger klog.Logger) *AstraCqlStoreConfig {
-	bundleBytes := os.Getenv("NEXUS__CQL_ASTRA_BUNDLE")
-	if bundleBytes == "" {
-		logger.V(0).Info("Astra bundle or credentials are not present in the environment")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-	}
-
-	zipReader, err := zip.NewReader(bytes.NewReader([]byte(bundleBytes)), int64(len(bundleBytes)))
+func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *AstraCqlStoreConfig {
+	zipReader, err := zip.NewReader(bytes.NewReader([]byte(config.SecureConnectionBundleBase64)), int64(len(config.SecureConnectionBundleBase64)))
 	if err != nil {
 		logger.V(0).Error(err, "Astra bundle content cannot be read")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
@@ -85,8 +84,8 @@ func NewAstraCqlStoreConfig(logger klog.Logger) *AstraCqlStoreConfig {
 	return &AstraCqlStoreConfig{
 		GatewayHost: gatewayConfig["host"],
 		GatewayPort: gatewayConfig["cql_port"],
-		GatewayPass: os.Getenv("NEXUS__CQL_ASTRA_CLIENT_ID"),
-		GatewayUser: os.Getenv("NEXUS__CQL_ASTRA_CLIENT_SECRET"),
+		GatewayPass: config.GatewayPassword,
+		GatewayUser: config.GatewayUser,
 		TlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      caCertPool,
@@ -110,8 +109,8 @@ func NewCqlStore(cluster *gocql.ClusterConfig, logger klog.Logger) *CqlStore {
 }
 
 // NewAstraCqlStore creates a CqlStore connected to DataStax AstraDB serverless instance
-func NewAstraCqlStore(logger klog.Logger) *CqlStore {
-	config := NewAstraCqlStoreConfig(logger)
+func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore {
+	config := NewAstraCqlStoreConfig(logger, bundle)
 	cluster := gocql.NewCluster(config.GatewayHost)
 	cluster.Authenticator = gocql.PasswordAuthenticator{
 		Username: config.GatewayUser,
