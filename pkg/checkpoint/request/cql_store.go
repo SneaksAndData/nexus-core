@@ -19,9 +19,9 @@ type CqlStore struct {
 }
 
 type AstraBundleConfig struct {
-	SecureConnectionBundleBase64 string
-	GatewayUser                  string
-	GatewayPassword              string
+	SecureConnectionBundleBase64 string `mapstructure:"secure-connection-bundle-base64"`
+	GatewayUser                  string `mapstructure:"gateway-user"`
+	GatewayPassword              string `mapstructure:"gateway-password"`
 }
 
 type AstraCqlStoreConfig struct {

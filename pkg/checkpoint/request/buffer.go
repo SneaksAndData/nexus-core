@@ -20,13 +20,13 @@ type Buffer interface {
 }
 
 type BufferConfig struct {
-	PayloadStoragePath         string
-	PayloadValidFor            time.Duration
-	FailureRateBaseDelay       time.Duration
-	FailureRateMaxDelay        time.Duration
-	RateLimitElementsPerSecond int
-	RateLimitElementsBurst     int
-	Workers                    int
+	PayloadStoragePath         string        `mapstructure:"payload-storage-path"`
+	PayloadValidFor            time.Duration `mapstructure:"payload-valid-for"`
+	FailureRateBaseDelay       time.Duration `mapstructure:"failure-rate-base-delay"`
+	FailureRateMaxDelay        time.Duration `mapstructure:"failure-rate-max-delay"`
+	RateLimitElementsPerSecond int           `mapstructure:"rate-limit-elements-per-second"`
+	RateLimitElementsBurst     int           `mapstructure:"rate-limit-elements-burst"`
+	Workers                    int           `mapstructure:"workers"`
 }
 
 type BufferInput struct {
