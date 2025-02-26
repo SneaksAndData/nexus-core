@@ -11,6 +11,7 @@ import (
 	"github.com/scylladb/gocqlx/v3"
 	"io"
 	"k8s.io/klog/v2"
+	"strconv"
 )
 
 type CqlStore struct {
@@ -80,7 +81,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(bundleFiles["ca.crt"])
-	var gatewayConfig map[string]string
+	var gatewayConfig map[string]any
 
 	err = json.Unmarshal(bundleFiles["config.json"], &gatewayConfig)
 	if err != nil {
@@ -89,13 +90,14 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 	}
 
 	return &AstraCqlStoreConfig{
-		GatewayHost: gatewayConfig["host"],
-		GatewayPort: gatewayConfig["cql_port"],
+		GatewayHost: gatewayConfig["host"].(string),
+		GatewayPort: strconv.Itoa(int(gatewayConfig["cql_port"].(float64))),
 		GatewayPass: config.GatewayPassword,
 		GatewayUser: config.GatewayUser,
 		TlsConfig: &tls.Config{
 			Certificates: []tls.Certificate{cert},
 			RootCAs:      caCertPool,
+			ServerName:   gatewayConfig["host"].(string),
 		},
 	}
 
