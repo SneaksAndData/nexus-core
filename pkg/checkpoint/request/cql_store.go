@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/base64"
 	"encoding/json"
 	"github.com/gocql/gocql"
 	"github.com/scylladb/gocqlx/v3"
@@ -46,9 +47,15 @@ func getContent(zipFile *zip.File) ([]byte, error) {
 }
 
 func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *AstraCqlStoreConfig {
-	zipReader, err := zip.NewReader(bytes.NewReader([]byte(config.SecureConnectionBundleBase64)), int64(len(config.SecureConnectionBundleBase64)))
+	bundleBytes, err := base64.StdEncoding.DecodeString(config.SecureConnectionBundleBase64)
 	if err != nil {
-		logger.V(0).Error(err, "Astra bundle content cannot be read")
+		logger.V(0).Error(err, "Astra bundle value is not a valid base64-encoded string")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
+	zipReader, err := zip.NewReader(bytes.NewReader(bundleBytes), int64(len(config.SecureConnectionBundleBase64)))
+	if err != nil {
+		logger.V(0).Error(err, "Astra bundle cannot be unpacked")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
