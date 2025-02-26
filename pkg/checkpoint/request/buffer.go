@@ -99,7 +99,7 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 		submitter,
 	)
 
-	buffer.actor.Start(buffer.ctx)
+	go buffer.actor.Start(buffer.ctx)
 }
 
 func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) error {
