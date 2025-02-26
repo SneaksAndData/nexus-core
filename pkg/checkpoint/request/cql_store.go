@@ -53,7 +53,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
-	zipReader, err := zip.NewReader(bytes.NewReader(bundleBytes), int64(len(config.SecureConnectionBundleBase64)))
+	zipReader, err := zip.NewReader(bytes.NewReader(bundleBytes), int64(len(bundleBytes)))
 	if err != nil {
 		logger.V(0).Error(err, "Astra bundle cannot be unpacked")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
