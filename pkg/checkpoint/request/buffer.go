@@ -117,6 +117,10 @@ func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request
 	return nil
 }
 
+func (buffer *DefaultBuffer) Get(requestId string, algorithmName string) (*models.CheckpointedRequest, error) {
+	return buffer.checkpointStore.ReadCheckpoint(algorithmName, requestId)
+}
+
 func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
 	telemetry.Increment(buffer.metrics, "incoming_requests", input.tags())
 	buffer.logger.V(4).Info("Persisting payload", "request", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
