@@ -11,7 +11,6 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"path"
 	"time"
 )
 
@@ -99,7 +98,7 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 		submitter,
 	)
 
-	buffer.actor.Start(buffer.ctx)
+	go buffer.actor.Start(buffer.ctx)
 }
 
 func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) error {
@@ -116,7 +115,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	telemetry.Increment(buffer.metrics, "incoming_requests", input.tags())
 	buffer.logger.V(4).Info("Persisting payload", "request", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
 
-	payloadPath := path.Join(
+	payloadPath := fmt.Sprintf("%s/%s/%s",
 		buffer.bufferConfig.PayloadStoragePath,
 		fmt.Sprintf("algorithm=%s", input.Checkpoint.Algorithm),
 		input.Checkpoint.Id)

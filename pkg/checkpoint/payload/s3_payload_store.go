@@ -53,8 +53,8 @@ func NewS3PayloadStore(ctx context.Context, logger klog.Logger) *S3PayloadStore 
 
 func parsePath(blobPath string) *S3Path {
 	r, _ := regexp.Compile(s3UrlRegex)
-	matches := r.FindAllString(blobPath, -1)
-	return NewS3Path(matches[0], matches[1])
+	matches := r.FindStringSubmatch(blobPath)
+	return NewS3Path(matches[1], matches[2])
 }
 
 func (store *S3PayloadStore) SaveTextAsBlob(ctx context.Context, text string, blobPath string) error {
@@ -69,7 +69,7 @@ func (store *S3PayloadStore) SaveTextAsBlob(ctx context.Context, text string, bl
 		store.logger.V(0).Error(err, "Error when persisting payload into S3")
 		return err
 	}
-	store.logger.V(4).Info("Successfully persisted algorithm payload", "payloadPath", blobPath, "checksum", *result.ChecksumSHA1)
+	store.logger.V(4).Info("Successfully persisted algorithm payload", "payloadPath", blobPath, "etag", *result.ETag)
 
 	return nil
 }

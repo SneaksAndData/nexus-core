@@ -79,7 +79,7 @@ func DeepClone[T any](obj T) (*T, error) {
 		return nil, err
 	}
 	cloned := new(T)
-	if err = json.Unmarshal(serialized, *cloned); err != nil {
+	if err = json.Unmarshal(serialized, cloned); err != nil {
 		return nil, err
 	}
 

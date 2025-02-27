@@ -22,7 +22,7 @@ func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) e
 
 	cloned.LastModified = time.Now()
 
-	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*checkpoint)
+	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*cloned)
 	if err := query.ExecRelease(); err != nil {
 		cqls.logger.V(1).Error(err, "Error when inserting a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 		return err

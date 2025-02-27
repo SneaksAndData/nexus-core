@@ -50,6 +50,29 @@ type CheckpointedRequest struct {
 	ParentJob               ParentJobReference              `json:"parent_job"`
 }
 
+type CheckpointedRequestCqlModel struct {
+	Algorithm               string
+	Id                      string
+	LifecycleStage          string
+	PayloadUri              string
+	ResultUri               string
+	AlgorithmFailureCode    string
+	AlgorithmFailureCause   string
+	AlgorithmFailureDetails string
+	ReceivedByHost          string
+	ReceivedAt              time.Time
+	SentAt                  time.Time
+	AppliedConfiguration    string
+	ConfigurationOverrides  string
+	MonitoringMetadata      string
+	ContentHash             string
+	LastModified            time.Time
+	Tag                     string
+	ApiVersion              string
+	JobUid                  string
+	ParentJob               string
+}
+
 var CheckpointedRequestTable = table.New(table.Metadata{
 	Name: "checkpoints",
 	Columns: []string{
@@ -79,6 +102,35 @@ var CheckpointedRequestTable = table.New(table.Metadata{
 	},
 	SortKey: []string{},
 })
+
+func (cr *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
+	serializedConfig, _ := json.Marshal(cr.AppliedConfiguration)
+	serializedOverrides, _ := json.Marshal(cr.ConfigurationOverrides)
+	serializedMetadata, _ := json.Marshal(cr.MonitoringMetadata)
+
+	return &CheckpointedRequestCqlModel{
+		Algorithm:               cr.Algorithm,
+		Id:                      cr.Id,
+		LifecycleStage:          cr.LifecycleStage,
+		PayloadUri:              cr.PayloadUri,
+		ResultUri:               cr.ResultUri,
+		AlgorithmFailureCode:    cr.AlgorithmFailureCode,
+		AlgorithmFailureCause:   cr.AlgorithmFailureCause,
+		AlgorithmFailureDetails: cr.AlgorithmFailureDetails,
+		ReceivedByHost:          cr.ReceivedByHost,
+		ReceivedAt:              cr.ReceivedAt,
+		SentAt:                  cr.SentAt,
+		AppliedConfiguration:    string(serializedConfig),
+		ConfigurationOverrides:  string(serializedOverrides),
+		MonitoringMetadata:      string(serializedMetadata),
+		ContentHash:             cr.ContentHash,
+		LastModified:            cr.LastModified,
+		Tag:                     cr.Tag,
+		ApiVersion:              cr.ApiVersion,
+		JobUid:                  cr.JobUid,
+		ParentJob:               "", // TODO: fixme
+	}
+}
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
 	hostname, _ := os.Hostname()
