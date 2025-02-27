@@ -28,7 +28,9 @@ type DefaultPipelineStageActor[TIn comparable, TOut comparable] struct {
 	receiver  StageActor[TOut, any]
 }
 
-func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](failureRateBaseDelay time.Duration,
+func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](actorName string,
+	actorTags map[string]string,
+	failureRateBaseDelay time.Duration,
 	failureRateMaxDelay time.Duration,
 	rateLimitElementsPerSecond int,
 	rateLimitElementsBurst int,
@@ -41,6 +43,8 @@ func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](failureRateBa
 	)
 
 	return &DefaultPipelineStageActor[TIn, TOut]{
+		stageName: actorName,
+		stageTags: actorTags,
 		queue:     workqueue.NewTypedRateLimitingQueue(rateLimiter),
 		workers:   queueWorkers,
 		processor: processor,
