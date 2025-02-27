@@ -7,7 +7,7 @@ import (
 )
 
 var SubmissionBufferTable = table.New(table.Metadata{
-	Name: "submission_buffer",
+	Name: "nexus.submission_buffer",
 	Columns: []string{
 		"algorithm",
 		"id",

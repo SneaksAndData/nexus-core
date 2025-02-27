@@ -64,7 +64,7 @@ type CheckpointedRequestCqlModel struct {
 	SentAt                  time.Time
 	AppliedConfiguration    string
 	ConfigurationOverrides  string
-	MonitoringMetadata      string
+	MonitoringMetadata      map[string][]string
 	ContentHash             string
 	LastModified            time.Time
 	Tag                     string
@@ -74,7 +74,7 @@ type CheckpointedRequestCqlModel struct {
 }
 
 var CheckpointedRequestTable = table.New(table.Metadata{
-	Name: "checkpoints",
+	Name: "nexus.checkpoints",
 	Columns: []string{
 		"algorithm",
 		"id",
@@ -106,7 +106,6 @@ var CheckpointedRequestTable = table.New(table.Metadata{
 func (cr *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 	serializedConfig, _ := json.Marshal(cr.AppliedConfiguration)
 	serializedOverrides, _ := json.Marshal(cr.ConfigurationOverrides)
-	serializedMetadata, _ := json.Marshal(cr.MonitoringMetadata)
 
 	return &CheckpointedRequestCqlModel{
 		Algorithm:               cr.Algorithm,
@@ -122,7 +121,7 @@ func (cr *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 		SentAt:                  cr.SentAt,
 		AppliedConfiguration:    string(serializedConfig),
 		ConfigurationOverrides:  string(serializedOverrides),
-		MonitoringMetadata:      string(serializedMetadata),
+		MonitoringMetadata:      cr.MonitoringMetadata,
 		ContentHash:             cr.ContentHash,
 		LastModified:            cr.LastModified,
 		Tag:                     cr.Tag,
