@@ -32,7 +32,7 @@ func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) e
 }
 
 func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error) {
-	result := &models.CheckpointedRequest{
+	result := &models.CheckpointedRequestCqlModel{
 		Algorithm: algorithm,
 		Id:        id,
 	}
@@ -43,7 +43,7 @@ func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.Check
 		return nil, err
 	}
 
-	return result, nil
+	return result.FromCqlModel(), nil
 }
 
 func (cqls *CqlStore) ReadCheckpoints(requestTag string) ([]models.CheckpointedRequest, error) {

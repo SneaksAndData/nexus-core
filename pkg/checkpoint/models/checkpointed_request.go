@@ -161,6 +161,36 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 	}
 }
 
+func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
+	var appliedConfig v1.MachineLearningAlgorithmSpec
+	var overrides v1.MachineLearningAlgorithmSpec
+	_ = json.Unmarshal([]byte(c.AppliedConfiguration), &appliedConfig)
+	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), &overrides)
+
+	return &CheckpointedRequest{
+		Algorithm:               c.Algorithm,
+		Id:                      c.Id,
+		LifecycleStage:          c.LifecycleStage,
+		PayloadUri:              c.PayloadUri,
+		ResultUri:               c.ResultUri,
+		AlgorithmFailureCode:    c.AlgorithmFailureCode,
+		AlgorithmFailureCause:   c.AlgorithmFailureCause,
+		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
+		ReceivedByHost:          c.ReceivedByHost,
+		ReceivedAt:              c.ReceivedAt,
+		SentAt:                  c.SentAt,
+		AppliedConfiguration:    appliedConfig,
+		ConfigurationOverrides:  overrides,
+		MonitoringMetadata:      c.MonitoringMetadata,
+		ContentHash:             c.ContentHash,
+		LastModified:            c.LastModified,
+		Tag:                     c.Tag,
+		ApiVersion:              c.ApiVersion,
+		JobUid:                  c.JobUid,
+		ParentJob:               ParentJobReference{},
+	}
+}
+
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
 	hostname, _ := os.Hostname()
 	serializedPayload, err := json.Marshal(request.AlgorithmParameters)
