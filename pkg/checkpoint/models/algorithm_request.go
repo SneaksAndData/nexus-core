@@ -13,5 +13,5 @@ type AlgorithmRequest struct {
 	MonitoringMetadata  map[string][]string             `json:"monitoringMetadata,omitempty"`
 	RequestApiVersion   string                          `json:"requestApiVersion,omitempty"`
 	Tag                 string                          `json:"tag,omitempty"`
-	ParentRequest       ParentAlgorithmRequest          `json:"parentRequest,omitempty"`
+	ParentRequest       *ParentAlgorithmRequest         `json:"parentRequest,omitempty"`
 }
