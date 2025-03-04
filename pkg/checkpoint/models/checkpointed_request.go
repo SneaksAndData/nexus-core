@@ -16,6 +16,8 @@ import (
 	"time"
 )
 
+type LifecycleStage string
+
 const (
 	LifecyclestageNew              = "NEW"
 	LifecyclestageBuffered         = "BUFFERED"
@@ -26,6 +28,34 @@ const (
 	LifecyclestageDeadlineExceeded = "DEADLINE_EXCEEDED"
 	LifecyclestageCancelled        = "CANCELLED"
 )
+
+type ClientErrorCode string
+
+const (
+	CB000  ClientErrorCode = "Scheduling timeout."                                            // client-facing code for buffer stage errors
+	CAJ011 ClientErrorCode = "Execution timed out."                                           // client-facing code for deadline exceed due to running over time
+	CAJ012 ClientErrorCode = "Job timed out waiting to be scheduled. Please try again later." // lost submissions and other scheduling errors that cause infinite hang in a buffering stage
+	CAJ000 ClientErrorCode = "Execution cancelled by %s, reason: %s"                          // job has been gracefully cancelled via API
+)
+
+func (ce ClientErrorCode) ErrorName() string {
+	switch ce {
+	case CB000:
+		return "CB000"
+	case CAJ011:
+		return "CAJ011"
+	case CAJ012:
+		return "CAJ012"
+	case CAJ000:
+		return "CAJ000"
+	default:
+		return "UNDEFINED"
+	}
+}
+
+func (ce ClientErrorCode) ErrorMessage() string {
+	return string(ce)
+}
 
 type CheckpointedRequest struct {
 	Algorithm               string                          `json:"algorithm"`
@@ -103,31 +133,61 @@ var CheckpointedRequestTable = table.New(table.Metadata{
 	SortKey: []string{},
 })
 
-func (cr *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
-	serializedConfig, _ := json.Marshal(cr.AppliedConfiguration)
-	serializedOverrides, _ := json.Marshal(cr.ConfigurationOverrides)
+func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
+	serializedConfig, _ := json.Marshal(c.AppliedConfiguration)
+	serializedOverrides, _ := json.Marshal(c.ConfigurationOverrides)
 
 	return &CheckpointedRequestCqlModel{
-		Algorithm:               cr.Algorithm,
-		Id:                      cr.Id,
-		LifecycleStage:          cr.LifecycleStage,
-		PayloadUri:              cr.PayloadUri,
-		ResultUri:               cr.ResultUri,
-		AlgorithmFailureCode:    cr.AlgorithmFailureCode,
-		AlgorithmFailureCause:   cr.AlgorithmFailureCause,
-		AlgorithmFailureDetails: cr.AlgorithmFailureDetails,
-		ReceivedByHost:          cr.ReceivedByHost,
-		ReceivedAt:              cr.ReceivedAt,
-		SentAt:                  cr.SentAt,
+		Algorithm:               c.Algorithm,
+		Id:                      c.Id,
+		LifecycleStage:          c.LifecycleStage,
+		PayloadUri:              c.PayloadUri,
+		ResultUri:               c.ResultUri,
+		AlgorithmFailureCode:    c.AlgorithmFailureCode,
+		AlgorithmFailureCause:   c.AlgorithmFailureCause,
+		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
+		ReceivedByHost:          c.ReceivedByHost,
+		ReceivedAt:              c.ReceivedAt,
+		SentAt:                  c.SentAt,
 		AppliedConfiguration:    string(serializedConfig),
 		ConfigurationOverrides:  string(serializedOverrides),
-		MonitoringMetadata:      cr.MonitoringMetadata,
-		ContentHash:             cr.ContentHash,
-		LastModified:            cr.LastModified,
-		Tag:                     cr.Tag,
-		ApiVersion:              cr.ApiVersion,
-		JobUid:                  cr.JobUid,
+		MonitoringMetadata:      c.MonitoringMetadata,
+		ContentHash:             c.ContentHash,
+		LastModified:            c.LastModified,
+		Tag:                     c.Tag,
+		ApiVersion:              c.ApiVersion,
+		JobUid:                  c.JobUid,
 		ParentJob:               "", // TODO: fixme
+	}
+}
+
+func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
+	var appliedConfig v1.MachineLearningAlgorithmSpec
+	var overrides v1.MachineLearningAlgorithmSpec
+	_ = json.Unmarshal([]byte(c.AppliedConfiguration), &appliedConfig)
+	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), &overrides)
+
+	return &CheckpointedRequest{
+		Algorithm:               c.Algorithm,
+		Id:                      c.Id,
+		LifecycleStage:          c.LifecycleStage,
+		PayloadUri:              c.PayloadUri,
+		ResultUri:               c.ResultUri,
+		AlgorithmFailureCode:    c.AlgorithmFailureCode,
+		AlgorithmFailureCause:   c.AlgorithmFailureCause,
+		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
+		ReceivedByHost:          c.ReceivedByHost,
+		ReceivedAt:              c.ReceivedAt,
+		SentAt:                  c.SentAt,
+		AppliedConfiguration:    appliedConfig,
+		ConfigurationOverrides:  overrides,
+		MonitoringMetadata:      c.MonitoringMetadata,
+		ContentHash:             c.ContentHash,
+		LastModified:            c.LastModified,
+		Tag:                     c.Tag,
+		ApiVersion:              c.ApiVersion,
+		JobUid:                  c.JobUid,
+		ParentJob:               ParentJobReference{},
 	}
 }
 
@@ -367,4 +427,49 @@ func (c *CheckpointedRequest) ToV1Job() batchv1.Job {
 			TTLSecondsAfterFinished: ptr.Int32(300),
 		},
 	}
+}
+
+func (c *CheckpointedRequest) IsFinished() bool {
+	switch c.LifecycleStage {
+	case LifecyclestageFailed, LifecyclestageCompleted, LifecyclestageDeadlineExceeded, LifecyclestageScheduleTimeout, LifecyclestageCancelled:
+		return true
+	default:
+		return false
+	}
+}
+
+func (c *CheckpointedRequest) AsCAJ011() *CheckpointedRequest {
+	result := c.DeepCopy()
+	result.LifecycleStage = LifecyclestageDeadlineExceeded
+	result.AlgorithmFailureCode = CAJ011.ErrorName()
+	result.AlgorithmFailureCause = CAJ011.ErrorMessage()
+
+	return result
+}
+
+func (c *CheckpointedRequest) AsCAJ012() *CheckpointedRequest {
+	result := c.DeepCopy()
+	result.LifecycleStage = LifecyclestageScheduleTimeout
+	result.AlgorithmFailureCode = CAJ012.ErrorName()
+	result.AlgorithmFailureCause = CAJ012.ErrorMessage()
+
+	return result
+}
+
+func (c *CheckpointedRequest) AsCB000() *CheckpointedRequest {
+	result := c.DeepCopy()
+	result.LifecycleStage = LifecyclestageFailed
+	result.AlgorithmFailureCode = CB000.ErrorName()
+	result.AlgorithmFailureCause = CB000.ErrorMessage()
+
+	return result
+}
+
+func (c *CheckpointedRequest) AsCancelled(request CancellationRequest) *CheckpointedRequest {
+	result := c.DeepCopy()
+	result.LifecycleStage = LifecyclestageCancelled
+	result.AlgorithmFailureCode = CAJ000.ErrorName()
+	result.AlgorithmFailureCause = fmt.Sprintf(CAJ000.ErrorMessage(), request.Initiator, request.Reason)
+
+	return result
 }

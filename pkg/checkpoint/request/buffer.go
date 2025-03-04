@@ -68,10 +68,12 @@ type DefaultBuffer struct {
 	metrics         *statsd.Client
 	ctx             context.Context
 	actor           *pipeline.DefaultPipelineStageActor[*BufferInput, *BufferOutput]
+	name            string
+	tags            map[string]string
 }
 
 // NewDefaultBuffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
-func NewDefaultBuffer(ctx context.Context, config *BufferConfig, astraConfig *AstraBundleConfig) *DefaultBuffer {
+func NewDefaultBuffer(ctx context.Context, config *BufferConfig, astraConfig *AstraBundleConfig, metricTags map[string]string) *DefaultBuffer {
 	logger := klog.FromContext(ctx)
 
 	cqlStore := NewAstraCqlStore(logger, astraConfig)
@@ -84,11 +86,15 @@ func NewDefaultBuffer(ctx context.Context, config *BufferConfig, astraConfig *As
 		metrics:         ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
 		ctx:             ctx,
 		actor:           nil,
+		name:            "default_cassandra_s3",
+		tags:            metricTags,
 	}
 }
 
 func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, types.UID]) {
 	buffer.actor = pipeline.NewDefaultPipelineStageActor[*BufferInput, *BufferOutput](
+		buffer.name,
+		buffer.tags,
 		buffer.bufferConfig.FailureRateBaseDelay,
 		buffer.bufferConfig.FailureRateMaxDelay,
 		buffer.bufferConfig.RateLimitElementsPerSecond,
@@ -109,6 +115,10 @@ func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request
 
 	buffer.actor.Receive(input)
 	return nil
+}
+
+func (buffer *DefaultBuffer) Get(requestId string, algorithmName string) (*models.CheckpointedRequest, error) {
+	return buffer.checkpointStore.ReadCheckpoint(algorithmName, requestId)
 }
 
 func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
