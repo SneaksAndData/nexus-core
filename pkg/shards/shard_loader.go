@@ -12,7 +12,7 @@ import (
 )
 
 // LoadClients read kubeconfig files in the path and creates ShardClient instances from them
-func LoadClients(shardConfigPath string, logger klog.Logger) ([]*ShardClient, error) {
+func LoadClients(shardConfigPath string, namespace string, logger klog.Logger) ([]*ShardClient, error) {
 	files, err := os.ReadDir(shardConfigPath)
 	if err != nil {
 		logger.Error(err, "Error opening kubeconfig files for Shards")
@@ -43,7 +43,7 @@ func LoadClients(shardConfigPath string, logger klog.Logger) ([]*ShardClient, er
 				return nil, err
 			}
 
-			shardClients = append(shardClients, NewShardClient(kubeClient, nexusClient, strings.Split(file.Name(), ".")[0]))
+			shardClients = append(shardClients, NewShardClient(kubeClient, nexusClient, strings.Split(file.Name(), ".")[0], namespace))
 		}
 	}
 
@@ -51,8 +51,8 @@ func LoadClients(shardConfigPath string, logger klog.Logger) ([]*ShardClient, er
 }
 
 // LoadShards reads kubeconfigs files from the path and creates Shard instances from them
-func LoadShards(ctx context.Context, owner string, shardConfigPath string, logger klog.Logger) ([]*Shard, error) {
-	shardClients, err := LoadClients(shardConfigPath, logger)
+func LoadShards(ctx context.Context, owner string, shardConfigPath string, namespace string, logger klog.Logger) ([]*Shard, error) {
+	shardClients, err := LoadClients(shardConfigPath, namespace, logger)
 	connectedShards := []*Shard{}
 
 	if err != nil {
