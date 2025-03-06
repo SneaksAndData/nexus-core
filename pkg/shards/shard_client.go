@@ -12,14 +12,14 @@ import (
 )
 
 type ShardClient struct {
-	name                string
+	Name                string
 	kubernetesclientset kubernetes.Interface
 	nexusclientset      clientset.Interface
 }
 
 func NewShardClient(kubernetesClientset kubernetes.Interface, nexusclientsetset clientset.Interface, name string) *ShardClient {
 	return &ShardClient{
-		name:                name,
+		Name:                name,
 		kubernetesclientset: kubernetesClientset,
 		nexusclientset:      nexusclientsetset,
 	}
@@ -38,15 +38,15 @@ func (c *ShardClient) SendJob(namespace string, job *batchv1.Job) (*batchv1.Job,
 }
 
 func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
-	kubeInformer := c.getKubeInformerFactory(c.name)
-	nexusInformer := c.getNexusInformerFactory(c.name)
+	kubeInformer := c.getKubeInformerFactory(c.Name)
+	nexusInformer := c.getNexusInformerFactory(c.Name)
 
 	defer kubeInformer.Start(ctx.Done())
 	defer nexusInformer.Start(ctx.Done())
 
 	return NewShard(
 		owner,
-		c.name,
+		c.Name,
 		c.kubernetesclientset,
 		c.nexusclientset,
 		nexusInformer.Science().V1().MachineLearningAlgorithms(),

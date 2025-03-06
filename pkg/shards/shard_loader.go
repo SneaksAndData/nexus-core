@@ -11,6 +11,7 @@ import (
 	"strings"
 )
 
+// LoadClients read kubeconfig files in the path and creates ShardClient instances from them
 func LoadClients(shardConfigPath string, logger klog.Logger) ([]*ShardClient, error) {
 	files, err := os.ReadDir(shardConfigPath)
 	if err != nil {
@@ -49,6 +50,7 @@ func LoadClients(shardConfigPath string, logger klog.Logger) ([]*ShardClient, er
 	return shardClients, nil
 }
 
+// LoadShards reads kubeconfigs files from the path and creates Shard instances from them
 func LoadShards(ctx context.Context, owner string, shardConfigPath string, logger klog.Logger) ([]*Shard, error) {
 	shardClients, err := LoadClients(shardConfigPath, logger)
 	connectedShards := []*Shard{}
