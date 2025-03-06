@@ -13,13 +13,15 @@ import (
 
 type ShardClient struct {
 	Name                string
+	Namespace           string
 	kubernetesclientset kubernetes.Interface
 	nexusclientset      clientset.Interface
 }
 
-func NewShardClient(kubernetesClientset kubernetes.Interface, nexusclientsetset clientset.Interface, name string) *ShardClient {
+func NewShardClient(kubernetesClientset kubernetes.Interface, nexusclientsetset clientset.Interface, name string, namespace string) *ShardClient {
 	return &ShardClient{
 		Name:                name,
+		Namespace:           namespace,
 		kubernetesclientset: kubernetesClientset,
 		nexusclientset:      nexusclientsetset,
 	}
