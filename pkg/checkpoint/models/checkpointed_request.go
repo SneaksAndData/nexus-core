@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
-	"github.com/SneaksAndData/nexus-core/pkg/util"
 	"github.com/aws/smithy-go/ptr"
 	"github.com/scylladb/gocqlx/v3/table"
 	batchv1 "k8s.io/api/batch/v1"
@@ -241,11 +240,7 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 	}
 }
 
-func (c *CheckpointedRequest) ToV1Job() batchv1.Job {
-	appVersion := util.CoalesceString(os.Getenv("APPLICATION_VERSION"), "0.0.0")
-	jobNodeTaint := util.CoalesceString(os.Getenv("NEXUS__JOB_NODE_CLASS"), "kubernetes.sneaksanddata.io/node-group")
-	jobNodeTaintValue := util.CoalesceString(c.AppliedConfiguration.Workgroup, os.Getenv("NEXUS__JOB_NODE_CLASS_VALUE"))
-
+func (c *CheckpointedRequest) ToV1Job(jobNodeTaint string, jobNodeTaintValue string, appVersion string) batchv1.Job {
 	jobResourceList := corev1.ResourceList{
 		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.CpuLimit),
 		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.MemoryLimit),
