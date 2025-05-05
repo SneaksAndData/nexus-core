@@ -60,8 +60,8 @@ type NexusAlgorithmWorkgroupSpec struct {
 	Description    string          `json:"description"`
 	CapabilityTags map[string]bool `json:"capabilityTags"`
 
-	NodeTaints     []corev1.Taint        `json:"nodeTaints"`
-	NodeAffinities []corev1.NodeAffinity `json:"nodeAffinities"`
+	Tolerations []corev1.Toleration `json:"tolerations"`
+	Affinity    *corev1.Affinity    `json:"affinity"`
 }
 
 // NexusAlgorithmResources defines maximum compute resources that should be provisioned for the algorithm
@@ -89,6 +89,7 @@ type NexusAlgorithmContainer struct {
 type NexusAlgorithmRuntimeEnvironment struct {
 	EnvironmentVariables       []corev1.EnvVar        `json:"environmentVariables"`
 	MappedEnvironmentVariables []corev1.EnvFromSource `json:"mappedEnvironmentVariables,omitempty"`
+	Annotations                map[string]string      `json:"annotations,omitempty"`
 
 	DeadlineSeconds *int32 `json:"deadlineSeconds,omitempty"`
 	MaximumRetries  *int32 `json:"maximumRetries,omitempty"`
