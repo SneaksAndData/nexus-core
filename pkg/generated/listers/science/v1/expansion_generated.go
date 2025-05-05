@@ -25,3 +25,11 @@ type NexusAlgorithmTemplateListerExpansion interface{}
 // NexusAlgorithmTemplateNamespaceListerExpansion allows custom methods to be added to
 // NexusAlgorithmTemplateNamespaceLister.
 type NexusAlgorithmTemplateNamespaceListerExpansion interface{}
+
+// NexusAlgorithmWorkgroupListerExpansion allows custom methods to be added to
+// NexusAlgorithmWorkgroupLister.
+type NexusAlgorithmWorkgroupListerExpansion interface{}
+
+// NexusAlgorithmWorkgroupNamespaceListerExpansion allows custom methods to be added to
+// NexusAlgorithmWorkgroupNamespaceLister.
+type NexusAlgorithmWorkgroupNamespaceListerExpansion interface{}

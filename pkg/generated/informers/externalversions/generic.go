@@ -55,6 +55,8 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=science.sneaksanddata.com, Version=v1
 	case v1.SchemeGroupVersion.WithResource("nexusalgorithmtemplates"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Science().V1().NexusAlgorithmTemplates().Informer()}, nil
+	case v1.SchemeGroupVersion.WithResource("nexusalgorithmworkgroups"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Science().V1().NexusAlgorithmWorkgroups().Informer()}, nil
 
 	}
 

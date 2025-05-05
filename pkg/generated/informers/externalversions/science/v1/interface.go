@@ -26,6 +26,8 @@ import (
 type Interface interface {
 	// NexusAlgorithmTemplates returns a NexusAlgorithmTemplateInformer.
 	NexusAlgorithmTemplates() NexusAlgorithmTemplateInformer
+	// NexusAlgorithmWorkgroups returns a NexusAlgorithmWorkgroupInformer.
+	NexusAlgorithmWorkgroups() NexusAlgorithmWorkgroupInformer
 }
 
 type version struct {
@@ -42,4 +44,9 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // NexusAlgorithmTemplates returns a NexusAlgorithmTemplateInformer.
 func (v *version) NexusAlgorithmTemplates() NexusAlgorithmTemplateInformer {
 	return &nexusAlgorithmTemplateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// NexusAlgorithmWorkgroups returns a NexusAlgorithmWorkgroupInformer.
+func (v *version) NexusAlgorithmWorkgroups() NexusAlgorithmWorkgroupInformer {
+	return &nexusAlgorithmWorkgroupInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

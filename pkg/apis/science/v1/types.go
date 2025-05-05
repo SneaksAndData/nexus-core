@@ -36,19 +36,26 @@ type NexusAlgorithmTemplate struct {
 	Status NexusAlgorithmStatus `json:"status"`
 }
 
+// +genclient
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// NexusAlgorithmWorkgroup specifies node tolerations for algorithm pods
 type NexusAlgorithmWorkgroup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec NexusAlgorithmWorkgroupSpec `json:"spec"`
+	Spec   NexusAlgorithmWorkgroupSpec   `json:"spec"`
+	Status NexusAlgorithmWorkgroupStatus `json:"status"`
 }
 
+// NexusAlgorithmWorkgroupRef contains a reference to the workgroup
 type NexusAlgorithmWorkgroupRef struct {
 	Name  string `json:"name"`
 	Group string `json:"group"`
 	Kind  string `json:"kind"`
 }
 
+// NexusAlgorithmWorkgroupSpec is a spec for NexusAlgorithmWorkgroup resource
 type NexusAlgorithmWorkgroupSpec struct {
 	Description    string          `json:"description"`
 	CapabilityTags map[string]bool `json:"capabilityTags"`
@@ -57,17 +64,20 @@ type NexusAlgorithmWorkgroupSpec struct {
 	NodeAffinities []corev1.NodeAffinity `json:"nodeAffinities"`
 }
 
+// NexusAlgorithmResources defines maximum compute resources that should be provisioned for the algorithm
 type NexusAlgorithmResources struct {
 	CpuLimit        string            `json:"cpuLimit"`
 	MemoryLimit     string            `json:"memoryLimit"`
 	CustomResources map[string]string `json:"customResources,omitempty"`
 }
 
+// NexusAlgorithmSubmissionBehaviour defines submission behaviour: shards or single cluster, plus a workgroup
 type NexusAlgorithmSubmissionBehaviour struct {
 	ShardClusters []string                    `json:"shardClusters,omitempty"`
 	WorkgroupRef  *NexusAlgorithmWorkgroupRef `json:"workgroupRef"`
 }
 
+// NexusAlgorithmContainer provides container specification for each run
 type NexusAlgorithmContainer struct {
 	Image              string `json:"image"`
 	Registry           string `json:"registry"`
@@ -75,6 +85,7 @@ type NexusAlgorithmContainer struct {
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
 }
 
+// NexusAlgorithmRuntimeEnvironment defines environment configuration for each run
 type NexusAlgorithmRuntimeEnvironment struct {
 	EnvironmentVariables       []corev1.EnvVar        `json:"environmentVariables"`
 	MappedEnvironmentVariables []corev1.EnvFromSource `json:"mappedEnvironmentVariables,omitempty"`
@@ -83,11 +94,13 @@ type NexusAlgorithmRuntimeEnvironment struct {
 	MaximumRetries  *int32 `json:"maximumRetries,omitempty"`
 }
 
+// NexusErrorHandlingBehaviour defines error handling behaviours for algorithm exit codes
 type NexusErrorHandlingBehaviour struct {
 	TransientExitCodes []int32 `json:"transientExitCodes,omitempty"`
 	FatalExitCodes     []int32 `json:"fatalExitCodes,omitempty"`
 }
 
+// NexusDatadogIntegrationSettings defines settings for Nexus algorithms that use Datadog metrics and logging capabilities
 type NexusDatadogIntegrationSettings struct {
 	MountDatadogSocket *bool `json:"mountDatadogSocket,omitempty"`
 }
@@ -133,6 +146,13 @@ func NewResourceReadyCondition(transitionTime metav1.Time, status metav1.Conditi
 	}
 }
 
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// NexusAlgorithmWorkgroupStatus is the status for a NexusAlgorithmWorkgroup resource
+type NexusAlgorithmWorkgroupStatus struct {
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+}
+
 // NexusAlgorithmStatus is the status for a NexusAlgorithmTemplate resource
 type NexusAlgorithmStatus struct {
 	SyncedSecrets        []string           `json:"syncedSecrets,omitempty"`
@@ -149,6 +169,16 @@ type NexusAlgorithmTemplateList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []NexusAlgorithmTemplate `json:"items"`
+}
+
+// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+
+// NexusAlgorithmWorkgroupList is a list of NexusAlgorithmWorkgroup resources
+type NexusAlgorithmWorkgroupList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []NexusAlgorithmWorkgroup `json:"items"`
 }
 
 // GetSecretNames retrieves a list of unique secret names for this MLA

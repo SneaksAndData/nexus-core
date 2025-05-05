@@ -29,6 +29,7 @@ import (
 type ScienceV1Interface interface {
 	RESTClient() rest.Interface
 	NexusAlgorithmTemplatesGetter
+	NexusAlgorithmWorkgroupsGetter
 }
 
 // ScienceV1Client is used to interact with features provided by the science.sneaksanddata.com group.
@@ -38,6 +39,10 @@ type ScienceV1Client struct {
 
 func (c *ScienceV1Client) NexusAlgorithmTemplates(namespace string) NexusAlgorithmTemplateInterface {
 	return newNexusAlgorithmTemplates(c, namespace)
+}
+
+func (c *ScienceV1Client) NexusAlgorithmWorkgroups(namespace string) NexusAlgorithmWorkgroupInterface {
+	return newNexusAlgorithmWorkgroups(c, namespace)
 }
 
 // NewForConfig creates a new ScienceV1Client for the given config.

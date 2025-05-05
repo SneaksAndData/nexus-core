@@ -32,6 +32,10 @@ func (c *FakeScienceV1) NexusAlgorithmTemplates(namespace string) v1.NexusAlgori
 	return &FakeNexusAlgorithmTemplates{c, namespace}
 }
 
+func (c *FakeScienceV1) NexusAlgorithmWorkgroups(namespace string) v1.NexusAlgorithmWorkgroupInterface {
+	return &FakeNexusAlgorithmWorkgroups{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeScienceV1) RESTClient() rest.Interface {
