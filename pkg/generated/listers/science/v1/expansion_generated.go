@@ -18,10 +18,10 @@ limitations under the License.
 
 package v1
 
-// MachineLearningAlgorithmListerExpansion allows custom methods to be added to
-// MachineLearningAlgorithmLister.
-type MachineLearningAlgorithmListerExpansion interface{}
+// NexusAlgorithmTemplateListerExpansion allows custom methods to be added to
+// NexusAlgorithmTemplateLister.
+type NexusAlgorithmTemplateListerExpansion interface{}
 
-// MachineLearningAlgorithmNamespaceListerExpansion allows custom methods to be added to
-// MachineLearningAlgorithmNamespaceLister.
-type MachineLearningAlgorithmNamespaceListerExpansion interface{}
+// NexusAlgorithmTemplateNamespaceListerExpansion allows custom methods to be added to
+// NexusAlgorithmTemplateNamespaceLister.
+type NexusAlgorithmTemplateNamespaceListerExpansion interface{}

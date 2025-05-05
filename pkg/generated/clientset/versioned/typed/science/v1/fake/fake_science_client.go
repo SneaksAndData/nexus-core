@@ -28,8 +28,8 @@ type FakeScienceV1 struct {
 	*testing.Fake
 }
 
-func (c *FakeScienceV1) MachineLearningAlgorithms(namespace string) v1.MachineLearningAlgorithmInterface {
-	return &FakeMachineLearningAlgorithms{c, namespace}
+func (c *FakeScienceV1) NexusAlgorithmTemplates(namespace string) v1.NexusAlgorithmTemplateInterface {
+	return &FakeNexusAlgorithmTemplates{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

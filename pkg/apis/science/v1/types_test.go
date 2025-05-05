@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
+func newFakeMla(withConfigs bool) *NexusAlgorithmTemplate {
 	var envFrom []corev1.EnvFromSource
 	var env []corev1.EnvVar
 
@@ -57,7 +57,7 @@ func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
 		}
 	}
 
-	mla := &MachineLearningAlgorithm{
+	mla := &NexusAlgorithmTemplate{
 		TypeMeta: metav1.TypeMeta{APIVersion: SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-algorithms",
@@ -65,7 +65,7 @@ func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
 			Labels:    map[string]string{"nexus/algorithm-class": "mip"},
 			UID:       types.UID("123"),
 		},
-		Spec: MachineLearningAlgorithmSpec{
+		Spec: NexusAlgorithmSpec{
 			ImageRegistry:        "test.io",
 			ImageRepository:      "algorithms/test",
 			ImageTag:             "v1.0.0",
@@ -89,7 +89,7 @@ func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
 		},
 	}
 
-	mla.Status = MachineLearningAlgorithmStatus{
+	mla.Status = NexusAlgorithmStatus{
 		SyncedSecrets:        []string{"test-secret"},
 		SyncedConfigurations: []string{"test-config"},
 		SyncedToClusters:     []string{"test-cluster"},

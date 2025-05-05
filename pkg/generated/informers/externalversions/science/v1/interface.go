@@ -24,8 +24,8 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
-	// MachineLearningAlgorithms returns a MachineLearningAlgorithmInformer.
-	MachineLearningAlgorithms() MachineLearningAlgorithmInformer
+	// NexusAlgorithmTemplates returns a NexusAlgorithmTemplateInformer.
+	NexusAlgorithmTemplates() NexusAlgorithmTemplateInformer
 }
 
 type version struct {
@@ -39,7 +39,7 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
-// MachineLearningAlgorithms returns a MachineLearningAlgorithmInformer.
-func (v *version) MachineLearningAlgorithms() MachineLearningAlgorithmInformer {
-	return &machineLearningAlgorithmInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+// NexusAlgorithmTemplates returns a NexusAlgorithmTemplateInformer.
+func (v *version) NexusAlgorithmTemplates() NexusAlgorithmTemplateInformer {
+	return &nexusAlgorithmTemplateInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }

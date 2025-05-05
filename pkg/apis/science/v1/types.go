@@ -19,87 +19,107 @@ package v1
 import (
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"maps"
-	"math"
 	"slices"
 )
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// MachineLearningAlgorithm is a specification for a MachineLearningAlgorithm resource
-type MachineLearningAlgorithm struct {
+// NexusAlgorithmTemplate is a specification for an AI/ML batch application run: inference, training etc.
+type NexusAlgorithmTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   MachineLearningAlgorithmSpec   `json:"spec"`
-	Status MachineLearningAlgorithmStatus `json:"status"`
+	Spec   NexusAlgorithmSpec   `json:"spec"`
+	Status NexusAlgorithmStatus `json:"status"`
 }
 
-// MachineLearningAlgorithmSpec is the spec for a MachineLearningAlgorithm resource
-type MachineLearningAlgorithmSpec struct {
-	ImageRegistry        string                 `json:"imageRegistry"`
-	ImageRepository      string                 `json:"imageRepository"`
-	ImageTag             string                 `json:"imageTag"`
-	DeadlineSeconds      *int32                 `json:"deadlineSeconds,omitempty"`
-	MaximumRetries       *int32                 `json:"maximumRetries,omitempty"`
-	Env                  []corev1.EnvVar        `json:"env,omitempty"`
-	EnvFrom              []corev1.EnvFromSource `json:"envFrom,omitempty"`
-	CpuLimit             string                 `json:"cpuLimit"`
-	MemoryLimit          string                 `json:"memoryLimit"`
-	WorkgroupHost        string                 `json:"workgroupHost"`
-	Workgroup            string                 `json:"workgroup"`
-	AdditionalWorkgroups map[string]string      `json:"additionalWorkgroups,omitempty"`
-	MonitoringParameters []string               `json:"monitoringParameters,omitempty"`
-	CustomResources      map[string]string      `json:"customResources,omitempty"`
-	SpeculativeAttempts  *int32                 `json:"speculativeAttempts,omitempty"`
-	TransientExitCodes   []int32                `json:"transientExitCodes,omitempty"`
-	FatalExitCodes       []int32                `json:"fatalExitCodes,omitempty"`
-	Command              string                 `json:"command"`
-	Args                 []string               `json:"args,omitempty"`
-	MountDatadogSocket   *bool                  `json:"mountDatadogSocket,omitempty"`
-	ServiceAccountName   string                 `json:"serviceAccountName,omitempty"`
+type NexusAlgorithmWorkgroup struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec NexusAlgorithmWorkgroupSpec `json:"spec"`
 }
 
-func (spec *MachineLearningAlgorithmSpec) Merge(other *MachineLearningAlgorithmSpec) *MachineLearningAlgorithmSpec {
+type NexusAlgorithmWorkgroupRef struct {
+	Name  string `json:"name"`
+	Group string `json:"group"`
+	Kind  string `json:"kind"`
+}
+
+type NexusAlgorithmWorkgroupSpec struct {
+	Description    string          `json:"description"`
+	CapabilityTags map[string]bool `json:"capabilityTags"`
+
+	NodeTaints     []corev1.Taint        `json:"nodeTaints"`
+	NodeAffinities []corev1.NodeAffinity `json:"nodeAffinities"`
+}
+
+type NexusAlgorithmResources struct {
+	CpuLimit        string            `json:"cpuLimit"`
+	MemoryLimit     string            `json:"memoryLimit"`
+	CustomResources map[string]string `json:"customResources,omitempty"`
+}
+
+type NexusAlgorithmSubmissionBehaviour struct {
+	ShardClusters []string                    `json:"shardClusters,omitempty"`
+	WorkgroupRef  *NexusAlgorithmWorkgroupRef `json:"workgroupRef"`
+}
+
+type NexusAlgorithmContainer struct {
+	Image              string `json:"image"`
+	Registry           string `json:"registry"`
+	VersionTag         string `json:"versionTag"`
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+}
+
+type NexusAlgorithmRuntimeEnvironment struct {
+	EnvironmentVariables       []corev1.EnvVar        `json:"environmentVariables"`
+	MappedEnvironmentVariables []corev1.EnvFromSource `json:"mappedEnvironmentVariables,omitempty"`
+
+	DeadlineSeconds *int32 `json:"deadlineSeconds,omitempty"`
+	MaximumRetries  *int32 `json:"maximumRetries,omitempty"`
+}
+
+type NexusErrorHandlingBehaviour struct {
+	TransientExitCodes []int32 `json:"transientExitCodes,omitempty"`
+	FatalExitCodes     []int32 `json:"fatalExitCodes,omitempty"`
+}
+
+type NexusDatadogIntegrationSettings struct {
+	MountDatadogSocket *bool `json:"mountDatadogSocket,omitempty"`
+}
+
+// NexusAlgorithmSpec is the spec for a NexusAlgorithmTemplate resource
+type NexusAlgorithmSpec struct {
+	Container                  *NexusAlgorithmContainer           `json:"container"`
+	ComputeResources           *NexusAlgorithmResources           `json:"computeResources,omitempty"`
+	SubmissionBehaviour        *NexusAlgorithmSubmissionBehaviour `json:"submissionBehaviour,omitempty"`
+	Command                    string                             `json:"command"`
+	Args                       []string                           `json:"args,omitempty"`
+	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironment  `json:"runtimeEnvironment,omitempty"`
+	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviour       `json:"errorHandlingBehaviour,omitempty"`
+	DatadogIntegrationSettings *NexusDatadogIntegrationSettings   `json:"datadogIntegrationSettings,omitempty"`
+}
+
+func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithmSpec {
 	cloned := spec.DeepCopy()
 	otherCloned := other.DeepCopy()
 
-	cloned.ImageTag = util.CoalesceString(otherCloned.ImageTag, cloned.ImageTag)
-	cloned.DeadlineSeconds = util.CoalescePointer(otherCloned.DeadlineSeconds, cloned.DeadlineSeconds)
-	cloned.MaximumRetries = util.CoalescePointer(otherCloned.MaximumRetries, cloned.MaximumRetries)
-	cloned.Env = util.CoalesceCollection[corev1.EnvVar](otherCloned.Env, cloned.Env)
-	cloned.EnvFrom = util.CoalesceCollection[corev1.EnvFromSource](otherCloned.EnvFrom, cloned.EnvFrom)
-	cloned.CpuLimit = util.CoalesceString(otherCloned.CpuLimit, cloned.CpuLimit)
-	cloned.MemoryLimit = util.CoalesceString(otherCloned.MemoryLimit, cloned.MemoryLimit)
-	cloned.WorkgroupHost = util.CoalesceString(otherCloned.WorkgroupHost, cloned.WorkgroupHost)
-	cloned.Workgroup = util.CoalesceString(otherCloned.Workgroup, cloned.Workgroup)
-	cloned.AdditionalWorkgroups = util.CoalesceCollection[string](otherCloned.AdditionalWorkgroups, cloned.AdditionalWorkgroups)
-	cloned.MonitoringParameters = util.CoalesceCollection[string](otherCloned.MonitoringParameters, cloned.MonitoringParameters)
-	cloned.CustomResources = util.CoalesceCollection[string](otherCloned.CustomResources, cloned.CustomResources)
-	cloned.SpeculativeAttempts = util.CoalescePointer(otherCloned.SpeculativeAttempts, cloned.SpeculativeAttempts)
-	cloned.TransientExitCodes = util.CoalesceCollection[int32](otherCloned.TransientExitCodes, cloned.TransientExitCodes)
-	cloned.FatalExitCodes = util.CoalesceCollection[int32](otherCloned.FatalExitCodes, cloned.FatalExitCodes)
+	cloned.Container = util.CoalescePointer(otherCloned.Container, cloned.Container)
+	cloned.ComputeResources = util.CoalescePointer(otherCloned.ComputeResources, cloned.ComputeResources)
+	cloned.SubmissionBehaviour = util.CoalescePointer(otherCloned.SubmissionBehaviour, cloned.SubmissionBehaviour)
 	cloned.Command = util.CoalesceString(otherCloned.Command, cloned.Command)
 	cloned.Args = util.CoalesceCollection[string](otherCloned.Args, cloned.Args)
-	cloned.MountDatadogSocket = util.CoalescePointer(otherCloned.MountDatadogSocket, cloned.MountDatadogSocket)
+
+	cloned.RuntimeEnvironment = util.CoalescePointer(otherCloned.RuntimeEnvironment, cloned.RuntimeEnvironment)
+	cloned.ErrorHandlingBehaviour = util.CoalescePointer(otherCloned.ErrorHandlingBehaviour, cloned.ErrorHandlingBehaviour)
+
+	cloned.DatadogIntegrationSettings = util.CoalescePointer(otherCloned.DatadogIntegrationSettings, cloned.DatadogIntegrationSettings)
 
 	return cloned
-}
-
-func (spec *MachineLearningAlgorithmSpec) SubmissionCost(utilisation float64, rateCost int32) (*int32, error) {
-	cores, err := resource.ParseQuantity(spec.CpuLimit)
-	if err != nil {
-		return nil, err
-	}
-	var computedCost = int32(math.Round(cores.AsApproximateFloat64() * math.Log2(1+utilisation) * float64(rateCost)))
-	if computedCost < 0 {
-		return &rateCost, nil
-	}
-
-	return &computedCost, nil
 }
 
 // NewResourceReadyCondition creates a new condition indicating an overall Mla synchronisation success or failure
@@ -113,8 +133,8 @@ func NewResourceReadyCondition(transitionTime metav1.Time, status metav1.Conditi
 	}
 }
 
-// MachineLearningAlgorithmStatus is the status for a MachineLearningAlgorithm resource
-type MachineLearningAlgorithmStatus struct {
+// NexusAlgorithmStatus is the status for a NexusAlgorithmTemplate resource
+type NexusAlgorithmStatus struct {
 	SyncedSecrets        []string           `json:"syncedSecrets,omitempty"`
 	SyncedConfigurations []string           `json:"syncedConfigurations,omitempty"`
 	SyncedToClusters     []string           `json:"syncedToClusters,omitempty"`
@@ -123,24 +143,24 @@ type MachineLearningAlgorithmStatus struct {
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// MachineLearningAlgorithmList is a list of MachineLearningAlgorithm resources
-type MachineLearningAlgorithmList struct {
+// NexusAlgorithmTemplateList is a list of NexusAlgorithmTemplate resources
+type NexusAlgorithmTemplateList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata"`
 
-	Items []MachineLearningAlgorithm `json:"items"`
+	Items []NexusAlgorithmTemplate `json:"items"`
 }
 
 // GetSecretNames retrieves a list of unique secret names for this MLA
-func (mla *MachineLearningAlgorithm) GetSecretNames() []string {
+func (mla *NexusAlgorithmTemplate) GetSecretNames() []string {
 	subset := map[string]bool{}
-	for _, ref := range mla.Spec.EnvFrom {
+	for _, ref := range mla.Spec.RuntimeEnvironment.MappedEnvironmentVariables {
 		if ref.SecretRef != nil {
 			subset[ref.SecretRef.Name] = true
 		}
 	}
 
-	for _, ref := range mla.Spec.Env {
+	for _, ref := range mla.Spec.RuntimeEnvironment.EnvironmentVariables {
 		if ref.ValueFrom != nil && ref.ValueFrom.SecretKeyRef != nil {
 			subset[ref.ValueFrom.SecretKeyRef.Name] = true
 		}
@@ -150,15 +170,15 @@ func (mla *MachineLearningAlgorithm) GetSecretNames() []string {
 }
 
 // GetConfigMapNames retrieves a list of unique config names for this MLA
-func (mla *MachineLearningAlgorithm) GetConfigMapNames() []string {
+func (mla *NexusAlgorithmTemplate) GetConfigMapNames() []string {
 	subset := map[string]bool{}
-	for _, ref := range mla.Spec.EnvFrom {
+	for _, ref := range mla.Spec.RuntimeEnvironment.MappedEnvironmentVariables {
 		if ref.ConfigMapRef != nil {
 			subset[ref.ConfigMapRef.Name] = true
 		}
 	}
 
-	for _, ref := range mla.Spec.Env {
+	for _, ref := range mla.Spec.RuntimeEnvironment.EnvironmentVariables {
 		if ref.ValueFrom != nil && ref.ValueFrom.ConfigMapKeyRef != nil {
 			subset[ref.ValueFrom.ConfigMapKeyRef.Name] = true
 		}
@@ -174,11 +194,11 @@ func Int32Ptr(i int32) *int32 { return &i }
 func BoolPtr(b bool) *bool { return &b }
 
 // GetSecretDiff resolves difference in secret references between two algorithms
-func (mla *MachineLearningAlgorithm) GetSecretDiff(other *MachineLearningAlgorithm) []string {
+func (mla *NexusAlgorithmTemplate) GetSecretDiff(other *NexusAlgorithmTemplate) []string {
 	return util.GetConfigResolverDiff(mla.GetSecretNames, other.GetSecretNames)
 }
 
 // GetConfigmapDiff resolves difference in configmap references between two algorithms
-func (mla *MachineLearningAlgorithm) GetConfigmapDiff(other *MachineLearningAlgorithm) []string {
+func (mla *NexusAlgorithmTemplate) GetConfigmapDiff(other *NexusAlgorithmTemplate) []string {
 	return util.GetConfigResolverDiff(mla.GetConfigMapNames, other.GetConfigMapNames)
 }

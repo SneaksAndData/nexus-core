@@ -29,7 +29,7 @@ type fixture struct {
 	nexusClient *fake.Clientset
 	kubeClient  *k8sfake.Clientset
 
-	mlaLister    []*nexusv1.MachineLearningAlgorithm
+	mlaLister    []*nexusv1.NexusAlgorithmTemplate
 	secretLister []*corev1.Secret
 	configLister []*corev1.ConfigMap
 
@@ -46,7 +46,7 @@ func newFixture(t *testing.T) *fixture {
 	f := &fixture{}
 	f.t = t
 
-	f.mlaLister = []*nexusv1.MachineLearningAlgorithm{}
+	f.mlaLister = []*nexusv1.NexusAlgorithmTemplate{}
 	f.secretLister = []*corev1.Secret{}
 	f.configLister = []*corev1.ConfigMap{}
 
@@ -59,7 +59,7 @@ type FakeInformers struct {
 }
 
 type ApiFixture struct {
-	mlaListResults       []*nexusv1.MachineLearningAlgorithm
+	mlaListResults       []*nexusv1.NexusAlgorithmTemplate
 	secretListResults    []*corev1.Secret
 	configMapListResults []*corev1.ConfigMap
 
@@ -116,15 +116,15 @@ func checkAction(expected, actual core.Action, t *testing.T) {
 		expObject := e.GetObject()
 		object := a.GetObject()
 		switch expObject.(type) {
-		case *nexusv1.MachineLearningAlgorithm:
+		case *nexusv1.NexusAlgorithmTemplate:
 			// avoid issues with time drift
 			currentTime := metav1.Now()
-			expCopy := expObject.DeepCopyObject().(*nexusv1.MachineLearningAlgorithm)
+			expCopy := expObject.DeepCopyObject().(*nexusv1.NexusAlgorithmTemplate)
 			for ix := range expCopy.Status.Conditions {
 				expCopy.Status.Conditions[ix].LastTransitionTime = currentTime
 			}
 
-			objCopy := object.DeepCopyObject().(*nexusv1.MachineLearningAlgorithm)
+			objCopy := object.DeepCopyObject().(*nexusv1.NexusAlgorithmTemplate)
 			for ix := range objCopy.Status.Conditions {
 				objCopy.Status.Conditions[ix].LastTransitionTime = currentTime
 			}
@@ -231,8 +231,8 @@ func (f *fixture) newShard() (*Shard, *FakeInformers) {
 	}
 }
 
-func newShardMla() *nexusv1.MachineLearningAlgorithm {
-	mla := &nexusv1.MachineLearningAlgorithm{
+func newShardMla() *nexusv1.NexusAlgorithmTemplate {
+	mla := &nexusv1.NexusAlgorithmTemplate{
 		TypeMeta: metav1.TypeMeta{APIVersion: nexusv1.SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-algorithms",
@@ -242,7 +242,7 @@ func newShardMla() *nexusv1.MachineLearningAlgorithm {
 				"science.sneaksanddata.com/configuration-owner": "test-controller-cluster",
 			},
 		},
-		Spec: nexusv1.MachineLearningAlgorithmSpec{
+		Spec: nexusv1.NexusAlgorithmSpec{
 			ImageRegistry:   "test.io",
 			ImageRepository: "algorithms/test",
 			ImageTag:        "v1.0.0",
@@ -288,7 +288,7 @@ func TestShard_CreateMachineLearningAlgorithm(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
@@ -318,7 +318,7 @@ func TestShard_UpdateMachineLearningAlgorithm(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{mla},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
@@ -346,7 +346,7 @@ func TestShard_DeleteMachineLearningAlgorithm(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{mla},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
@@ -387,7 +387,7 @@ func TestShard_CreateSecret(t *testing.T) {
 	expectedSecret.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 		{
 			APIVersion: nexusv1.SchemeGroupVersion.String(),
-			Kind:       "MachineLearningAlgorithm",
+			Kind:       "NexusAlgorithmTemplate",
 			Name:       mla.Name,
 			UID:        mla.UID,
 		},
@@ -395,7 +395,7 @@ func TestShard_CreateSecret(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{mla},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
@@ -435,7 +435,7 @@ func TestShard_CreateConfigMap(t *testing.T) {
 	expectedConfigMap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
 		{
 			APIVersion: nexusv1.SchemeGroupVersion.String(),
-			Kind:       "MachineLearningAlgorithm",
+			Kind:       "NexusAlgorithmTemplate",
 			Name:       mla.Name,
 			UID:        mla.UID,
 		},
@@ -443,7 +443,7 @@ func TestShard_CreateConfigMap(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{mla},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
@@ -477,7 +477,7 @@ func TestShard_UpdateConfigMap(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: nexusv1.SchemeGroupVersion.String(),
-					Kind:       "MachineLearningAlgorithm",
+					Kind:       "NexusAlgorithmTemplate",
 					Name:       mla.Name,
 					UID:        mla.UID,
 				},
@@ -495,7 +495,7 @@ func TestShard_UpdateConfigMap(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{mla},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{configMap},
 			existingCoreObjects:  []runtime.Object{},
@@ -529,7 +529,7 @@ func TestShard_UpdateSecret(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: nexusv1.SchemeGroupVersion.String(),
-					Kind:       "MachineLearningAlgorithm",
+					Kind:       "NexusAlgorithmTemplate",
 					Name:       mla.Name,
 					UID:        mla.UID,
 				},
@@ -548,7 +548,7 @@ func TestShard_UpdateSecret(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{mla},
 			secretListResults:    []*corev1.Secret{secret},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{secret},
@@ -581,7 +581,7 @@ func TestShard_DereferenceSecret(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: nexusv1.SchemeGroupVersion.String(),
-					Kind:       "MachineLearningAlgorithm",
+					Kind:       "NexusAlgorithmTemplate",
 					Name:       mla.Name,
 					UID:        mla.UID,
 				},
@@ -598,7 +598,7 @@ func TestShard_DereferenceSecret(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{mla},
 			secretListResults:    []*corev1.Secret{secret},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{secret},
@@ -632,7 +632,7 @@ func TestShard_DereferenceConfigMap(t *testing.T) {
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: nexusv1.SchemeGroupVersion.String(),
-					Kind:       "MachineLearningAlgorithm",
+					Kind:       "NexusAlgorithmTemplate",
 					Name:       mla.Name,
 					UID:        mla.UID,
 				},
@@ -648,7 +648,7 @@ func TestShard_DereferenceConfigMap(t *testing.T) {
 
 	f = f.configure(
 		&ApiFixture{
-			mlaListResults:       []*nexusv1.MachineLearningAlgorithm{mla},
+			mlaListResults:       []*nexusv1.NexusAlgorithmTemplate{mla},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{configMap},
 			existingCoreObjects:  []runtime.Object{configMap},

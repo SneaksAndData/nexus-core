@@ -57,26 +57,26 @@ func (ce ClientErrorCode) ErrorMessage() string {
 }
 
 type CheckpointedRequest struct {
-	Algorithm               string                          `json:"algorithm"`
-	Id                      string                          `json:"id"`
-	LifecycleStage          string                          `json:"lifecycle_stage"`
-	PayloadUri              string                          `json:"payload_uri"`
-	ResultUri               string                          `json:"result_uri"`
-	AlgorithmFailureCode    string                          `json:"algorithm_failure_code"`
-	AlgorithmFailureCause   string                          `json:"algorithm_failure_cause"`
-	AlgorithmFailureDetails string                          `json:"algorithm_failure_details"`
-	ReceivedByHost          string                          `json:"received_by_host"`
-	ReceivedAt              time.Time                       `json:"received_at"`
-	SentAt                  time.Time                       `json:"sent_at"`
-	AppliedConfiguration    v1.MachineLearningAlgorithmSpec `json:"applied_configuration"`
-	ConfigurationOverrides  v1.MachineLearningAlgorithmSpec `json:"configuration_overrides"`
-	MonitoringMetadata      map[string][]string             `json:"monitoring_metadata"`
-	ContentHash             string                          `json:"content_hash"`
-	LastModified            time.Time                       `json:"last_modified"`
-	Tag                     string                          `json:"tag"`
-	ApiVersion              string                          `json:"api_version"`
-	JobUid                  string                          `json:"job_uid"`
-	ParentJob               ParentJobReference              `json:"parent_job"`
+	Algorithm               string                `json:"algorithm"`
+	Id                      string                `json:"id"`
+	LifecycleStage          string                `json:"lifecycle_stage"`
+	PayloadUri              string                `json:"payload_uri"`
+	ResultUri               string                `json:"result_uri"`
+	AlgorithmFailureCode    string                `json:"algorithm_failure_code"`
+	AlgorithmFailureCause   string                `json:"algorithm_failure_cause"`
+	AlgorithmFailureDetails string                `json:"algorithm_failure_details"`
+	ReceivedByHost          string                `json:"received_by_host"`
+	ReceivedAt              time.Time             `json:"received_at"`
+	SentAt                  time.Time             `json:"sent_at"`
+	AppliedConfiguration    v1.NexusAlgorithmSpec `json:"applied_configuration"`
+	ConfigurationOverrides  v1.NexusAlgorithmSpec `json:"configuration_overrides"`
+	MonitoringMetadata      map[string][]string   `json:"monitoring_metadata"`
+	ContentHash             string                `json:"content_hash"`
+	LastModified            time.Time             `json:"last_modified"`
+	Tag                     string                `json:"tag"`
+	ApiVersion              string                `json:"api_version"`
+	JobUid                  string                `json:"job_uid"`
+	ParentJob               ParentJobReference    `json:"parent_job"`
 }
 
 type CheckpointedRequestCqlModel struct {
@@ -161,8 +161,8 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 }
 
 func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
-	var appliedConfig v1.MachineLearningAlgorithmSpec
-	var overrides v1.MachineLearningAlgorithmSpec
+	var appliedConfig v1.NexusAlgorithmSpec
+	var overrides v1.NexusAlgorithmSpec
 	_ = json.Unmarshal([]byte(c.AppliedConfiguration), &appliedConfig)
 	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), &overrides)
 
@@ -190,7 +190,7 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 	}
 }
 
-func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
+func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
 	hostname, _ := os.Hostname()
 	serializedPayload, err := json.Marshal(request.AlgorithmParameters)
 

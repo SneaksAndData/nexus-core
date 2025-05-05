@@ -8,10 +8,10 @@ type ParentAlgorithmRequest struct {
 }
 
 type AlgorithmRequest struct {
-	AlgorithmParameters map[string]interface{}          `json:"algorithmParameters" binding:"required"`
-	CustomConfiguration v1.MachineLearningAlgorithmSpec `json:"customConfiguration,omitempty"`
-	MonitoringMetadata  map[string][]string             `json:"monitoringMetadata,omitempty"`
-	RequestApiVersion   string                          `json:"requestApiVersion,omitempty"`
-	Tag                 string                          `json:"tag,omitempty"`
-	ParentRequest       *ParentAlgorithmRequest         `json:"parentRequest,omitempty"`
+	AlgorithmParameters map[string]interface{}  `json:"algorithmParameters" binding:"required"`
+	CustomConfiguration v1.NexusAlgorithmSpec   `json:"customConfiguration,omitempty"`
+	MonitoringMetadata  map[string][]string     `json:"monitoringMetadata,omitempty"`
+	RequestApiVersion   string                  `json:"requestApiVersion,omitempty"`
+	Tag                 string                  `json:"tag,omitempty"`
+	ParentRequest       *ParentAlgorithmRequest `json:"parentRequest,omitempty"`
 }
