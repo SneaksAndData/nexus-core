@@ -34,24 +34,19 @@ const (
 type ClientErrorCode string
 
 const (
-	CB000  ClientErrorCode = "Scheduling timeout."                                            // client-facing code for buffer stage errors
-	CAJ011 ClientErrorCode = "Execution timed out."                                           // client-facing code for deadline exceed due to running over time
-	CAJ012 ClientErrorCode = "Job timed out waiting to be scheduled. Please try again later." // lost submissions and other scheduling errors that cause infinite hang in a buffering stage
-	CAJ000 ClientErrorCode = "Execution cancelled by %s, reason: %s"                          // job has been gracefully cancelled via API
+	NAE000 ClientErrorCode = "Scheduling failure."                   // client-facing code for scheduling stage errors
+	NAE001 ClientErrorCode = "Execution timed out."                  // client-facing code for deadline exceed due to running over time
+	NAE002 ClientErrorCode = "Execution cancelled by %s, reason: %s" // job has been gracefully cancelled via API
 )
 
 func (ce ClientErrorCode) ErrorName() string {
 	switch ce {
-	case CB000:
-		return "CB000"
-	case CAJ011:
-		return "CAJ011"
-	case CAJ012:
-		return "CAJ012"
-	case CAJ000:
-		return "CAJ000"
+	case NAE000:
+		return "NAE000"
+	case NAE001:
+		return "NAE001"
 	default:
-		return "UNDEFINED"
+		return "NAEUKNOWN"
 	}
 }
 
@@ -398,20 +393,20 @@ func (c *CheckpointedRequest) IsFinished() bool {
 	}
 }
 
-func (c *CheckpointedRequest) AsCAJ011() *CheckpointedRequest {
+func (c *CheckpointedRequest) AsNAE001() *CheckpointedRequest {
 	result := c.DeepCopy()
 	result.LifecycleStage = LifecyclestageDeadlineExceeded
-	result.AlgorithmFailureCode = CAJ011.ErrorName()
-	result.AlgorithmFailureCause = CAJ011.ErrorMessage()
+	result.AlgorithmFailureCode = NAE001.ErrorName()
+	result.AlgorithmFailureCause = NAE001.ErrorMessage()
 
 	return result
 }
 
-func (c *CheckpointedRequest) AsCB000() *CheckpointedRequest {
+func (c *CheckpointedRequest) AsNAE000() *CheckpointedRequest {
 	result := c.DeepCopy()
-	result.LifecycleStage = LifecyclestageFailed
-	result.AlgorithmFailureCode = CB000.ErrorName()
-	result.AlgorithmFailureCause = CB000.ErrorMessage()
+	result.LifecycleStage = LifecyclestageSchedulingFailed
+	result.AlgorithmFailureCode = NAE000.ErrorName()
+	result.AlgorithmFailureCause = NAE000.ErrorMessage()
 
 	return result
 }
@@ -419,8 +414,8 @@ func (c *CheckpointedRequest) AsCB000() *CheckpointedRequest {
 func (c *CheckpointedRequest) AsCancelled(request CancellationRequest) *CheckpointedRequest {
 	result := c.DeepCopy()
 	result.LifecycleStage = LifecyclestageCancelled
-	result.AlgorithmFailureCode = CAJ000.ErrorName()
-	result.AlgorithmFailureCause = fmt.Sprintf(CAJ000.ErrorMessage(), request.Initiator, request.Reason)
+	result.AlgorithmFailureCode = NAE002.ErrorName()
+	result.AlgorithmFailureCause = fmt.Sprintf(NAE002.ErrorMessage(), request.Initiator, request.Reason)
 
 	return result
 }

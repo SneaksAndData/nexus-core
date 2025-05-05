@@ -30,6 +30,8 @@ type BufferConfig struct {
 
 type BufferInput struct {
 	Checkpoint        *models.CheckpointedRequest
+	ResolvedWorkgroup *v1.NexusAlgorithmWorkgroupSpec
+	ResolvedShardName string
 	SerializedPayload []byte
 	Config            *v1.NexusAlgorithmSpec
 }
@@ -147,7 +149,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 
 	bufferedCheckpoint.PayloadUri = payloadUri
 	bufferedCheckpoint.LifecycleStage = models.LifecyclestageBuffered
-	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint)
+	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedShardName)
 
 	if err := buffer.metadataStore.UpsertMetadata(bufferedEntry); err != nil {
 		return nil, err

@@ -209,7 +209,7 @@ func (f *fixture) newShard() (*Shard, *FakeInformers) {
 		kubeInf.Core().V1().Secrets(),
 		kubeInf.Core().V1().ConfigMaps())
 
-	newShard.MlaSynced = alwaysReady
+	newShard.TemplateSynced = alwaysReady
 	newShard.SecretsSynced = alwaysReady
 	newShard.ConfigMapsSynced = alwaysReady
 

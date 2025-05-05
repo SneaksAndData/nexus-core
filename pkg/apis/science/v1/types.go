@@ -181,15 +181,15 @@ type NexusAlgorithmWorkgroupList struct {
 }
 
 // GetSecretNames retrieves a list of unique secret names for this MLA
-func (mla *NexusAlgorithmTemplate) GetSecretNames() []string {
+func (template *NexusAlgorithmTemplate) GetSecretNames() []string {
 	subset := map[string]bool{}
-	for _, ref := range mla.Spec.RuntimeEnvironment.MappedEnvironmentVariables {
+	for _, ref := range template.Spec.RuntimeEnvironment.MappedEnvironmentVariables {
 		if ref.SecretRef != nil {
 			subset[ref.SecretRef.Name] = true
 		}
 	}
 
-	for _, ref := range mla.Spec.RuntimeEnvironment.EnvironmentVariables {
+	for _, ref := range template.Spec.RuntimeEnvironment.EnvironmentVariables {
 		if ref.ValueFrom != nil && ref.ValueFrom.SecretKeyRef != nil {
 			subset[ref.ValueFrom.SecretKeyRef.Name] = true
 		}
@@ -199,15 +199,15 @@ func (mla *NexusAlgorithmTemplate) GetSecretNames() []string {
 }
 
 // GetConfigMapNames retrieves a list of unique config names for this MLA
-func (mla *NexusAlgorithmTemplate) GetConfigMapNames() []string {
+func (template *NexusAlgorithmTemplate) GetConfigMapNames() []string {
 	subset := map[string]bool{}
-	for _, ref := range mla.Spec.RuntimeEnvironment.MappedEnvironmentVariables {
+	for _, ref := range template.Spec.RuntimeEnvironment.MappedEnvironmentVariables {
 		if ref.ConfigMapRef != nil {
 			subset[ref.ConfigMapRef.Name] = true
 		}
 	}
 
-	for _, ref := range mla.Spec.RuntimeEnvironment.EnvironmentVariables {
+	for _, ref := range template.Spec.RuntimeEnvironment.EnvironmentVariables {
 		if ref.ValueFrom != nil && ref.ValueFrom.ConfigMapKeyRef != nil {
 			subset[ref.ValueFrom.ConfigMapKeyRef.Name] = true
 		}
@@ -217,11 +217,11 @@ func (mla *NexusAlgorithmTemplate) GetConfigMapNames() []string {
 }
 
 // GetSecretDiff resolves difference in secret references between two algorithms
-func (mla *NexusAlgorithmTemplate) GetSecretDiff(other *NexusAlgorithmTemplate) []string {
-	return util.GetConfigResolverDiff(mla.GetSecretNames, other.GetSecretNames)
+func (template *NexusAlgorithmTemplate) GetSecretDiff(other *NexusAlgorithmTemplate) []string {
+	return util.GetConfigResolverDiff(template.GetSecretNames, other.GetSecretNames)
 }
 
 // GetConfigmapDiff resolves difference in configmap references between two algorithms
-func (mla *NexusAlgorithmTemplate) GetConfigmapDiff(other *NexusAlgorithmTemplate) []string {
-	return util.GetConfigResolverDiff(mla.GetConfigMapNames, other.GetConfigMapNames)
+func (template *NexusAlgorithmTemplate) GetConfigmapDiff(other *NexusAlgorithmTemplate) []string {
+	return util.GetConfigResolverDiff(template.GetConfigMapNames, other.GetConfigMapNames)
 }

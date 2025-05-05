@@ -4,4 +4,5 @@ package models
 type CancellationRequest struct {
 	Initiator string `json:"initiator" binding:"required"`
 	Reason    string `json:"reason"  binding:"required"`
+	RequestId string `json:"requestId" binding:"required"`
 }

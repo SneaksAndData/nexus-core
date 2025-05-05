@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/buildmeta"
 	"github.com/scylladb/gocqlx/v3/table"
 	batchv1 "k8s.io/api/batch/v1"
@@ -39,10 +40,10 @@ func (sbe *SubmissionBufferEntry) SubmissionTemplate() (*batchv1.Job, error) {
 	return result, nil
 }
 
-func FromCheckpoint(checkpoint *CheckpointedRequest) *SubmissionBufferEntry {
+func FromCheckpoint(checkpoint *CheckpointedRequest, resolvedWorkgroup *v1.NexusAlgorithmWorkgroupSpec, resolvedShardName string) *SubmissionBufferEntry {
 	// TODO: job node taint and taint value should be moved to CRD
 	// this change will be implemented once receiver is functional, to avoid adding extra complexity to initial testing
-	jobTemplate, _ := json.Marshal(checkpoint.ToV1Job("kubernetes.sneaksanddata.com/service-node-group", checkpoint.AppliedConfiguration.Workgroup, fmt.Sprintf("%s-%s", buildmeta.AppVersion, buildmeta.BuildNumber)))
+	jobTemplate, _ := json.Marshal(checkpoint.ToV1Job(fmt.Sprintf("%s-%s", buildmeta.AppVersion, buildmeta.BuildNumber), resolvedWorkgroup, resolvedShardName))
 
 	return &SubmissionBufferEntry{
 		Algorithm: checkpoint.Algorithm,

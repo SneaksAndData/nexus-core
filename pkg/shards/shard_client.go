@@ -14,29 +14,29 @@ import (
 type ShardClient struct {
 	Name                string
 	Namespace           string
-	kubernetesclientset kubernetes.Interface
-	nexusclientset      clientset.Interface
+	kubernetesClientSet kubernetes.Interface
+	nexusClientSet      clientset.Interface
 }
 
-func NewShardClient(kubernetesClientset kubernetes.Interface, nexusclientsetset clientset.Interface, name string, namespace string) *ShardClient {
+func NewShardClient(kubernetesClientSet kubernetes.Interface, nexusClientsetSet clientset.Interface, name string, namespace string) *ShardClient {
 	return &ShardClient{
 		Name:                name,
 		Namespace:           namespace,
-		kubernetesclientset: kubernetesClientset,
-		nexusclientset:      nexusclientsetset,
+		kubernetesClientSet: kubernetesClientSet,
+		nexusClientSet:      nexusClientsetSet,
 	}
 }
 
 func (c *ShardClient) getKubeInformerFactory(namespace string) kubeinformers.SharedInformerFactory {
-	return kubeinformers.NewSharedInformerFactoryWithOptions(c.kubernetesclientset, time.Second*30, kubeinformers.WithNamespace(namespace))
+	return kubeinformers.NewSharedInformerFactoryWithOptions(c.kubernetesClientSet, time.Second*30, kubeinformers.WithNamespace(namespace))
 }
 
 func (c *ShardClient) getNexusInformerFactory(namespace string) informers.SharedInformerFactory {
-	return informers.NewSharedInformerFactoryWithOptions(c.nexusclientset, time.Second*30, informers.WithNamespace(namespace))
+	return informers.NewSharedInformerFactoryWithOptions(c.nexusClientSet, time.Second*30, informers.WithNamespace(namespace))
 }
 
 func (c *ShardClient) SendJob(namespace string, job *batchv1.Job) (*batchv1.Job, error) {
-	return c.kubernetesclientset.BatchV1().Jobs(namespace).Create(context.TODO(), job, v1.CreateOptions{})
+	return c.kubernetesClientSet.BatchV1().Jobs(namespace).Create(context.TODO(), job, v1.CreateOptions{})
 }
 
 func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
@@ -49,9 +49,9 @@ func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
 	return NewShard(
 		owner,
 		c.Name,
-		c.kubernetesclientset,
-		c.nexusclientset,
-		nexusInformer.Science().V1().MachineLearningAlgorithms(),
+		c.kubernetesClientSet,
+		c.nexusClientSet,
+		nexusInformer.Science().V1().NexusAlgorithmTemplates(),
 		kubeInformer.Core().V1().Secrets(),
 		kubeInformer.Core().V1().ConfigMaps())
 }
