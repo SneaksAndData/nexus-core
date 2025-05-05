@@ -146,8 +146,6 @@ func NewResourceReadyCondition(transitionTime metav1.Time, status metav1.Conditi
 	}
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // NexusAlgorithmWorkgroupStatus is the status for a NexusAlgorithmWorkgroup resource
 type NexusAlgorithmWorkgroupStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
@@ -216,12 +214,6 @@ func (mla *NexusAlgorithmTemplate) GetConfigMapNames() []string {
 
 	return slices.Collect(maps.Keys(subset))
 }
-
-// Int32Ptr converts int32 type to int32 pointer type
-// Method from sample-controller
-func Int32Ptr(i int32) *int32 { return &i }
-
-func BoolPtr(b bool) *bool { return &b }
 
 // GetSecretDiff resolves difference in secret references between two algorithms
 func (mla *NexusAlgorithmTemplate) GetSecretDiff(other *NexusAlgorithmTemplate) []string {
