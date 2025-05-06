@@ -149,7 +149,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 
 	bufferedCheckpoint.PayloadUri = payloadUri
 	bufferedCheckpoint.LifecycleStage = models.LifecyclestageBuffered
-	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedShardName)
+	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup)
 
 	if err := buffer.metadataStore.UpsertMetadata(bufferedEntry); err != nil {
 		return nil, err

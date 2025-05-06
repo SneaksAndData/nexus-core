@@ -255,7 +255,7 @@ func defaultFailurePolicy() *batchv1.PodFailurePolicy {
 	}
 }
 
-func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec, selectedShardName string) batchv1.Job {
+func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec) batchv1.Job {
 	jobResourceList := corev1.ResourceList{
 		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
 		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
@@ -364,7 +364,7 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 								},
 								{
 									Name:  "NEXUS__SHARD_NAME",
-									Value: selectedShardName,
+									Value: workgroup.Cluster,
 								},
 							}...),
 							EnvFrom:      c.AppliedConfiguration.RuntimeEnvironment.MappedEnvironmentVariables,
