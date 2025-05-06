@@ -38,6 +38,7 @@ type BufferInput struct {
 type BufferOutput struct {
 	Checkpoint *models.CheckpointedRequest
 	Entry      *models.SubmissionBufferEntry
+	Workgroup  *v1.NexusAlgorithmWorkgroupSpec
 }
 
 func (input *BufferInput) tags() map[string]string {
@@ -160,5 +161,6 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	return &BufferOutput{
 		Checkpoint: bufferedCheckpoint,
 		Entry:      bufferedEntry,
+		Workgroup:  input.ResolvedWorkgroup,
 	}, nil
 }
