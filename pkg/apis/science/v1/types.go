@@ -35,6 +35,7 @@ const (
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
 
 // NexusAlgorithmTemplate is a specification for an AI/ML batch application run: inference, training etc.
 type NexusAlgorithmTemplate struct {
@@ -42,11 +43,12 @@ type NexusAlgorithmTemplate struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   NexusAlgorithmSpec   `json:"spec"`
-	Status NexusAlgorithmStatus `json:"status"`
+	Status NexusAlgorithmStatus `json:"status,omitempty"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
 
 // NexusAlgorithmWorkgroup specifies node tolerations for algorithm pods
 type NexusAlgorithmWorkgroup struct {
@@ -54,7 +56,7 @@ type NexusAlgorithmWorkgroup struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   NexusAlgorithmWorkgroupSpec   `json:"spec"`
-	Status NexusAlgorithmWorkgroupStatus `json:"status"`
+	Status NexusAlgorithmWorkgroupStatus `json:"status,omitempty"`
 }
 
 // NexusAlgorithmWorkgroupRef contains a reference to the workgroup
@@ -67,11 +69,11 @@ type NexusAlgorithmWorkgroupRef struct {
 // NexusAlgorithmWorkgroupSpec is a spec for NexusAlgorithmWorkgroup resource
 type NexusAlgorithmWorkgroupSpec struct {
 	Description  string          `json:"description"`
-	Capabilities map[string]bool `json:"capabilities"`
+	Capabilities map[string]bool `json:"capabilities,omitempty"`
 
 	Cluster     string              `json:"cluster"`
-	Tolerations []corev1.Toleration `json:"tolerations"`
-	Affinity    *corev1.Affinity    `json:"affinity"`
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+	Affinity    *corev1.Affinity    `json:"affinity,omitempty"`
 }
 
 // NexusAlgorithmResources defines maximum compute resources that should be provisioned for the algorithm
@@ -91,7 +93,7 @@ type NexusAlgorithmContainer struct {
 
 // NexusAlgorithmRuntimeEnvironment defines environment configuration for each run
 type NexusAlgorithmRuntimeEnvironment struct {
-	EnvironmentVariables       []corev1.EnvVar        `json:"environmentVariables"`
+	EnvironmentVariables       []corev1.EnvVar        `json:"environmentVariables,omitempty"`
 	MappedEnvironmentVariables []corev1.EnvFromSource `json:"mappedEnvironmentVariables,omitempty"`
 	Annotations                map[string]string      `json:"annotations,omitempty"`
 
@@ -152,13 +154,11 @@ func NewResourceReadyCondition(transitionTime metav1.Time, status metav1.Conditi
 }
 
 // NexusAlgorithmWorkgroupStatus is the status for a NexusAlgorithmWorkgroup resource
-// +kubebuilder:subresource:status
 type NexusAlgorithmWorkgroupStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // NexusAlgorithmStatus is the status for a NexusAlgorithmTemplate resource
-// +kubebuilder:subresource:status
 type NexusAlgorithmStatus struct {
 	SyncedSecrets        []string           `json:"syncedSecrets,omitempty"`
 	SyncedConfigurations []string           `json:"syncedConfigurations,omitempty"`
