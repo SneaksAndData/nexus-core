@@ -24,6 +24,15 @@ import (
 	"slices"
 )
 
+type NexusWorkgroupCapability = string
+
+const (
+	ARM64      = NexusWorkgroupCapability("arm64")
+	AMD64      = NexusWorkgroupCapability("amd64")
+	GPU        = NexusWorkgroupCapability("gpu")
+	AUTOSCALED = NexusWorkgroupCapability("autoscaled")
+)
+
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
@@ -57,9 +66,10 @@ type NexusAlgorithmWorkgroupRef struct {
 
 // NexusAlgorithmWorkgroupSpec is a spec for NexusAlgorithmWorkgroup resource
 type NexusAlgorithmWorkgroupSpec struct {
-	Description    string          `json:"description"`
-	CapabilityTags map[string]bool `json:"capabilityTags"`
+	Description  string          `json:"description"`
+	Capabilities map[string]bool `json:"capabilities"`
 
+	Cluster     string              `json:"cluster"`
 	Tolerations []corev1.Toleration `json:"tolerations"`
 	Affinity    *corev1.Affinity    `json:"affinity"`
 }
@@ -69,12 +79,6 @@ type NexusAlgorithmResources struct {
 	CpuLimit        string            `json:"cpuLimit"`
 	MemoryLimit     string            `json:"memoryLimit"`
 	CustomResources map[string]string `json:"customResources,omitempty"`
-}
-
-// NexusAlgorithmSubmissionBehaviour defines submission behaviour: shards or single cluster, plus a workgroup
-type NexusAlgorithmSubmissionBehaviour struct {
-	ShardClusters []string                    `json:"shardClusters,omitempty"`
-	WorkgroupRef  *NexusAlgorithmWorkgroupRef `json:"workgroupRef"`
 }
 
 // NexusAlgorithmContainer provides container specification for each run
@@ -108,14 +112,14 @@ type NexusDatadogIntegrationSettings struct {
 
 // NexusAlgorithmSpec is the spec for a NexusAlgorithmTemplate resource
 type NexusAlgorithmSpec struct {
-	Container                  *NexusAlgorithmContainer           `json:"container"`
-	ComputeResources           *NexusAlgorithmResources           `json:"computeResources,omitempty"`
-	SubmissionBehaviour        *NexusAlgorithmSubmissionBehaviour `json:"submissionBehaviour,omitempty"`
-	Command                    string                             `json:"command"`
-	Args                       []string                           `json:"args,omitempty"`
-	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironment  `json:"runtimeEnvironment,omitempty"`
-	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviour       `json:"errorHandlingBehaviour,omitempty"`
-	DatadogIntegrationSettings *NexusDatadogIntegrationSettings   `json:"datadogIntegrationSettings,omitempty"`
+	Container                  *NexusAlgorithmContainer          `json:"container"`
+	ComputeResources           *NexusAlgorithmResources          `json:"computeResources,omitempty"`
+	WorkgroupRef               *NexusAlgorithmWorkgroupRef       `json:"workgroupRef,omitempty"`
+	Command                    string                            `json:"command"`
+	Args                       []string                          `json:"args,omitempty"`
+	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironment `json:"runtimeEnvironment,omitempty"`
+	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviour      `json:"errorHandlingBehaviour,omitempty"`
+	DatadogIntegrationSettings *NexusDatadogIntegrationSettings  `json:"datadogIntegrationSettings,omitempty"`
 }
 
 func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithmSpec {
@@ -124,7 +128,7 @@ func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithm
 
 	cloned.Container = util.CoalescePointer(otherCloned.Container, cloned.Container)
 	cloned.ComputeResources = util.CoalescePointer(otherCloned.ComputeResources, cloned.ComputeResources)
-	cloned.SubmissionBehaviour = util.CoalescePointer(otherCloned.SubmissionBehaviour, cloned.SubmissionBehaviour)
+	cloned.WorkgroupRef = util.CoalescePointer(otherCloned.WorkgroupRef, cloned.WorkgroupRef)
 	cloned.Command = util.CoalesceString(otherCloned.Command, cloned.Command)
 	cloned.Args = util.CoalesceCollection[string](otherCloned.Args, cloned.Args)
 
