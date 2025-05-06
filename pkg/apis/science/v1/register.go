@@ -49,6 +49,7 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 		&NexusAlgorithmTemplate{},
 		&NexusAlgorithmTemplateList{},
 		&NexusAlgorithmWorkgroup{},
+		&NexusAlgorithmWorkgroupList{},
 	)
 	metav1.AddToGroupVersion(scheme, SchemeGroupVersion)
 	return nil
