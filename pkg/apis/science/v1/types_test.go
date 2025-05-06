@@ -77,13 +77,10 @@ func newFakeMla(withConfigs bool) *NexusAlgorithmTemplate {
 				CpuLimit:    "1000m",
 				MemoryLimit: "2000Mi",
 			},
-			SubmissionBehaviour: &NexusAlgorithmSubmissionBehaviour{
-				ShardClusters: []string{"test-cluster.io"},
-				WorkgroupRef: &NexusAlgorithmWorkgroupRef{
-					Name:  "test-workgroup",
-					Group: "nexus-workgroup.io",
-					Kind:  "KarpenterWorkgroupV1",
-				},
+			WorkgroupRef: &NexusAlgorithmWorkgroupRef{
+				Name:  "test-workgroup",
+				Group: "nexus-workgroup.io",
+				Kind:  "KarpenterWorkgroupV1",
 			},
 			Command: "python",
 			Args:    []string{"job.py", "--request-id 111-222-333 --arg1 true"},
