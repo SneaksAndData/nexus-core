@@ -34,8 +34,8 @@ import (
 type Shard struct {
 	OwnerName           string
 	Name                string
-	kubernetesclientset kubernetes.Interface
-	nexusclientset      clientset.Interface
+	kubernetesClientSet kubernetes.Interface
+	nexusClientSet      clientset.Interface
 	// SecretLister is a Secret lister in this Shard
 	SecretLister  corelisters.SecretLister
 	SecretsSynced cache.InformerSynced
@@ -44,9 +44,9 @@ type Shard struct {
 	ConfigMapLister  corelisters.ConfigMapLister
 	ConfigMapsSynced cache.InformerSynced
 
-	// MlaLister is a MachineLearningAlgorithm lister in this Shard
-	MlaLister nexuslisters.MachineLearningAlgorithmLister
-	MlaSynced cache.InformerSynced
+	// TemplateLister is a NexusAlgorithmTemplate lister in this Shard
+	TemplateLister nexuslisters.NexusAlgorithmTemplateLister
+	TemplateSynced cache.InformerSynced
 }
 
 // NewShard creates a new Shard instance. File name in *kubeConfigPath* will be used as the Shard's name
@@ -57,24 +57,24 @@ func NewShard(
 	kubeClient kubernetes.Interface,
 	nexusClient clientset.Interface,
 
-	mlainformer nexusinformers.MachineLearningAlgorithmInformer,
-	secretinformer coreinformers.SecretInformer,
-	configmapinformer coreinformers.ConfigMapInformer,
+	templateInformer nexusinformers.NexusAlgorithmTemplateInformer,
+	secretInformer coreinformers.SecretInformer,
+	configmapInformer coreinformers.ConfigMapInformer,
 ) *Shard {
 	return &Shard{
 		OwnerName:           ownerName,
 		Name:                name,
-		kubernetesclientset: kubeClient,
-		nexusclientset:      nexusClient,
+		kubernetesClientSet: kubeClient,
+		nexusClientSet:      nexusClient,
 
-		SecretLister:  secretinformer.Lister(),
-		SecretsSynced: secretinformer.Informer().HasSynced,
+		SecretLister:  secretInformer.Lister(),
+		SecretsSynced: secretInformer.Informer().HasSynced,
 
-		ConfigMapLister:  configmapinformer.Lister(),
-		ConfigMapsSynced: configmapinformer.Informer().HasSynced,
+		ConfigMapLister:  configmapInformer.Lister(),
+		ConfigMapsSynced: configmapInformer.Informer().HasSynced,
 
-		MlaLister: mlainformer.Lister(),
-		MlaSynced: mlainformer.Informer().HasSynced,
+		TemplateLister: templateInformer.Lister(),
+		TemplateSynced: templateInformer.Informer().HasSynced,
 	}
 }
 
@@ -85,47 +85,47 @@ func (shard *Shard) GetReferenceLabels() map[string]string {
 	}
 }
 
-func (shard *Shard) CreateMachineLearningAlgorithm(mlaName string, mlaNamespace string, mlaSpec v1.MachineLearningAlgorithmSpec, fieldManager string) (*v1.MachineLearningAlgorithm, error) {
-	newMla := &v1.MachineLearningAlgorithm{
+func (shard *Shard) CreateMachineLearningAlgorithm(templateName string, templateNamespace string, mlaSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
+	newTemplate := &v1.NexusAlgorithmTemplate{
 		TypeMeta: metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      mlaName,
-			Namespace: mlaNamespace,
+			Name:      templateName,
+			Namespace: templateNamespace,
 			Labels:    shard.GetReferenceLabels(),
 		},
 		Spec: *mlaSpec.DeepCopy(),
 	}
 
-	return shard.nexusclientset.ScienceV1().MachineLearningAlgorithms(mlaNamespace).Create(context.TODO(), newMla, metav1.CreateOptions{FieldManager: fieldManager})
+	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(templateNamespace).Create(context.TODO(), newTemplate, metav1.CreateOptions{FieldManager: fieldManager})
 }
 
 // UpdateMachineLearningAlgorithm updates the MLA in this shard in case it drifts from the one in the controller cluster
-func (shard *Shard) UpdateMachineLearningAlgorithm(mla *v1.MachineLearningAlgorithm, mlaSpec v1.MachineLearningAlgorithmSpec, fieldManager string) (*v1.MachineLearningAlgorithm, error) {
-	newMla := mla.DeepCopy()
-	newMla.Spec = *mlaSpec.DeepCopy()
+func (shard *Shard) UpdateMachineLearningAlgorithm(template *v1.NexusAlgorithmTemplate, templateSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
+	newTemplate := template.DeepCopy()
+	newTemplate.Spec = *templateSpec.DeepCopy()
 
-	return shard.nexusclientset.ScienceV1().MachineLearningAlgorithms(newMla.Namespace).Update(context.TODO(), newMla, metav1.UpdateOptions{FieldManager: fieldManager})
+	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(newTemplate.Namespace).Update(context.TODO(), newTemplate, metav1.UpdateOptions{FieldManager: fieldManager})
 }
 
 // DeleteMachineLearningAlgorithm removes the MLA from this shard
-func (shard *Shard) DeleteMachineLearningAlgorithm(mla *v1.MachineLearningAlgorithm) error {
-	return shard.nexusclientset.ScienceV1().MachineLearningAlgorithms(mla.Namespace).Delete(context.TODO(), mla.Name, metav1.DeleteOptions{})
+func (shard *Shard) DeleteMachineLearningAlgorithm(template *v1.NexusAlgorithmTemplate) error {
+	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(template.Namespace).Delete(context.TODO(), template.Name, metav1.DeleteOptions{})
 }
 
-// CreateSecret creates a new Secret for a MachineLearningAlgorithm resource. It also sets
+// CreateSecret creates a new Secret for a NexusAlgorithmTemplate resource. It also sets
 // the appropriate OwnerReferences on the resource so handleObject can discover
 // the Foo resource that 'owns' it.
-func (shard *Shard) CreateSecret(mla *v1.MachineLearningAlgorithm, secret *corev1.Secret, fieldManager string) (*corev1.Secret, error) {
+func (shard *Shard) CreateSecret(template *v1.NexusAlgorithmTemplate, secret *corev1.Secret, fieldManager string) (*corev1.Secret, error) {
 	newSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secret.Name,
-			Namespace: mla.Namespace,
+			Namespace: template.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: v1.SchemeGroupVersion.String(),
-					Kind:       "MachineLearningAlgorithm",
-					Name:       mla.Name,
-					UID:        mla.UID,
+					Kind:       "NexusAlgorithmTemplate",
+					Name:       template.Name,
+					UID:        template.UID,
 				},
 			},
 			Labels: shard.GetReferenceLabels(),
@@ -134,23 +134,23 @@ func (shard *Shard) CreateSecret(mla *v1.MachineLearningAlgorithm, secret *corev
 		StringData: secret.StringData,
 	}
 
-	return shard.kubernetesclientset.CoreV1().Secrets(mla.Namespace).Create(context.TODO(), newSecret, metav1.CreateOptions{FieldManager: fieldManager})
+	return shard.kubernetesClientSet.CoreV1().Secrets(template.Namespace).Create(context.TODO(), newSecret, metav1.CreateOptions{FieldManager: fieldManager})
 }
 
-// CreateConfigMap creates a new ConfigMap for a MachineLearningAlgorithm resource. It also sets
+// CreateConfigMap creates a new ConfigMap for a NexusAlgorithmTemplate resource. It also sets
 // the appropriate OwnerReferences on the resource so handleObject can discover
 // the Foo resource that 'owns' it.
-func (shard *Shard) CreateConfigMap(mla *v1.MachineLearningAlgorithm, configMap *corev1.ConfigMap, fieldManager string) (*corev1.ConfigMap, error) {
+func (shard *Shard) CreateConfigMap(template *v1.NexusAlgorithmTemplate, configMap *corev1.ConfigMap, fieldManager string) (*corev1.ConfigMap, error) {
 	newConfigMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      configMap.Name,
-			Namespace: mla.Namespace,
+			Namespace: template.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					APIVersion: v1.SchemeGroupVersion.String(),
-					Kind:       "MachineLearningAlgorithm",
-					Name:       mla.Name,
-					UID:        mla.UID,
+					Kind:       "NexusAlgorithmTemplate",
+					Name:       template.Name,
+					UID:        template.UID,
 				},
 			},
 			Labels: shard.GetReferenceLabels(),
@@ -158,11 +158,11 @@ func (shard *Shard) CreateConfigMap(mla *v1.MachineLearningAlgorithm, configMap 
 		Data: configMap.Data,
 	}
 
-	return shard.kubernetesclientset.CoreV1().ConfigMaps(mla.Namespace).Create(context.TODO(), newConfigMap, metav1.CreateOptions{FieldManager: fieldManager})
+	return shard.kubernetesClientSet.CoreV1().ConfigMaps(template.Namespace).Create(context.TODO(), newConfigMap, metav1.CreateOptions{FieldManager: fieldManager})
 }
 
 // UpdateSecret updates the secret with new content
-func (shard *Shard) UpdateSecret(secret *corev1.Secret, newData map[string][]byte, newOwner *v1.MachineLearningAlgorithm, fieldManager string) (*corev1.Secret, error) {
+func (shard *Shard) UpdateSecret(secret *corev1.Secret, newData map[string][]byte, newOwner *v1.NexusAlgorithmTemplate, fieldManager string) (*corev1.Secret, error) {
 	updatedSecret := secret.DeepCopy()
 	if newData != nil {
 		updatedSecret.Data = newData
@@ -170,30 +170,30 @@ func (shard *Shard) UpdateSecret(secret *corev1.Secret, newData map[string][]byt
 	if newOwner != nil {
 		updatedSecret.OwnerReferences = append(updatedSecret.OwnerReferences, metav1.OwnerReference{
 			APIVersion: v1.SchemeGroupVersion.String(),
-			Kind:       "MachineLearningAlgorithm",
+			Kind:       "NexusAlgorithmTemplate",
 			Name:       newOwner.Name,
 			UID:        newOwner.UID,
 		})
 	}
-	return shard.kubernetesclientset.CoreV1().Secrets(updatedSecret.Namespace).Update(context.TODO(), updatedSecret, metav1.UpdateOptions{FieldManager: fieldManager})
+	return shard.kubernetesClientSet.CoreV1().Secrets(updatedSecret.Namespace).Update(context.TODO(), updatedSecret, metav1.UpdateOptions{FieldManager: fieldManager})
 }
 
 // DereferenceSecret removes provided algorithm as the owner of the secret, and optionally removes the secret if it has no owners
-func (shard *Shard) DereferenceSecret(secret *corev1.Secret, mla *v1.MachineLearningAlgorithm, fieldManager string) error {
-	remainingOwners, err := util.RemoveOwner[corev1.Secret](context.TODO(), secret, mla.UID, shard.kubernetesclientset, fieldManager)
+func (shard *Shard) DereferenceSecret(secret *corev1.Secret, template *v1.NexusAlgorithmTemplate, fieldManager string) error {
+	remainingOwners, err := util.RemoveOwner[corev1.Secret](context.TODO(), secret, template.UID, shard.kubernetesClientSet, fieldManager)
 	if err != nil {
 		return err
 	}
 	// delete the secret if there are no remaining owners
 	if remainingOwners == 0 {
-		return shard.kubernetesclientset.CoreV1().Secrets(secret.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{})
+		return shard.kubernetesClientSet.CoreV1().Secrets(secret.Namespace).Delete(context.TODO(), secret.Name, metav1.DeleteOptions{})
 	}
 
 	return nil
 }
 
 // UpdateConfigMap updates the config map with new content
-func (shard *Shard) UpdateConfigMap(configMap *corev1.ConfigMap, newData map[string]string, newOwner *v1.MachineLearningAlgorithm, fieldManager string) (*corev1.ConfigMap, error) {
+func (shard *Shard) UpdateConfigMap(configMap *corev1.ConfigMap, newData map[string]string, newOwner *v1.NexusAlgorithmTemplate, fieldManager string) (*corev1.ConfigMap, error) {
 	updatedConfigMap := configMap.DeepCopy()
 	if newData != nil {
 		updatedConfigMap.Data = newData
@@ -201,23 +201,23 @@ func (shard *Shard) UpdateConfigMap(configMap *corev1.ConfigMap, newData map[str
 	if newOwner != nil {
 		updatedConfigMap.OwnerReferences = append(updatedConfigMap.OwnerReferences, metav1.OwnerReference{
 			APIVersion: v1.SchemeGroupVersion.String(),
-			Kind:       "MachineLearningAlgorithm",
+			Kind:       "NexusAlgorithmTemplate",
 			Name:       newOwner.Name,
 			UID:        newOwner.UID,
 		})
 	}
-	return shard.kubernetesclientset.CoreV1().ConfigMaps(updatedConfigMap.Namespace).Update(context.TODO(), updatedConfigMap, metav1.UpdateOptions{FieldManager: fieldManager})
+	return shard.kubernetesClientSet.CoreV1().ConfigMaps(updatedConfigMap.Namespace).Update(context.TODO(), updatedConfigMap, metav1.UpdateOptions{FieldManager: fieldManager})
 }
 
 // DereferenceConfigMap removes provided algorithm as the owner of the secret, and optionally removes the secret if it has no owners
-func (shard *Shard) DereferenceConfigMap(configMap *corev1.ConfigMap, mla *v1.MachineLearningAlgorithm, fieldManager string) error {
-	remainingOwners, err := util.RemoveOwner[corev1.ConfigMap](context.TODO(), configMap, mla.UID, shard.kubernetesclientset, fieldManager)
+func (shard *Shard) DereferenceConfigMap(configMap *corev1.ConfigMap, mla *v1.NexusAlgorithmTemplate, fieldManager string) error {
+	remainingOwners, err := util.RemoveOwner[corev1.ConfigMap](context.TODO(), configMap, mla.UID, shard.kubernetesClientSet, fieldManager)
 	if err != nil {
 		return err
 	}
 	// delete the secret if there are no remaining owners
 	if remainingOwners == 0 {
-		return shard.kubernetesclientset.CoreV1().ConfigMaps(configMap.Namespace).Delete(context.TODO(), configMap.Name, metav1.DeleteOptions{})
+		return shard.kubernetesClientSet.CoreV1().ConfigMaps(configMap.Namespace).Delete(context.TODO(), configMap.Name, metav1.DeleteOptions{})
 	}
 
 	return nil

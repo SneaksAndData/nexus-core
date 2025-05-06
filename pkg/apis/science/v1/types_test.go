@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"github.com/aws/smithy-go/ptr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -10,7 +11,7 @@ import (
 	"testing"
 )
 
-func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
+func newFakeMla(withConfigs bool) *NexusAlgorithmTemplate {
 	var envFrom []corev1.EnvFromSource
 	var env []corev1.EnvVar
 
@@ -57,7 +58,7 @@ func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
 		}
 	}
 
-	mla := &MachineLearningAlgorithm{
+	mla := &NexusAlgorithmTemplate{
 		TypeMeta: metav1.TypeMeta{APIVersion: SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-algorithms",
@@ -65,31 +66,44 @@ func newFakeMla(withConfigs bool) *MachineLearningAlgorithm {
 			Labels:    map[string]string{"nexus/algorithm-class": "mip"},
 			UID:       types.UID("123"),
 		},
-		Spec: MachineLearningAlgorithmSpec{
-			ImageRegistry:        "test.io",
-			ImageRepository:      "algorithms/test",
-			ImageTag:             "v1.0.0",
-			DeadlineSeconds:      Int32Ptr(120),
-			MaximumRetries:       Int32Ptr(3),
-			Env:                  env,
-			EnvFrom:              envFrom,
-			CpuLimit:             "1000m",
-			MemoryLimit:          "2000Mi",
-			WorkgroupHost:        "test-cluster.io",
-			Workgroup:            "default",
-			AdditionalWorkgroups: map[string]string{},
-			MonitoringParameters: []string{},
-			CustomResources:      map[string]string{},
-			SpeculativeAttempts:  Int32Ptr(0),
-			TransientExitCodes:   []int32{},
-			FatalExitCodes:       []int32{},
-			Command:              "python",
-			Args:                 []string{"job.py", "--request-id 111-222-333 --arg1 true"},
-			MountDatadogSocket:   BoolPtr(true),
+		Spec: NexusAlgorithmSpec{
+			Container: &NexusAlgorithmContainer{
+				Image:              "test.io",
+				Registry:           "algorithms/test",
+				VersionTag:         "v1.0.0",
+				ServiceAccountName: "test-sa",
+			},
+			ComputeResources: &NexusAlgorithmResources{
+				CpuLimit:    "1000m",
+				MemoryLimit: "2000Mi",
+			},
+			SubmissionBehaviour: &NexusAlgorithmSubmissionBehaviour{
+				ShardClusters: []string{"test-cluster.io"},
+				WorkgroupRef: &NexusAlgorithmWorkgroupRef{
+					Name:  "test-workgroup",
+					Group: "nexus-workgroup.io",
+					Kind:  "KarpenterWorkgroupV1",
+				},
+			},
+			Command: "python",
+			Args:    []string{"job.py", "--request-id 111-222-333 --arg1 true"},
+			RuntimeEnvironment: &NexusAlgorithmRuntimeEnvironment{
+				EnvironmentVariables:       env,
+				MappedEnvironmentVariables: envFrom,
+				DeadlineSeconds:            ptr.Int32(120),
+				MaximumRetries:             ptr.Int32(3),
+			},
+			ErrorHandlingBehaviour: &NexusErrorHandlingBehaviour{
+				TransientExitCodes: []int32{},
+				FatalExitCodes:     []int32{},
+			},
+			DatadogIntegrationSettings: &NexusDatadogIntegrationSettings{
+				MountDatadogSocket: ptr.Bool(true),
+			},
 		},
 	}
 
-	mla.Status = MachineLearningAlgorithmStatus{
+	mla.Status = NexusAlgorithmStatus{
 		SyncedSecrets:        []string{"test-secret"},
 		SyncedConfigurations: []string{"test-config"},
 		SyncedToClusters:     []string{"test-cluster"},
@@ -156,7 +170,7 @@ func TestMachineLearningAlgorithm_GetConfigMapDiff(t *testing.T) {
 	mla2 := mla1.DeepCopy()
 	// remove test-secret and test-cfg3 references
 	// however, test-secret is also referenced in EnvFrom, so we should only have test-cfg3 reported as diff
-	mla2.Spec.Env = []corev1.EnvVar{}
+	mla2.Spec.RuntimeEnvironment.EnvironmentVariables = []corev1.EnvVar{}
 	diffs := mla1.GetConfigmapDiff(mla2)
 
 	if !reflect.DeepEqual([]string{"test-cfg3"}, diffs) {
@@ -170,8 +184,8 @@ func TestMachineLearningAlgorithm_GetSecretDiff(t *testing.T) {
 	mla2 := mla1.DeepCopy()
 	// remove test-secret and test-cfg3 references
 	// however, test-secret is also referenced in EnvFrom, so we should only have test-cfg3 reported as diff
-	mla2.Spec.Env = []corev1.EnvVar{}
-	mla2.Spec.EnvFrom = []corev1.EnvFromSource{}
+	mla2.Spec.RuntimeEnvironment.EnvironmentVariables = []corev1.EnvVar{}
+	mla2.Spec.RuntimeEnvironment.MappedEnvironmentVariables = []corev1.EnvFromSource{}
 	diffs := mla1.GetSecretDiff(mla2)
 
 	if !reflect.DeepEqual([]string{"test-secret"}, diffs) {

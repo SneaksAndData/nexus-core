@@ -32,59 +32,59 @@ import (
 	cache "k8s.io/client-go/tools/cache"
 )
 
-// MachineLearningAlgorithmInformer provides access to a shared informer and lister for
-// MachineLearningAlgorithms.
-type MachineLearningAlgorithmInformer interface {
+// NexusAlgorithmWorkgroupInformer provides access to a shared informer and lister for
+// NexusAlgorithmWorkgroups.
+type NexusAlgorithmWorkgroupInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.MachineLearningAlgorithmLister
+	Lister() v1.NexusAlgorithmWorkgroupLister
 }
 
-type machineLearningAlgorithmInformer struct {
+type nexusAlgorithmWorkgroupInformer struct {
 	factory          internalinterfaces.SharedInformerFactory
 	tweakListOptions internalinterfaces.TweakListOptionsFunc
 	namespace        string
 }
 
-// NewMachineLearningAlgorithmInformer constructs a new informer for MachineLearningAlgorithm type.
+// NewNexusAlgorithmWorkgroupInformer constructs a new informer for NexusAlgorithmWorkgroup type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewMachineLearningAlgorithmInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
-	return NewFilteredMachineLearningAlgorithmInformer(client, namespace, resyncPeriod, indexers, nil)
+func NewNexusAlgorithmWorkgroupInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers) cache.SharedIndexInformer {
+	return NewFilteredNexusAlgorithmWorkgroupInformer(client, namespace, resyncPeriod, indexers, nil)
 }
 
-// NewFilteredMachineLearningAlgorithmInformer constructs a new informer for MachineLearningAlgorithm type.
+// NewFilteredNexusAlgorithmWorkgroupInformer constructs a new informer for NexusAlgorithmWorkgroup type.
 // Always prefer using an informer factory to get a shared informer instead of getting an independent
 // one. This reduces memory footprint and number of connections to the server.
-func NewFilteredMachineLearningAlgorithmInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
+func NewFilteredNexusAlgorithmWorkgroupInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ScienceV1().MachineLearningAlgorithms(namespace).List(context.TODO(), options)
+				return client.ScienceV1().NexusAlgorithmWorkgroups(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ScienceV1().MachineLearningAlgorithms(namespace).Watch(context.TODO(), options)
+				return client.ScienceV1().NexusAlgorithmWorkgroups(namespace).Watch(context.TODO(), options)
 			},
 		},
-		&sciencev1.MachineLearningAlgorithm{},
+		&sciencev1.NexusAlgorithmWorkgroup{},
 		resyncPeriod,
 		indexers,
 	)
 }
 
-func (f *machineLearningAlgorithmInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
-	return NewFilteredMachineLearningAlgorithmInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
+func (f *nexusAlgorithmWorkgroupInformer) defaultInformer(client versioned.Interface, resyncPeriod time.Duration) cache.SharedIndexInformer {
+	return NewFilteredNexusAlgorithmWorkgroupInformer(client, f.namespace, resyncPeriod, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, f.tweakListOptions)
 }
 
-func (f *machineLearningAlgorithmInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&sciencev1.MachineLearningAlgorithm{}, f.defaultInformer)
+func (f *nexusAlgorithmWorkgroupInformer) Informer() cache.SharedIndexInformer {
+	return f.factory.InformerFor(&sciencev1.NexusAlgorithmWorkgroup{}, f.defaultInformer)
 }
 
-func (f *machineLearningAlgorithmInformer) Lister() v1.MachineLearningAlgorithmLister {
-	return v1.NewMachineLearningAlgorithmLister(f.Informer().GetIndexer())
+func (f *nexusAlgorithmWorkgroupInformer) Lister() v1.NexusAlgorithmWorkgroupLister {
+	return v1.NewNexusAlgorithmWorkgroupLister(f.Informer().GetIndexer())
 }

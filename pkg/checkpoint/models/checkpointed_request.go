@@ -23,32 +23,30 @@ const (
 	LifecyclestageRunning          = "RUNNING"
 	LifecyclestageCompleted        = "COMPLETED"
 	LifecyclestageFailed           = "FAILED"
-	LifecyclestageScheduleTimeout  = "SCHEDULING_TIMEOUT"
+	LifecyclestageSchedulingFailed = "SCHEDULING_FAILED"
 	LifecyclestageDeadlineExceeded = "DEADLINE_EXCEEDED"
 	LifecyclestageCancelled        = "CANCELLED"
+
+	JobTemplateNameKey          = "science.sneaksanddata.com/algorithm-template-name"
+	JobLabelFrameworkVersionKey = "science.sneaksanddata.com/nexus-version"
 )
 
 type ClientErrorCode string
 
 const (
-	CB000  ClientErrorCode = "Scheduling timeout."                                            // client-facing code for buffer stage errors
-	CAJ011 ClientErrorCode = "Execution timed out."                                           // client-facing code for deadline exceed due to running over time
-	CAJ012 ClientErrorCode = "Job timed out waiting to be scheduled. Please try again later." // lost submissions and other scheduling errors that cause infinite hang in a buffering stage
-	CAJ000 ClientErrorCode = "Execution cancelled by %s, reason: %s"                          // job has been gracefully cancelled via API
+	NAE000 ClientErrorCode = "Scheduling failure."                   // client-facing code for scheduling stage errors
+	NAE001 ClientErrorCode = "Execution timed out."                  // client-facing code for deadline exceed due to running over time
+	NAE002 ClientErrorCode = "Execution cancelled by %s, reason: %s" // job has been gracefully cancelled via API
 )
 
 func (ce ClientErrorCode) ErrorName() string {
 	switch ce {
-	case CB000:
-		return "CB000"
-	case CAJ011:
-		return "CAJ011"
-	case CAJ012:
-		return "CAJ012"
-	case CAJ000:
-		return "CAJ000"
+	case NAE000:
+		return "NAE000"
+	case NAE001:
+		return "NAE001"
 	default:
-		return "UNDEFINED"
+		return "NAEUKNOWN"
 	}
 }
 
@@ -57,26 +55,26 @@ func (ce ClientErrorCode) ErrorMessage() string {
 }
 
 type CheckpointedRequest struct {
-	Algorithm               string                          `json:"algorithm"`
-	Id                      string                          `json:"id"`
-	LifecycleStage          string                          `json:"lifecycle_stage"`
-	PayloadUri              string                          `json:"payload_uri"`
-	ResultUri               string                          `json:"result_uri"`
-	AlgorithmFailureCode    string                          `json:"algorithm_failure_code"`
-	AlgorithmFailureCause   string                          `json:"algorithm_failure_cause"`
-	AlgorithmFailureDetails string                          `json:"algorithm_failure_details"`
-	ReceivedByHost          string                          `json:"received_by_host"`
-	ReceivedAt              time.Time                       `json:"received_at"`
-	SentAt                  time.Time                       `json:"sent_at"`
-	AppliedConfiguration    v1.MachineLearningAlgorithmSpec `json:"applied_configuration"`
-	ConfigurationOverrides  v1.MachineLearningAlgorithmSpec `json:"configuration_overrides"`
-	MonitoringMetadata      map[string][]string             `json:"monitoring_metadata"`
-	ContentHash             string                          `json:"content_hash"`
-	LastModified            time.Time                       `json:"last_modified"`
-	Tag                     string                          `json:"tag"`
-	ApiVersion              string                          `json:"api_version"`
-	JobUid                  string                          `json:"job_uid"`
-	ParentJob               ParentJobReference              `json:"parent_job"`
+	Algorithm               string                `json:"algorithm"`
+	Id                      string                `json:"id"`
+	LifecycleStage          string                `json:"lifecycle_stage"`
+	PayloadUri              string                `json:"payload_uri"`
+	ResultUri               string                `json:"result_uri"`
+	AlgorithmFailureCode    string                `json:"algorithm_failure_code"`
+	AlgorithmFailureCause   string                `json:"algorithm_failure_cause"`
+	AlgorithmFailureDetails string                `json:"algorithm_failure_details"`
+	ReceivedByHost          string                `json:"received_by_host"`
+	ReceivedAt              time.Time             `json:"received_at"`
+	SentAt                  time.Time             `json:"sent_at"`
+	AppliedConfiguration    v1.NexusAlgorithmSpec `json:"applied_configuration"`
+	ConfigurationOverrides  v1.NexusAlgorithmSpec `json:"configuration_overrides"`
+	MonitoringMetadata      map[string][]string   `json:"monitoring_metadata"`
+	ContentHash             string                `json:"content_hash"`
+	LastModified            time.Time             `json:"last_modified"`
+	Tag                     string                `json:"tag"`
+	ApiVersion              string                `json:"api_version"`
+	JobUid                  string                `json:"job_uid"`
+	ParentJob               ParentJobReference    `json:"parent_job"`
 }
 
 type CheckpointedRequestCqlModel struct {
@@ -161,8 +159,8 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 }
 
 func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
-	var appliedConfig v1.MachineLearningAlgorithmSpec
-	var overrides v1.MachineLearningAlgorithmSpec
+	var appliedConfig v1.NexusAlgorithmSpec
+	var overrides v1.NexusAlgorithmSpec
 	_ = json.Unmarshal([]byte(c.AppliedConfiguration), &appliedConfig)
 	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), &overrides)
 
@@ -190,7 +188,7 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 	}
 }
 
-func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
+func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
 	hostname, _ := os.Hostname()
 	serializedPayload, err := json.Marshal(request.AlgorithmParameters)
 
@@ -240,13 +238,30 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 	}
 }
 
-func (c *CheckpointedRequest) ToV1Job(jobNodeTaint string, jobNodeTaintValue string, appVersion string) batchv1.Job {
+func defaultFailurePolicy() *batchv1.PodFailurePolicy {
+	return &batchv1.PodFailurePolicy{
+		Rules: []batchv1.PodFailurePolicyRule{
+			{
+				Action:      batchv1.PodFailurePolicyActionIgnore,
+				OnExitCodes: nil,
+				OnPodConditions: []batchv1.PodFailurePolicyOnPodConditionsPattern{
+					{
+						Type:   corev1.DisruptionTarget,
+						Status: corev1.ConditionTrue,
+					},
+				},
+			},
+		},
+	}
+}
+
+func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec, selectedShardName string) batchv1.Job {
 	jobResourceList := corev1.ResourceList{
-		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.CpuLimit),
-		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.MemoryLimit),
+		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
+		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
 	}
 
-	for customResourceKey, customResourceValue := range c.AppliedConfiguration.CustomResources {
+	for customResourceKey, customResourceValue := range c.AppliedConfiguration.ComputeResources.CustomResources {
 		jobResourceList[corev1.ResourceName(customResourceKey)] = resource.MustParse(customResourceValue)
 	}
 
@@ -262,36 +277,12 @@ func (c *CheckpointedRequest) ToV1Job(jobNodeTaint string, jobNodeTaintValue str
 		}
 	}
 
-	jobAnnotations := map[string]string{
-		"science.sneaksanddata.com/algorithm-template-name": c.Algorithm,
-	}
-
-	jobTolerations := []corev1.Toleration{
-		{
-			Operator: corev1.TolerationOpEqual,
-			Key:      jobNodeTaint,
-			Value:    jobNodeTaintValue,
-		},
-	}
-
 	jobVolumes := []corev1.Volume{}
 	jobVolumeMounts := []corev1.VolumeMount{}
-	jobPodFailurePolicy := &batchv1.PodFailurePolicy{
-		Rules: []batchv1.PodFailurePolicyRule{
-			{
-				Action:      batchv1.PodFailurePolicyActionIgnore,
-				OnExitCodes: nil,
-				OnPodConditions: []batchv1.PodFailurePolicyOnPodConditionsPattern{
-					{
-						Type:   corev1.DisruptionTarget,
-						Status: corev1.ConditionTrue,
-					},
-				},
-			},
-		},
-	}
 
-	if *c.AppliedConfiguration.MountDatadogSocket {
+	jobPodFailurePolicy := defaultFailurePolicy()
+
+	if *c.AppliedConfiguration.DatadogIntegrationSettings.MountDatadogSocket {
 		jobVolumes = append(jobVolumes, corev1.Volume{
 			Name: "dsdsocket",
 			VolumeSource: corev1.VolumeSource{
@@ -306,39 +297,23 @@ func (c *CheckpointedRequest) ToV1Job(jobNodeTaint string, jobNodeTaintValue str
 		})
 	}
 
-	if c.MonitoringMetadata != nil {
-		for annotationKey, annotationValue := range c.MonitoringMetadata {
-			jobAnnotations[annotationKey] = strings.Join(annotationValue, ",")
-		}
-	}
-
-	if c.AppliedConfiguration.AdditionalWorkgroups != nil {
-		for adwKey, adwValue := range c.AppliedConfiguration.AdditionalWorkgroups {
-			jobTolerations = append(jobTolerations, corev1.Toleration{
-				Operator: corev1.TolerationOpEqual,
-				Key:      adwKey,
-				Value:    adwValue,
-			})
-		}
-	}
-
-	if c.AppliedConfiguration.FatalExitCodes != nil {
+	if c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes != nil {
 		jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{
 			Action: batchv1.PodFailurePolicyActionFailJob,
 			OnExitCodes: &batchv1.PodFailurePolicyOnExitCodesRequirement{
 				Operator: batchv1.PodFailurePolicyOnExitCodesOpIn,
-				Values:   c.AppliedConfiguration.FatalExitCodes,
+				Values:   c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes,
 			},
 			OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
 		})
 	}
 
-	if c.AppliedConfiguration.TransientExitCodes != nil {
+	if c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes != nil {
 		jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{
 			Action: batchv1.PodFailurePolicyActionIgnore,
 			OnExitCodes: &batchv1.PodFailurePolicyOnExitCodesRequirement{
 				Operator: batchv1.PodFailurePolicyOnExitCodesOpIn,
-				Values:   c.AppliedConfiguration.TransientExitCodes,
+				Values:   c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes,
 			},
 			OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
 		})
@@ -352,28 +327,29 @@ func (c *CheckpointedRequest) ToV1Job(jobNodeTaint string, jobNodeTaintValue str
 		ObjectMeta: metav1.ObjectMeta{
 			Name: c.Id,
 			Labels: map[string]string{
-				"science.sneaksanddata.com/nexus-version": appVersion,
-				"app.kubernetes.io/component":             "algorithm-run",
+				JobTemplateNameKey:            c.Algorithm,
+				JobLabelFrameworkVersionKey:   appVersion,
+				"app.kubernetes.io/component": "algorithm-run",
 			},
+			Annotations: c.AppliedConfiguration.RuntimeEnvironment.Annotations,
 		},
 		Spec: batchv1.JobSpec{
 			PodFailurePolicy: jobPodFailurePolicy,
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						"science.sneaksanddata.com/nexus-version": appVersion,
-						"app.kubernetes.io/component":             "algorithm-run",
+						JobTemplateNameKey:            c.Algorithm,
+						JobLabelFrameworkVersionKey:   appVersion,
+						"app.kubernetes.io/component": "algorithm-run",
 					},
-					Annotations: map[string]string{
-						"science.sneaksanddata.com/algorithm-template-name": c.Algorithm,
-					},
+					Annotations: c.AppliedConfiguration.RuntimeEnvironment.Annotations,
 				},
 				Spec: corev1.PodSpec{
 					Volumes: jobVolumes,
 					Containers: []corev1.Container{
 						{
 							Name:            c.Id,
-							Image:           fmt.Sprintf("%s/%s:%s", c.AppliedConfiguration.ImageRegistry, c.AppliedConfiguration.ImageRepository, c.AppliedConfiguration.ImageTag),
+							Image:           fmt.Sprintf("%s/%s:%s", c.AppliedConfiguration.Container.Registry, c.AppliedConfiguration.Container.Image, c.AppliedConfiguration.Container.VersionTag),
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources: corev1.ResourceRequirements{
 								Requests: jobResourceList,
@@ -381,44 +357,28 @@ func (c *CheckpointedRequest) ToV1Job(jobNodeTaint string, jobNodeTaintValue str
 							},
 							Command: strings.Split(" ", c.AppliedConfiguration.Command),
 							Args:    jobArgs,
-							Env: append(c.AppliedConfiguration.Env, []corev1.EnvVar{
+							Env: append(c.AppliedConfiguration.RuntimeEnvironment.EnvironmentVariables, []corev1.EnvVar{
 								{
 									Name:  "NEXUS__ALGORITHM_NAME",
 									Value: c.Algorithm,
 								},
 								{
-									Name:  "NEXUS__BOUND_WORKGROUP",
-									Value: c.AppliedConfiguration.WorkgroupHost,
+									Name:  "NEXUS__SHARD_NAME",
+									Value: selectedShardName,
 								},
 							}...),
-							EnvFrom:      c.AppliedConfiguration.EnvFrom,
+							EnvFrom:      c.AppliedConfiguration.RuntimeEnvironment.MappedEnvironmentVariables,
 							VolumeMounts: jobVolumeMounts,
 						},
 					},
-					Affinity: &corev1.Affinity{
-						NodeAffinity: &corev1.NodeAffinity{
-							RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
-								NodeSelectorTerms: []corev1.NodeSelectorTerm{
-									{
-										MatchExpressions: []corev1.NodeSelectorRequirement{
-											{
-												Key:      jobNodeTaint,
-												Operator: corev1.NodeSelectorOpIn,
-												Values:   []string{jobNodeTaintValue},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-					Tolerations:        jobTolerations,
-					ServiceAccountName: c.AppliedConfiguration.ServiceAccountName,
+					Affinity:           workgroup.Affinity,
+					Tolerations:        workgroup.Tolerations,
+					ServiceAccountName: c.AppliedConfiguration.Container.ServiceAccountName,
 					RestartPolicy:      "Never",
 				},
 			},
-			BackoffLimit:            c.AppliedConfiguration.MaximumRetries,
-			ActiveDeadlineSeconds:   ptr.Int64(int64(*c.AppliedConfiguration.DeadlineSeconds)),
+			BackoffLimit:            c.AppliedConfiguration.RuntimeEnvironment.MaximumRetries,
+			ActiveDeadlineSeconds:   ptr.Int64(int64(*c.AppliedConfiguration.RuntimeEnvironment.DeadlineSeconds)),
 			TTLSecondsAfterFinished: ptr.Int32(300),
 		},
 	}
@@ -426,36 +386,27 @@ func (c *CheckpointedRequest) ToV1Job(jobNodeTaint string, jobNodeTaintValue str
 
 func (c *CheckpointedRequest) IsFinished() bool {
 	switch c.LifecycleStage {
-	case LifecyclestageFailed, LifecyclestageCompleted, LifecyclestageDeadlineExceeded, LifecyclestageScheduleTimeout, LifecyclestageCancelled:
+	case LifecyclestageFailed, LifecyclestageCompleted, LifecyclestageDeadlineExceeded, LifecyclestageSchedulingFailed, LifecyclestageCancelled:
 		return true
 	default:
 		return false
 	}
 }
 
-func (c *CheckpointedRequest) AsCAJ011() *CheckpointedRequest {
+func (c *CheckpointedRequest) AsNAE001() *CheckpointedRequest {
 	result := c.DeepCopy()
 	result.LifecycleStage = LifecyclestageDeadlineExceeded
-	result.AlgorithmFailureCode = CAJ011.ErrorName()
-	result.AlgorithmFailureCause = CAJ011.ErrorMessage()
+	result.AlgorithmFailureCode = NAE001.ErrorName()
+	result.AlgorithmFailureCause = NAE001.ErrorMessage()
 
 	return result
 }
 
-func (c *CheckpointedRequest) AsCAJ012() *CheckpointedRequest {
+func (c *CheckpointedRequest) AsNAE000() *CheckpointedRequest {
 	result := c.DeepCopy()
-	result.LifecycleStage = LifecyclestageScheduleTimeout
-	result.AlgorithmFailureCode = CAJ012.ErrorName()
-	result.AlgorithmFailureCause = CAJ012.ErrorMessage()
-
-	return result
-}
-
-func (c *CheckpointedRequest) AsCB000() *CheckpointedRequest {
-	result := c.DeepCopy()
-	result.LifecycleStage = LifecyclestageFailed
-	result.AlgorithmFailureCode = CB000.ErrorName()
-	result.AlgorithmFailureCause = CB000.ErrorMessage()
+	result.LifecycleStage = LifecyclestageSchedulingFailed
+	result.AlgorithmFailureCode = NAE000.ErrorName()
+	result.AlgorithmFailureCause = NAE000.ErrorMessage()
 
 	return result
 }
@@ -463,8 +414,8 @@ func (c *CheckpointedRequest) AsCB000() *CheckpointedRequest {
 func (c *CheckpointedRequest) AsCancelled(request CancellationRequest) *CheckpointedRequest {
 	result := c.DeepCopy()
 	result.LifecycleStage = LifecyclestageCancelled
-	result.AlgorithmFailureCode = CAJ000.ErrorName()
-	result.AlgorithmFailureCause = fmt.Sprintf(CAJ000.ErrorMessage(), request.Initiator, request.Reason)
+	result.AlgorithmFailureCode = NAE002.ErrorName()
+	result.AlgorithmFailureCause = fmt.Sprintf(NAE002.ErrorMessage(), request.Initiator, request.Reason)
 
 	return result
 }

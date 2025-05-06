@@ -15,7 +15,7 @@ import (
 )
 
 type Buffer interface {
-	BufferRequest(ctx context.Context, requestId string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*models.SubmissionBufferEntry, error)
+	BufferRequest(ctx context.Context, requestId string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*models.SubmissionBufferEntry, error)
 }
 
 type BufferConfig struct {
@@ -30,8 +30,10 @@ type BufferConfig struct {
 
 type BufferInput struct {
 	Checkpoint        *models.CheckpointedRequest
+	ResolvedWorkgroup *v1.NexusAlgorithmWorkgroupSpec
+	ResolvedShardName string
 	SerializedPayload []byte
-	Config            *v1.MachineLearningAlgorithmSpec
+	Config            *v1.NexusAlgorithmSpec
 }
 
 type BufferOutput struct {
@@ -45,7 +47,7 @@ func (input *BufferInput) tags() map[string]string {
 	}
 }
 
-func newBufferInput(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) (*BufferInput, error) {
+func newBufferInput(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*BufferInput, error) {
 	checkpoint, serializedPayload, err := models.FromAlgorithmRequest(requestId, algorithmName, request, config)
 
 	if err != nil {
@@ -107,7 +109,7 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 	buffer.actor.Start(buffer.ctx)
 }
 
-func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.MachineLearningAlgorithmSpec) error {
+func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec) error {
 	input, err := newBufferInput(requestId, algorithmName, request, config)
 	if err != nil {
 		return err
@@ -147,7 +149,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 
 	bufferedCheckpoint.PayloadUri = payloadUri
 	bufferedCheckpoint.LifecycleStage = models.LifecyclestageBuffered
-	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint)
+	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedShardName)
 
 	if err := buffer.metadataStore.UpsertMetadata(bufferedEntry); err != nil {
 		return nil, err
