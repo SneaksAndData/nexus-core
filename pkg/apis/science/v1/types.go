@@ -152,11 +152,13 @@ func NewResourceReadyCondition(transitionTime metav1.Time, status metav1.Conditi
 }
 
 // NexusAlgorithmWorkgroupStatus is the status for a NexusAlgorithmWorkgroup resource
+// +kubebuilder:subresource:status
 type NexusAlgorithmWorkgroupStatus struct {
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // NexusAlgorithmStatus is the status for a NexusAlgorithmTemplate resource
+// +kubebuilder:subresource:status
 type NexusAlgorithmStatus struct {
 	SyncedSecrets        []string           `json:"syncedSecrets,omitempty"`
 	SyncedConfigurations []string           `json:"syncedConfigurations,omitempty"`
