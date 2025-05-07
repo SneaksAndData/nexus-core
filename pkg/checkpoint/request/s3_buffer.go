@@ -87,7 +87,7 @@ func (buffer *DefaultBuffer) Get(requestId string, algorithmName string) (*model
 
 func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
 	telemetry.Increment(buffer.metrics, "incoming_requests", input.Tags())
-	buffer.logger.V(4).Info("Persisting payload", "request", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
+	buffer.logger.V(0).Info("persisting payload", "request", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
 
 	payloadPath := fmt.Sprintf("%s/%s/%s",
 		buffer.config.BufferConfig.PayloadStoragePath,
@@ -114,6 +114,10 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup)
 
 	if err := buffer.metadataStore.UpsertMetadata(bufferedEntry); err != nil {
+		return nil, err
+	}
+
+	if err := buffer.checkpointStore.UpsertCheckpoint(bufferedCheckpoint); err != nil {
 		return nil, err
 	}
 
