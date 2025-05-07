@@ -165,6 +165,7 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 	var overrides *v1.NexusAlgorithmSpec
 	_ = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
 	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), overrides)
+	duration, _ := time.ParseDuration(c.PayloadValidFor)
 
 	return &CheckpointedRequest{
 		Algorithm:               c.Algorithm,
@@ -186,6 +187,7 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
 		ParentJob:               &ParentJobReference{},
+		PayloadValidFor:         duration,
 	}
 }
 
