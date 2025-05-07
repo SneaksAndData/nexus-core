@@ -32,7 +32,8 @@ func NewS3Path(bucket string, key string) *S3Path {
 	}
 }
 
-func NewS3PayloadStore(ctx context.Context, logger klog.Logger) *S3PayloadStore {
+// NewS3PayloadStore initializes S3 client for the S3 payload store. Providing empty values for credentialsProvider, s3endpoint and s3region will result in using default SDK credential flow.
+func NewS3PayloadStore(ctx context.Context, logger klog.Logger, credentialsProvider aws.CredentialsProvider, s3endpoint string, s3region string) *S3PayloadStore {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		logger.V(0).Error(err, "Error when reading S3 configuration")
@@ -43,6 +44,9 @@ func NewS3PayloadStore(ctx context.Context, logger klog.Logger) *S3PayloadStore 
 		o.UseAccelerate = false
 		o.HTTPSignerV4 = v4.NewSigner()
 		o.AppID = "nexus"
+		o.Credentials = credentialsProvider
+		o.BaseEndpoint = &s3endpoint
+		o.Region = s3region
 	})
 	return &S3PayloadStore{
 		client: client,
