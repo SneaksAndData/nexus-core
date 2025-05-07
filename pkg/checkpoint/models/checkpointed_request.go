@@ -45,6 +45,8 @@ func (ce ClientErrorCode) ErrorName() string {
 		return "NAE000"
 	case NAE001:
 		return "NAE001"
+	case NAE002:
+		return "NAE002"
 	default:
 		return "NAEUKNOWN"
 	}
@@ -55,26 +57,26 @@ func (ce ClientErrorCode) ErrorMessage() string {
 }
 
 type CheckpointedRequest struct {
-	Algorithm               string                `json:"algorithm"`
-	Id                      string                `json:"id"`
-	LifecycleStage          string                `json:"lifecycle_stage"`
-	PayloadUri              string                `json:"payload_uri"`
-	ResultUri               string                `json:"result_uri"`
-	AlgorithmFailureCode    string                `json:"algorithm_failure_code"`
-	AlgorithmFailureCause   string                `json:"algorithm_failure_cause"`
-	AlgorithmFailureDetails string                `json:"algorithm_failure_details"`
-	ReceivedByHost          string                `json:"received_by_host"`
-	ReceivedAt              time.Time             `json:"received_at"`
-	SentAt                  time.Time             `json:"sent_at"`
-	AppliedConfiguration    v1.NexusAlgorithmSpec `json:"applied_configuration"`
-	ConfigurationOverrides  v1.NexusAlgorithmSpec `json:"configuration_overrides"`
-	MonitoringMetadata      map[string][]string   `json:"monitoring_metadata"`
-	ContentHash             string                `json:"content_hash"`
-	LastModified            time.Time             `json:"last_modified"`
-	Tag                     string                `json:"tag"`
-	ApiVersion              string                `json:"api_version"`
-	JobUid                  string                `json:"job_uid"`
-	ParentJob               ParentJobReference    `json:"parent_job"`
+	Algorithm               string                 `json:"algorithm"`
+	Id                      string                 `json:"id"`
+	LifecycleStage          string                 `json:"lifecycle_stage"`
+	PayloadUri              string                 `json:"payload_uri"`
+	ResultUri               string                 `json:"result_uri"`
+	AlgorithmFailureCode    string                 `json:"algorithm_failure_code"`
+	AlgorithmFailureCause   string                 `json:"algorithm_failure_cause"`
+	AlgorithmFailureDetails string                 `json:"algorithm_failure_details"`
+	ReceivedByHost          string                 `json:"received_by_host"`
+	ReceivedAt              time.Time              `json:"received_at"`
+	SentAt                  time.Time              `json:"sent_at"`
+	AppliedConfiguration    *v1.NexusAlgorithmSpec `json:"applied_configuration,omitempty"`
+	ConfigurationOverrides  *v1.NexusAlgorithmSpec `json:"configuration_overrides,omitempty"`
+	ContentHash             string                 `json:"content_hash"`
+	LastModified            time.Time              `json:"last_modified"`
+	Tag                     string                 `json:"tag,omitempty"`
+	ApiVersion              string                 `json:"api_version"`
+	JobUid                  string                 `json:"job_uid,omitempty"`
+	ParentJob               *ParentJobReference    `json:"parent_job,omitempty"`
+	PayloadValidFor         time.Duration          `json:"payload_valid_for,omitempty"`
 }
 
 type CheckpointedRequestCqlModel struct {
@@ -91,13 +93,13 @@ type CheckpointedRequestCqlModel struct {
 	SentAt                  time.Time
 	AppliedConfiguration    string
 	ConfigurationOverrides  string
-	MonitoringMetadata      map[string][]string
 	ContentHash             string
 	LastModified            time.Time
 	Tag                     string
 	ApiVersion              string
 	JobUid                  string
 	ParentJob               string
+	PayloadValidFor         string
 }
 
 var CheckpointedRequestTable = table.New(table.Metadata{
@@ -116,12 +118,12 @@ var CheckpointedRequestTable = table.New(table.Metadata{
 		"sent_at",
 		"applied_configuration",
 		"configuration_overrides",
-		"monitoring_metadata",
 		"content_hash",
 		"last_modified",
 		"tag",
 		"api_version",
 		"parent_job",
+		"payload_valid_for",
 	},
 	PartKey: []string{
 		"algorithm",
@@ -148,21 +150,21 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 		SentAt:                  c.SentAt,
 		AppliedConfiguration:    string(serializedConfig),
 		ConfigurationOverrides:  string(serializedOverrides),
-		MonitoringMetadata:      c.MonitoringMetadata,
 		ContentHash:             c.ContentHash,
 		LastModified:            c.LastModified,
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
 		ParentJob:               "", // TODO: fixme
+		PayloadValidFor:         c.PayloadValidFor.String(),
 	}
 }
 
 func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
-	var appliedConfig v1.NexusAlgorithmSpec
-	var overrides v1.NexusAlgorithmSpec
-	_ = json.Unmarshal([]byte(c.AppliedConfiguration), &appliedConfig)
-	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), &overrides)
+	var appliedConfig *v1.NexusAlgorithmSpec
+	var overrides *v1.NexusAlgorithmSpec
+	_ = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
+	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), overrides)
 
 	return &CheckpointedRequest{
 		Algorithm:               c.Algorithm,
@@ -178,13 +180,12 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 		SentAt:                  c.SentAt,
 		AppliedConfiguration:    appliedConfig,
 		ConfigurationOverrides:  overrides,
-		MonitoringMetadata:      c.MonitoringMetadata,
 		ContentHash:             c.ContentHash,
 		LastModified:            c.LastModified,
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               ParentJobReference{},
+		ParentJob:               &ParentJobReference{},
 	}
 }
 
@@ -206,10 +207,10 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		ConfigurationOverrides: request.CustomConfiguration,
 		Tag:                    request.Tag,
 		JobUid:                 "",
-		ParentJob:              ParentJobReference{}, // TODO: add support for parent job
-		MonitoringMetadata:     request.MonitoringMetadata,
+		ParentJob:              &ParentJobReference{}, // TODO: add support for parent job
 		ApiVersion:             request.RequestApiVersion,
-		AppliedConfiguration:   *config,
+		AppliedConfiguration:   config,
+		PayloadValidFor:        request.PayloadValidFor,
 	}, serializedPayload, nil
 }
 
@@ -226,15 +227,15 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 		ReceivedByHost:          c.ReceivedByHost,
 		ReceivedAt:              c.ReceivedAt,
 		SentAt:                  c.SentAt,
-		AppliedConfiguration:    *c.AppliedConfiguration.DeepCopy(),
-		ConfigurationOverrides:  *c.ConfigurationOverrides.DeepCopy(),
-		MonitoringMetadata:      c.MonitoringMetadata,
+		AppliedConfiguration:    c.AppliedConfiguration.DeepCopy(),
+		ConfigurationOverrides:  c.ConfigurationOverrides.DeepCopy(),
 		ContentHash:             c.ContentHash,
 		LastModified:            c.LastModified,
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               ParentJobReference{},
+		ParentJob:               &ParentJobReference{},
+		PayloadValidFor:         c.PayloadValidFor,
 	}
 }
 

@@ -253,13 +253,10 @@ func newTemplateOnShard() *nexusv1.NexusAlgorithmTemplate {
 				CpuLimit:    "1000m",
 				MemoryLimit: "2000Mi",
 			},
-			SubmissionBehaviour: &nexusv1.NexusAlgorithmSubmissionBehaviour{
-				ShardClusters: []string{"test-cluster.io"},
-				WorkgroupRef: &nexusv1.NexusAlgorithmWorkgroupRef{
-					Name:  "default",
-					Group: "test.io",
-					Kind:  "NexusAlgorithmWorkgroup",
-				},
+			WorkgroupRef: &nexusv1.NexusAlgorithmWorkgroupRef{
+				Name:  "default",
+				Group: "test.io",
+				Kind:  "NexusAlgorithmWorkgroup",
 			},
 			Command: "python",
 			Args:    []string{"job.py", "--request-id 111-222-333 --arg1 true"},
