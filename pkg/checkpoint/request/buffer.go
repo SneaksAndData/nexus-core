@@ -12,13 +12,13 @@ type Buffer interface {
 }
 
 type BufferConfig struct {
-	PayloadStoragePath         string        `mapstructure:"payload-storage-path"`
-	PayloadValidFor            time.Duration `mapstructure:"payload-valid-for"`
-	FailureRateBaseDelay       time.Duration `mapstructure:"failure-rate-base-delay"`
-	FailureRateMaxDelay        time.Duration `mapstructure:"failure-rate-max-delay"`
-	RateLimitElementsPerSecond int           `mapstructure:"rate-limit-elements-per-second"`
-	RateLimitElementsBurst     int           `mapstructure:"rate-limit-elements-burst"`
-	Workers                    int           `mapstructure:"workers"`
+	PayloadStoragePath         string        `mapstructure:"payload-storage-path,omitempty"`
+	PayloadValidFor            time.Duration `mapstructure:"payload-valid-for,omitempty"`
+	FailureRateBaseDelay       time.Duration `mapstructure:"failure-rate-base-delay,omitempty"`
+	FailureRateMaxDelay        time.Duration `mapstructure:"failure-rate-max-delay,omitempty"`
+	RateLimitElementsPerSecond int           `mapstructure:"rate-limit-elements-per-second,omitempty"`
+	RateLimitElementsBurst     int           `mapstructure:"rate-limit-elements-burst,omitempty"`
+	Workers                    int           `mapstructure:"workers,omitempty"`
 }
 
 type BufferInput struct {

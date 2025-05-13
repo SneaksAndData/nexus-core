@@ -16,10 +16,10 @@ import (
 )
 
 type S3BufferConfig struct {
-	BufferConfig    *BufferConfig `mapstructure:"buffer-config"`
-	AccessKeyID     string        `mapstructure:"access-key-id"`
-	SecretAccessKey string        `mapstructure:"secret-access-key"`
-	Region          string        `mapstructure:"region"`
+	BufferConfig    *BufferConfig `mapstructure:"buffer-config,omitempty"`
+	AccessKeyID     string        `mapstructure:"access-key-id,omitempty"`
+	SecretAccessKey string        `mapstructure:"secret-access-key,omitempty"`
+	Region          string        `mapstructure:"region,omitempty"`
 	Endpoint        string        `mapstructure:"endpoint,omitempty"`
 }
 
