@@ -50,13 +50,13 @@ func getContent(zipFile *zip.File) ([]byte, error) {
 func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *AstraCqlStoreConfig {
 	bundleBytes, err := base64.StdEncoding.DecodeString(config.SecureConnectionBundleBase64)
 	if err != nil {
-		logger.V(0).Error(err, "Astra bundle value is not a valid base64-encoded string")
+		logger.V(0).Error(err, "bundle value is not a valid base64-encoded string")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
 	zipReader, err := zip.NewReader(bytes.NewReader(bundleBytes), int64(len(bundleBytes)))
 	if err != nil {
-		logger.V(0).Error(err, "Astra bundle cannot be unpacked")
+		logger.V(0).Error(err, "bundle cannot be unpacked")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
@@ -66,7 +66,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 	for _, zipFile := range zipReader.File {
 		bundleFileContent, err := getContent(zipFile)
 		if err != nil {
-			logger.V(0).Error(err, "Error when unpacking the bundle")
+			logger.V(0).Error(err, "error when unpacking the bundle")
 			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 		}
 
@@ -75,7 +75,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 
 	cert, err := tls.X509KeyPair(bundleFiles["cert"], bundleFiles["key"])
 	if err != nil {
-		logger.V(0).Error(err, "Unable to instantiate X509KeyPair certificate from the bundle")
+		logger.V(0).Error(err, "unable to instantiate X509KeyPair certificate from the bundle")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
@@ -85,7 +85,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 
 	err = json.Unmarshal(bundleFiles["config.json"], &gatewayConfig)
 	if err != nil {
-		logger.V(0).Error(err, "Error parsing connection configuration json")
+		logger.V(0).Error(err, "error parsing connection configuration json")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 

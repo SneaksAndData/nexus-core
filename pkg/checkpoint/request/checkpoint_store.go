@@ -16,7 +16,7 @@ type CheckpointStore interface {
 func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {
 	cloned, err := util.DeepClone(*checkpoint)
 	if err != nil {
-		cqls.logger.V(1).Error(err, "Error when serializing a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+		cqls.logger.V(1).Error(err, "error when serializing a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 		return err
 	}
 
@@ -24,7 +24,7 @@ func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) e
 
 	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*cloned.ToCqlModel())
 	if err := query.ExecRelease(); err != nil {
-		cqls.logger.V(1).Error(err, "Error when inserting a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+		cqls.logger.V(1).Error(err, "error when inserting a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 		return err
 	}
 
@@ -39,7 +39,7 @@ func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.Check
 
 	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Get()).BindStruct(*result)
 	if err := query.GetRelease(result); err != nil {
-		cqls.logger.V(1).Error(err, "Error when reading a checkpoint", "algorithm", algorithm, "id", id)
+		cqls.logger.V(1).Error(err, "error when reading a checkpoint", "algorithm", algorithm, "id", id)
 		return nil, err
 	}
 
@@ -52,7 +52,7 @@ func (cqls *CqlStore) ReadCheckpoints(requestTag string) ([]models.CheckpointedR
 		"tag": requestTag,
 	})
 	if err := query.SelectRelease(&result); err != nil {
-		cqls.logger.V(1).Error(err, "Error when reading checkpoints by tag", "tag", requestTag)
+		cqls.logger.V(1).Error(err, "error when reading checkpoints by tag", "tag", requestTag)
 		return nil, err
 	}
 

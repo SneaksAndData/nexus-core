@@ -41,8 +41,6 @@ func (sbe *SubmissionBufferEntry) SubmissionTemplate() (*batchv1.Job, error) {
 }
 
 func FromCheckpoint(checkpoint *CheckpointedRequest, resolvedWorkgroup *v1.NexusAlgorithmWorkgroupSpec) *SubmissionBufferEntry {
-	// TODO: job node taint and taint value should be moved to CRD
-	// this change will be implemented once receiver is functional, to avoid adding extra complexity to initial testing
 	jobTemplate, _ := json.Marshal(checkpoint.ToV1Job(fmt.Sprintf("%s-%s", buildmeta.AppVersion, buildmeta.BuildNumber), resolvedWorkgroup))
 
 	return &SubmissionBufferEntry{

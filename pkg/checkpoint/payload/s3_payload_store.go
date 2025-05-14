@@ -36,7 +36,7 @@ func NewS3Path(bucket string, key string) *S3Path {
 func NewS3PayloadStore(ctx context.Context, logger klog.Logger, credentialsProvider aws.CredentialsProvider, s3endpoint string, s3region string) *S3PayloadStore {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
-		logger.V(0).Error(err, "Error when reading S3 configuration")
+		logger.V(0).Error(err, "error when reading S3 configuration")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 	client := s3.NewFromConfig(cfg, func(o *s3.Options) {
@@ -70,10 +70,10 @@ func (store *S3PayloadStore) SaveTextAsBlob(ctx context.Context, text string, bl
 	})
 
 	if err != nil {
-		store.logger.V(0).Error(err, "Error when persisting payload into S3")
+		store.logger.V(0).Error(err, "error when persisting payload into S3")
 		return err
 	}
-	store.logger.V(4).Info("Successfully persisted algorithm payload", "payloadPath", blobPath, "etag", *result.ETag)
+	store.logger.V(4).Info("successfully persisted algorithm payload", "payloadPath", blobPath, "etag", *result.ETag)
 
 	return nil
 }
@@ -87,7 +87,7 @@ func (store *S3PayloadStore) GetBlobUri(ctx context.Context, blobPath string, va
 		s3.WithPresignExpires(validFor))
 
 	if err != nil {
-		store.logger.V(0).Error(err, "Error when generating payload URI")
+		store.logger.V(0).Error(err, "error when generating payload URI")
 		return "", err
 	}
 
