@@ -112,7 +112,7 @@ func newFakeMla(withConfigs bool) *NexusAlgorithmTemplate {
 	return mla
 }
 
-func TestMachineLearningAlgorithm_GetSecretNames(t *testing.T) {
+func TestNexusAlgorithmTemplate_GetSecretNames(t *testing.T) {
 	secretsNames := newFakeMla(true).GetSecretNames()
 	expectedSecretNames := []string{
 		"test-secret",
@@ -127,7 +127,7 @@ func TestMachineLearningAlgorithm_GetSecretNames(t *testing.T) {
 	t.Log("GetSecretNames returns correct result")
 }
 
-func TestMachineLearningAlgorithm_GetConfigMapNames(t *testing.T) {
+func TestNexusAlgorithmTemplate_GetConfigMapNames(t *testing.T) {
 	configMapNames := newFakeMla(true).GetConfigMapNames()
 	expectedConfigMapNames := []string{
 		"test-cfg1",
@@ -144,7 +144,7 @@ func TestMachineLearningAlgorithm_GetConfigMapNames(t *testing.T) {
 	t.Log("GetConfigMapNames returns correct result")
 }
 
-func TestMachineLearningAlgorithm_GetSecretNamesNames_Empty(t *testing.T) {
+func TestNexusAlgorithmTemplate_GetSecretNamesNames_Empty(t *testing.T) {
 	secretsNames := newFakeMla(false).GetSecretNames()
 
 	if secretsNames != nil {
@@ -153,7 +153,7 @@ func TestMachineLearningAlgorithm_GetSecretNamesNames_Empty(t *testing.T) {
 	t.Log("GetSecretNames returns correct result when algorithm has no secret references")
 }
 
-func TestMachineLearningAlgorithm_GetConfigMapNames_Empty(t *testing.T) {
+func TestNexusAlgorithmTemplate_GetConfigMapNames_Empty(t *testing.T) {
 	configMapNames := newFakeMla(false).GetConfigMapNames()
 
 	if configMapNames != nil {
@@ -162,7 +162,7 @@ func TestMachineLearningAlgorithm_GetConfigMapNames_Empty(t *testing.T) {
 	t.Log("GetConfigMapNames returns correct result when algorithm has no config references")
 }
 
-func TestMachineLearningAlgorithm_GetConfigMapDiff(t *testing.T) {
+func TestNexusAlgorithmTemplate_GetConfigMapDiff(t *testing.T) {
 	mla1 := newFakeMla(true)
 	mla2 := mla1.DeepCopy()
 	// remove test-secret and test-cfg3 references
@@ -176,7 +176,7 @@ func TestMachineLearningAlgorithm_GetConfigMapDiff(t *testing.T) {
 	t.Log("GetConfigMapDiff evaluates difference in configmap references correctly")
 }
 
-func TestMachineLearningAlgorithm_GetSecretDiff(t *testing.T) {
+func TestNexusAlgorithmTemplate_GetSecretDiff(t *testing.T) {
 	mla1 := newFakeMla(true)
 	mla2 := mla1.DeepCopy()
 	// remove test-secret and test-cfg3 references

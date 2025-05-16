@@ -39,7 +39,7 @@ func LoadClients(shardConfigPath string, namespace string, logger klog.Logger) (
 
 			nexusClient, err := clientset.NewForConfig(cfg)
 			if err != nil {
-				logger.Error(err, "error building kubernetes clientset for MachineLearningAlgorithm API for shard {shard}", file.Name())
+				logger.Error(err, "error building kubernetes clientset for NexusAlgorithmTemplate API for shard {shard}", file.Name())
 				return nil, err
 			}
 
