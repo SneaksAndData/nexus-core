@@ -290,8 +290,8 @@ func newTemplateOnShard() *nexusv1.NexusAlgorithmTemplate {
 	return template
 }
 
-// TestCreateMachineLearningAlgorithm tests that resource creation action happens correctly
-func TestShard_CreateMachineLearningAlgorithm(t *testing.T) {
+// TestShard_CreateNexusAlgorithmTemplate tests that resource creation action happens correctly
+func TestShard_CreateNexusAlgorithmTemplate(t *testing.T) {
 	f := newFixture(t)
 	template := newTemplateOnShard()
 	_, ctx := ktesting.NewTestContext(t)
@@ -311,14 +311,14 @@ func TestShard_CreateMachineLearningAlgorithm(t *testing.T) {
 	testInformers.nexusInformers.Start(ctx.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "nexusalgorithmtemplates"}, template.Namespace, template))
-	_, _ = shard.CreateMachineLearningAlgorithm(template.Name, template.Namespace, template.Spec, "test")
+	_, _ = shard.CreateTemplate(template.Name, template.Namespace, template.Spec, "test")
 
 	f.checkActions(f.nexusActions, f.nexusClient.Actions())
 	t.Log("Shard client created a new MLA resource")
 }
 
-// TestUpdateMachineLearningAlgorithm tests that resource update action happens correctly
-func TestShard_UpdateMachineLearningAlgorithm(t *testing.T) {
+// TestUpdateNexusAlgorithmTemplate tests that resource update action happens correctly
+func TestShard_UpdateNexusAlgorithmTemplate(t *testing.T) {
 	f := newFixture(t)
 	template := newTemplateOnShard()
 	updatedTemplate := template.DeepCopy()
@@ -341,14 +341,14 @@ func TestShard_UpdateMachineLearningAlgorithm(t *testing.T) {
 	testInformers.nexusInformers.Start(ctx.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "nexusalgorithmtemplates"}, template.Namespace, updatedTemplate))
-	_, _ = shard.UpdateMachineLearningAlgorithm(template, updatedTemplate.Spec, "test")
+	_, _ = shard.UpdateTemplate(template, updatedTemplate.Spec, "test")
 
 	f.checkActions(f.nexusActions, f.nexusClient.Actions())
 	t.Log("Shard client update an existing MLA resource")
 }
 
-// TestDeleteMachineLearningAlgorithm tests that resource delete action happens correctly
-func TestShard_DeleteMachineLearningAlgorithm(t *testing.T) {
+// TestDeleteNexusAlgorithmTemplate tests that resource delete action happens correctly
+func TestShard_DeleteNexusAlgorithmTemplate(t *testing.T) {
 	f := newFixture(t)
 	template := newTemplateOnShard()
 
@@ -369,7 +369,7 @@ func TestShard_DeleteMachineLearningAlgorithm(t *testing.T) {
 	testInformers.nexusInformers.Start(ctx.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "nexusalgorithmtemplates"}, template.Namespace, template.Name))
-	_ = shard.DeleteMachineLearningAlgorithm(template)
+	_ = shard.DeleteTemplate(template)
 
 	f.checkActions(f.nexusActions, f.nexusClient.Actions())
 	t.Log("Shard client deleted an existing MLA resource")

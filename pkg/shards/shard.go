@@ -85,7 +85,7 @@ func (shard *Shard) GetReferenceLabels() map[string]string {
 	}
 }
 
-func (shard *Shard) CreateMachineLearningAlgorithm(templateName string, templateNamespace string, mlaSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
+func (shard *Shard) CreateTemplate(templateName string, templateNamespace string, mlaSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
 	newTemplate := &v1.NexusAlgorithmTemplate{
 		TypeMeta: metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
@@ -99,16 +99,16 @@ func (shard *Shard) CreateMachineLearningAlgorithm(templateName string, template
 	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(templateNamespace).Create(context.TODO(), newTemplate, metav1.CreateOptions{FieldManager: fieldManager})
 }
 
-// UpdateMachineLearningAlgorithm updates the MLA in this shard in case it drifts from the one in the controller cluster
-func (shard *Shard) UpdateMachineLearningAlgorithm(template *v1.NexusAlgorithmTemplate, templateSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
+// UpdateTemplate updates the MLA in this shard in case it drifts from the one in the controller cluster
+func (shard *Shard) UpdateTemplate(template *v1.NexusAlgorithmTemplate, templateSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
 	newTemplate := template.DeepCopy()
 	newTemplate.Spec = *templateSpec.DeepCopy()
 
 	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(newTemplate.Namespace).Update(context.TODO(), newTemplate, metav1.UpdateOptions{FieldManager: fieldManager})
 }
 
-// DeleteMachineLearningAlgorithm removes the MLA from this shard
-func (shard *Shard) DeleteMachineLearningAlgorithm(template *v1.NexusAlgorithmTemplate) error {
+// DeleteTemplate removes the MLA from this shard
+func (shard *Shard) DeleteTemplate(template *v1.NexusAlgorithmTemplate) error {
 	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(template.Namespace).Delete(context.TODO(), template.Name, metav1.DeleteOptions{})
 }
 

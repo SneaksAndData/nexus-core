@@ -47,6 +47,8 @@ jobs:
           hack/verify-codegen.sh
           
       - name: Test
+        env: 
+          APPLICATION_ENVIRONMENT: units
         run: go test ./... -coverprofile=./cover.out -covermode=atomic -coverpkg=./...
         
       - name: Visualise Coverage

@@ -8,7 +8,7 @@ import (
 )
 
 func GetWorkgroupByRef(template *v1.NexusAlgorithmTemplate, client nexusclientset.Interface, resourceNamespace string) (*v1.NexusAlgorithmWorkgroupSpec, error) {
-	workgroup, err := client.ScienceV1().NexusAlgorithmWorkgroups(resourceNamespace).Get(context.TODO(), template.Spec.SubmissionBehaviour.WorkgroupRef.Name, metav1.GetOptions{})
+	workgroup, err := client.ScienceV1().NexusAlgorithmWorkgroups(resourceNamespace).Get(context.TODO(), template.Spec.WorkgroupRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
