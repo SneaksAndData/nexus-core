@@ -34,7 +34,7 @@ func GetInformerObjectKey(resourceNamespace string, resourceName string) string 
 	return fmt.Sprintf("%s/%s", resourceNamespace, resourceName)
 }
 
-// GetCachedObject retrieves a cached NexusAlgorithmTemplate resource from informer cache
+// GetCachedObject retrieves a cached resource from informer cache
 func GetCachedObject[T any](objectName string, resourceNamespace string, informer cache.SharedIndexInformer) (*T, error) {
 	resource, exists, err := informer.GetStore().GetByKey(GetInformerObjectKey(resourceNamespace, objectName))
 	if err != nil {
