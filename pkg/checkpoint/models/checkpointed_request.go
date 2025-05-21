@@ -29,7 +29,7 @@ const (
 
 	JobTemplateNameKey          = "science.sneaksanddata.com/algorithm-template-name"
 	JobLabelFrameworkVersionKey = "science.sneaksanddata.com/nexus-version"
-	JobLabelComponent           = "science.sneaksanddata.com/nexus-component"
+	NexusComponentLabel         = "science.sneaksanddata.com/nexus-component"
 	JobLabelAlgorithmRun        = "algorithm-run"
 )
 
@@ -303,7 +303,7 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 			Labels: map[string]string{
 				JobTemplateNameKey:          c.Algorithm,
 				JobLabelFrameworkVersionKey: appVersion,
-				JobLabelComponent:           JobLabelAlgorithmRun,
+				NexusComponentLabel:         JobLabelAlgorithmRun,
 			},
 			Annotations: c.AppliedConfiguration.RuntimeEnvironment.Annotations,
 		},
@@ -314,7 +314,7 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 					Labels: map[string]string{
 						JobTemplateNameKey:          c.Algorithm,
 						JobLabelFrameworkVersionKey: appVersion,
-						JobLabelComponent:           JobLabelAlgorithmRun,
+						NexusComponentLabel:         JobLabelAlgorithmRun,
 					},
 					Annotations: c.AppliedConfiguration.RuntimeEnvironment.Annotations,
 				},
