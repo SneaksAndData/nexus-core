@@ -18,43 +18,20 @@ import (
 type LifecycleStage string
 
 const (
-	LifecyclestageNew              = "NEW"
-	LifecyclestageBuffered         = "BUFFERED"
-	LifecyclestageRunning          = "RUNNING"
-	LifecyclestageCompleted        = "COMPLETED"
-	LifecyclestageFailed           = "FAILED"
-	LifecyclestageSchedulingFailed = "SCHEDULING_FAILED"
-	LifecyclestageDeadlineExceeded = "DEADLINE_EXCEEDED"
-	LifecyclestageCancelled        = "CANCELLED"
+	LifecycleStageNew              = "NEW"
+	LifecycleStageBuffered         = "BUFFERED"
+	LifecycleStageRunning          = "RUNNING"
+	LifecycleStageCompleted        = "COMPLETED"
+	LifecycleStageFailed           = "FAILED"
+	LifecycleStageSchedulingFailed = "SCHEDULING_FAILED"
+	LifecycleStageDeadlineExceeded = "DEADLINE_EXCEEDED"
+	LifecycleStageCancelled        = "CANCELLED"
 
 	JobTemplateNameKey          = "science.sneaksanddata.com/algorithm-template-name"
 	JobLabelFrameworkVersionKey = "science.sneaksanddata.com/nexus-version"
+	JobLabelComponent           = "science.sneaksanddata.com/nexus-component"
+	JobLabelAlgorithmRun        = "algorithm-run"
 )
-
-type ClientErrorCode string
-
-const (
-	NAE000 ClientErrorCode = "Scheduling failure."                   // client-facing code for scheduling stage errors
-	NAE001 ClientErrorCode = "Execution timed out."                  // client-facing code for deadline exceed due to running over time
-	NAE002 ClientErrorCode = "Execution cancelled by %s, reason: %s" // job has been gracefully cancelled via API
-)
-
-func (ce ClientErrorCode) ErrorName() string {
-	switch ce {
-	case NAE000:
-		return "NAE000"
-	case NAE001:
-		return "NAE001"
-	case NAE002:
-		return "NAE002"
-	default:
-		return "NAEUKNOWN"
-	}
-}
-
-func (ce ClientErrorCode) ErrorMessage() string {
-	return string(ce)
-}
 
 type CheckpointedRequest struct {
 	Algorithm               string                 `json:"algorithm"`
@@ -62,7 +39,6 @@ type CheckpointedRequest struct {
 	LifecycleStage          string                 `json:"lifecycle_stage"`
 	PayloadUri              string                 `json:"payload_uri"`
 	ResultUri               string                 `json:"result_uri"`
-	AlgorithmFailureCode    string                 `json:"algorithm_failure_code"`
 	AlgorithmFailureCause   string                 `json:"algorithm_failure_cause"`
 	AlgorithmFailureDetails string                 `json:"algorithm_failure_details"`
 	ReceivedByHost          string                 `json:"received_by_host"`
@@ -85,7 +61,6 @@ type CheckpointedRequestCqlModel struct {
 	LifecycleStage          string
 	PayloadUri              string
 	ResultUri               string
-	AlgorithmFailureCode    string
 	AlgorithmFailureCause   string
 	AlgorithmFailureDetails string
 	ReceivedByHost          string
@@ -110,7 +85,6 @@ var CheckpointedRequestTable = table.New(table.Metadata{
 		"lifecycle_stage",
 		"payload_uri",
 		"result_uri",
-		"algorithm_failure_code",
 		"algorithm_failure_cause",
 		"algorithm_failure_details",
 		"received_by_host",
@@ -142,7 +116,6 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 		LifecycleStage:          c.LifecycleStage,
 		PayloadUri:              c.PayloadUri,
 		ResultUri:               c.ResultUri,
-		AlgorithmFailureCode:    c.AlgorithmFailureCode,
 		AlgorithmFailureCause:   c.AlgorithmFailureCause,
 		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
 		ReceivedByHost:          c.ReceivedByHost,
@@ -173,7 +146,6 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 		LifecycleStage:          c.LifecycleStage,
 		PayloadUri:              c.PayloadUri,
 		ResultUri:               c.ResultUri,
-		AlgorithmFailureCode:    c.AlgorithmFailureCode,
 		AlgorithmFailureCause:   c.AlgorithmFailureCause,
 		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
 		ReceivedByHost:          c.ReceivedByHost,
@@ -202,7 +174,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 	return &CheckpointedRequest{
 		Algorithm:              algorithmName,
 		Id:                     requestId,
-		LifecycleStage:         LifecyclestageNew,
+		LifecycleStage:         LifecycleStageNew,
 		ReceivedByHost:         hostname,
 		ReceivedAt:             time.Now(),
 		LastModified:           time.Now(),
@@ -223,7 +195,6 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 		LifecycleStage:          c.LifecycleStage,
 		PayloadUri:              c.PayloadUri,
 		ResultUri:               c.ResultUri,
-		AlgorithmFailureCode:    c.AlgorithmFailureCode,
 		AlgorithmFailureCause:   c.AlgorithmFailureCause,
 		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
 		ReceivedByHost:          c.ReceivedByHost,
@@ -330,9 +301,9 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 		ObjectMeta: metav1.ObjectMeta{
 			Name: c.Id,
 			Labels: map[string]string{
-				JobTemplateNameKey:            c.Algorithm,
-				JobLabelFrameworkVersionKey:   appVersion,
-				"app.kubernetes.io/component": "algorithm-run",
+				JobTemplateNameKey:          c.Algorithm,
+				JobLabelFrameworkVersionKey: appVersion,
+				JobLabelComponent:           JobLabelAlgorithmRun,
 			},
 			Annotations: c.AppliedConfiguration.RuntimeEnvironment.Annotations,
 		},
@@ -341,9 +312,9 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						JobTemplateNameKey:            c.Algorithm,
-						JobLabelFrameworkVersionKey:   appVersion,
-						"app.kubernetes.io/component": "algorithm-run",
+						JobTemplateNameKey:          c.Algorithm,
+						JobLabelFrameworkVersionKey: appVersion,
+						JobLabelComponent:           JobLabelAlgorithmRun,
 					},
 					Annotations: c.AppliedConfiguration.RuntimeEnvironment.Annotations,
 				},
@@ -389,36 +360,11 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 
 func (c *CheckpointedRequest) IsFinished() bool {
 	switch c.LifecycleStage {
-	case LifecyclestageFailed, LifecyclestageCompleted, LifecyclestageDeadlineExceeded, LifecyclestageSchedulingFailed, LifecyclestageCancelled:
+	case LifecycleStageFailed, LifecycleStageCompleted, LifecycleStageDeadlineExceeded, LifecycleStageSchedulingFailed, LifecycleStageCancelled:
 		return true
+	case LifecycleStageRunning:
+		return false
 	default:
 		return false
 	}
-}
-
-func (c *CheckpointedRequest) AsNAE001() *CheckpointedRequest {
-	result := c.DeepCopy()
-	result.LifecycleStage = LifecyclestageDeadlineExceeded
-	result.AlgorithmFailureCode = NAE001.ErrorName()
-	result.AlgorithmFailureCause = NAE001.ErrorMessage()
-
-	return result
-}
-
-func (c *CheckpointedRequest) AsNAE000() *CheckpointedRequest {
-	result := c.DeepCopy()
-	result.LifecycleStage = LifecyclestageSchedulingFailed
-	result.AlgorithmFailureCode = NAE000.ErrorName()
-	result.AlgorithmFailureCause = NAE000.ErrorMessage()
-
-	return result
-}
-
-func (c *CheckpointedRequest) AsCancelled(request CancellationRequest) *CheckpointedRequest {
-	result := c.DeepCopy()
-	result.LifecycleStage = LifecyclestageCancelled
-	result.AlgorithmFailureCode = NAE002.ErrorName()
-	result.AlgorithmFailureCause = fmt.Sprintf(NAE002.ErrorMessage(), request.Initiator, request.Reason)
-
-	return result
 }
