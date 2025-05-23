@@ -45,7 +45,9 @@ func GetCachedObject[T any](objectName string, resourceNamespace string, informe
 		return nil, nil
 	}
 
-	return resource.(*T), nil
+	resourceObj := resource.(T)
+
+	return &resourceObj, nil
 }
 
 // IsNexusRunEvent checks if an API server event is related to a Nexus run.
