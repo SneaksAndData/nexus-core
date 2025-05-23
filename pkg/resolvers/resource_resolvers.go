@@ -21,8 +21,8 @@ func GetWorkgroupByRef(template *nexusv1.NexusAlgorithmTemplate, client nexuscli
 	return &workgroup.Spec, err
 }
 
-func isNexusRun(objMeta *metav1.ObjectMeta) bool {
-	if !metav1.HasLabel(*objMeta, models.NexusComponentLabel) {
+func isNexusRun(objMeta metav1.ObjectMeta) bool {
+	if !metav1.HasLabel(objMeta, models.NexusComponentLabel) {
 		return false
 	}
 
@@ -63,7 +63,7 @@ func IsNexusRunEvent(event *corev1.Event, resourceNamespace string, informers ma
 			return false, err
 		}
 
-		return isNexusRun(&job.ObjectMeta), nil
+		return isNexusRun(job.ObjectMeta), nil
 	case "Pod":
 		pod, err := GetCachedObject[corev1.Pod](event.InvolvedObject.Name, resourceNamespace, informers[event.InvolvedObject.Kind])
 
@@ -71,7 +71,7 @@ func IsNexusRunEvent(event *corev1.Event, resourceNamespace string, informers ma
 			return false, err
 		}
 
-		return isNexusRun(&pod.ObjectMeta), nil
+		return isNexusRun(pod.ObjectMeta), nil
 	default:
 		return false, nil
 	}
