@@ -45,9 +45,7 @@ func GetCachedObject[T any](objectName string, resourceNamespace string, informe
 		return nil, nil
 	}
 
-	resourceObj := resource.(T)
-
-	return &resourceObj, nil
+	return resource.(*T), nil
 }
 
 // IsNexusRunEvent checks if an API server event is related to a Nexus run.
@@ -61,6 +59,10 @@ func IsNexusRunEvent(event *corev1.Event, resourceNamespace string, informers ma
 	case "Job":
 		job, err := GetCachedObject[batchv1.Job](event.InvolvedObject.Name, resourceNamespace, informers[event.InvolvedObject.Kind])
 
+		if job == nil {
+			return false, nil
+		}
+
 		if err != nil {
 			return false, err
 		}
@@ -68,6 +70,10 @@ func IsNexusRunEvent(event *corev1.Event, resourceNamespace string, informers ma
 		return isNexusRun(job.ObjectMeta), nil
 	case "Pod":
 		pod, err := GetCachedObject[corev1.Pod](event.InvolvedObject.Name, resourceNamespace, informers[event.InvolvedObject.Kind])
+
+		if pod == nil {
+			return false, nil
+		}
 
 		if err != nil {
 			return false, err
