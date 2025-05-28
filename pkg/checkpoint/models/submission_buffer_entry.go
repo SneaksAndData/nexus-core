@@ -26,6 +26,7 @@ var SubmissionBufferTable = table.New(table.Metadata{
 type SubmissionBufferEntry struct {
 	Algorithm string `json:"algorithm"`
 	Id        string `json:"id"`
+	Cluster   string `json:"cluster"`
 	Template  string `json:"template,omitempty"`
 }
 
@@ -46,6 +47,7 @@ func FromCheckpoint(checkpoint *CheckpointedRequest, resolvedWorkgroup *v1.Nexus
 	return &SubmissionBufferEntry{
 		Algorithm: checkpoint.Algorithm,
 		Id:        checkpoint.Id,
+		Cluster:   resolvedWorkgroup.Cluster,
 		Template:  string(jobTemplate),
 	}
 }

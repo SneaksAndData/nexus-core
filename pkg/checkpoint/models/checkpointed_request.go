@@ -77,31 +77,54 @@ type CheckpointedRequestCqlModel struct {
 	PayloadValidFor         string
 }
 
+var checkpointColumns = []string{
+	"algorithm",
+	"id",
+	"lifecycle_stage",
+	"payload_uri",
+	"result_uri",
+	"algorithm_failure_cause",
+	"algorithm_failure_details",
+	"received_by_host",
+	"received_at",
+	"sent_at",
+	"applied_configuration",
+	"configuration_overrides",
+	"content_hash",
+	"last_modified",
+	"tag",
+	"api_version",
+	"parent_job",
+	"payload_valid_for",
+}
+
+const tableName = "nexus.checkpoints"
+
 var CheckpointedRequestTable = table.New(table.Metadata{
-	Name: "nexus.checkpoints",
-	Columns: []string{
-		"algorithm",
-		"id",
-		"lifecycle_stage",
-		"payload_uri",
-		"result_uri",
-		"algorithm_failure_cause",
-		"algorithm_failure_details",
-		"received_by_host",
-		"received_at",
-		"sent_at",
-		"applied_configuration",
-		"configuration_overrides",
-		"content_hash",
-		"last_modified",
-		"tag",
-		"api_version",
-		"parent_job",
-		"payload_valid_for",
-	},
+	Name:    tableName,
+	Columns: checkpointColumns,
 	PartKey: []string{
 		"algorithm",
 		"id",
+	},
+	SortKey: []string{},
+})
+
+var CheckpointedRequestTableIndexByHost = table.New(table.Metadata{
+	Name:    tableName,
+	Columns: checkpointColumns,
+	PartKey: []string{
+		"received_by_host",
+		"lifecycle_stage",
+	},
+	SortKey: []string{},
+})
+
+var CheckpointedRequestTableIndexByTag = table.New(table.Metadata{
+	Name:    tableName,
+	Columns: checkpointColumns,
+	PartKey: []string{
+		"tag",
 	},
 	SortKey: []string{},
 })
