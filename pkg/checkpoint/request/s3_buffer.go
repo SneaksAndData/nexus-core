@@ -98,6 +98,10 @@ func (buffer *DefaultBuffer) Update(checkpoint *models.CheckpointedRequest) erro
 	return buffer.checkpointStore.UpsertCheckpoint(checkpoint)
 }
 
+func (buffer *DefaultBuffer) GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
+	return buffer.metadataStore.ReadMetadata(checkpoint)
+}
+
 func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
 	telemetry.Increment(buffer.metrics, "incoming_requests", input.Tags())
 	buffer.logger.V(0).Info("persisting payload", "request", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
