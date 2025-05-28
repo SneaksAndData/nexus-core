@@ -3,14 +3,15 @@ package request
 import (
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/SneaksAndData/nexus-core/pkg/util"
-	"github.com/scylladb/gocqlx/v3/qb"
+	"iter"
 	"time"
 )
 
 type CheckpointStore interface {
 	UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error
 	ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error)
-	ReadCheckpoints(requestTag string) ([]models.CheckpointedRequest, error)
+	ReadBufferedCheckpointsByHost(host string) (iter.Seq[*models.CheckpointedRequest], error)
+	ReadCheckpointsByTag(requestTag string) (iter.Seq[*models.CheckpointedRequest], error)
 }
 
 func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {
@@ -46,30 +47,45 @@ func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.Check
 	return result.FromCqlModel(), nil
 }
 
-func (cqls *CqlStore) ReadPendingCheckpoints(host string) (*models.CheckpointedRequest, error) {
-	result := &models.CheckpointedRequestCqlModel{
+func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq[*models.CheckpointedRequest], error) {
+	predicate := &models.CheckpointedRequestCqlModel{
 		ReceivedByHost: host,
 		LifecycleStage: models.LifecycleStageBuffered,
 	}
+	queryResult := []*models.CheckpointedRequestCqlModel{}
 
-	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Get()).BindStruct(*result)
-	if err := query.GetRelease(result); err != nil {
-		cqls.logger.V(1).Error(err, "error when reading a checkpoint", "host", host, "stage", models.LifecycleStageBuffered)
+	var query = cqls.cqlSession.Query(models.CheckpointedRequestTableIndexByHost.Get()).BindStruct(*predicate)
+	if err := query.SelectRelease(queryResult); err != nil {
+		cqls.logger.V(1).Error(err, "error when reading buffered checkpoints", "host", host)
 		return nil, err
 	}
 
-	return result.FromCqlModel(), nil
+	return func(yield func(*models.CheckpointedRequest) bool) {
+		for _, model := range queryResult {
+			if !yield(model.FromCqlModel()) {
+				return
+			}
+		}
+	}, nil
 }
 
-func (cqls *CqlStore) ReadCheckpoints(requestTag string) ([]models.CheckpointedRequest, error) {
-	var result []models.CheckpointedRequest
-	query := cqls.cqlSession.Query(models.CheckpointedRequestTable.Select()).BindMap(qb.M{
-		"tag": requestTag,
-	})
-	if err := query.SelectRelease(&result); err != nil {
-		cqls.logger.V(1).Error(err, "error when reading checkpoints by tag", "tag", requestTag)
+func (cqls *CqlStore) ReadCheckpointsByTag(requestTag string) (iter.Seq[*models.CheckpointedRequest], error) {
+	predicate := &models.CheckpointedRequestCqlModel{
+		Tag: requestTag,
+	}
+	queryResult := []*models.CheckpointedRequestCqlModel{}
+
+	var query = cqls.cqlSession.Query(models.CheckpointedRequestTableIndexByTag.Get()).BindStruct(*predicate)
+	if err := query.SelectRelease(queryResult); err != nil {
+		cqls.logger.V(1).Error(err, "error when reading checkpoints by a tag", "tag", requestTag)
 		return nil, err
 	}
 
-	return result, nil
+	return func(yield func(*models.CheckpointedRequest) bool) {
+		for _, model := range queryResult {
+			if !yield(model.FromCqlModel()) {
+				return
+			}
+		}
+	}, nil
 }
