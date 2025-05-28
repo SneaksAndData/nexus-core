@@ -46,6 +46,21 @@ func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.Check
 	return result.FromCqlModel(), nil
 }
 
+func (cqls *CqlStore) ReadPendingCheckpoints(host string) (*models.CheckpointedRequest, error) {
+	result := &models.CheckpointedRequestCqlModel{
+		ReceivedByHost: host,
+		LifecycleStage: models.LifecycleStageBuffered,
+	}
+
+	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Get()).BindStruct(*result)
+	if err := query.GetRelease(result); err != nil {
+		cqls.logger.V(1).Error(err, "error when reading a checkpoint", "host", host, "stage", models.LifecycleStageBuffered)
+		return nil, err
+	}
+
+	return result.FromCqlModel(), nil
+}
+
 func (cqls *CqlStore) ReadCheckpoints(requestTag string) ([]models.CheckpointedRequest, error) {
 	var result []models.CheckpointedRequest
 	query := cqls.cqlSession.Query(models.CheckpointedRequestTable.Select()).BindMap(qb.M{
