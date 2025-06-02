@@ -116,7 +116,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	}
 
 	// TODO: add parent handling
-	if err := buffer.blobStore.SaveTextAsBlob(buffer.ctx, string(input.SerializedPayload), payloadPath); err != nil {
+	if err := buffer.blobStore.SaveTextAsBlob(buffer.ctx, string(*input.SerializedPayload), payloadPath); err != nil {
 		return nil, err
 	}
 
