@@ -130,10 +130,7 @@ var CheckpointedRequestTableIndexByTag = table.New(table.Metadata{
 })
 
 func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
-	serializedConfig, err := json.Marshal(c.AppliedConfiguration)
-	if err != nil {
-		panic(err)
-	}
+	serializedConfig, _ := json.Marshal(c.AppliedConfiguration)
 	serializedOverrides, _ := json.Marshal(c.ConfigurationOverrides)
 
 	return &CheckpointedRequestCqlModel{
