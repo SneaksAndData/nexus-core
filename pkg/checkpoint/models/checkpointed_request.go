@@ -206,7 +206,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		JobUid:                 "",
 		ParentJob:              &ParentJobReference{}, // TODO: add support for parent job
 		ApiVersion:             request.RequestApiVersion,
-		AppliedConfiguration:   config,
+		AppliedConfiguration:   config.Merge(request.CustomConfiguration),
 		PayloadValidFor:        request.PayloadValidFor,
 	}, serializedPayload, nil
 }
