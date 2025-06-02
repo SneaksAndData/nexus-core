@@ -53,7 +53,7 @@ func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq[*mode
 	queryResult := []*models.CheckpointedRequestCqlModel{}
 
 	var query = cqls.cqlSession.Query(models.CheckpointedRequestTableIndexByHost.Get()).BindStruct(*predicate)
-	if err := query.SelectRelease(queryResult); err != nil {
+	if err := query.SelectRelease(&queryResult); err != nil {
 		cqls.logger.V(1).Error(err, "error when reading buffered checkpoints", "host", host)
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func (cqls *CqlStore) ReadCheckpointsByTag(requestTag string) (iter.Seq[*models.
 	queryResult := []*models.CheckpointedRequestCqlModel{}
 
 	var query = cqls.cqlSession.Query(models.CheckpointedRequestTableIndexByTag.Get()).BindStruct(*predicate)
-	if err := query.SelectRelease(queryResult); err != nil {
+	if err := query.SelectRelease(&queryResult); err != nil {
 		cqls.logger.V(1).Error(err, "error when reading checkpoints by a tag", "tag", requestTag)
 		return nil, err
 	}
