@@ -2,7 +2,6 @@ package request
 
 import (
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
-	"github.com/SneaksAndData/nexus-core/pkg/util"
 	"iter"
 	"time"
 )
@@ -15,14 +14,11 @@ type CheckpointStore interface {
 }
 
 func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {
-	cloned, err := util.DeepClone(*checkpoint)
-	if err != nil {
-		cqls.logger.V(1).Error(err, "error when serializing a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
-		return err
-	}
+	cloned := checkpoint.DeepCopy()
 
 	cloned.LastModified = time.Now()
 	serialized := cloned.ToCqlModel()
+
 	cqls.logger.V(0).Info("upserting checkpoint", "checkpoint", serialized)
 
 	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*serialized)

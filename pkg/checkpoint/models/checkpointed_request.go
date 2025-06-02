@@ -230,7 +230,7 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               &ParentJobReference{},
+		ParentJob:               c.ParentJob,
 		PayloadValidFor:         c.PayloadValidFor,
 	}
 }
