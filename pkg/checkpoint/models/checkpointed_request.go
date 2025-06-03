@@ -53,7 +53,7 @@ type CheckpointedRequest struct {
 	ApiVersion              string                 `json:"api_version"`
 	JobUid                  string                 `json:"job_uid,omitempty"`
 	ParentJob               *ParentJobReference    `json:"parent_job,omitempty"`
-	PayloadValidFor         time.Duration          `json:"payload_valid_for,omitempty"`
+	PayloadValidFor         string                 `json:"payload_valid_for,omitempty"`
 }
 
 type CheckpointedRequestCqlModel struct {
@@ -162,8 +162,13 @@ func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error)
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
 		ParentJob:               "", // TODO: fixme
-		PayloadValidFor:         c.PayloadValidFor.String(),
+		PayloadValidFor:         c.PayloadValidFor,
 	}, nil
+}
+
+func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
+	result, _ := time.ParseDuration(c.PayloadValidFor)
+	return &result
 }
 
 func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, error) {
@@ -190,12 +195,6 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, erro
 		return nil, unmarshalErr
 	}
 
-	duration, err := time.ParseDuration(c.PayloadValidFor)
-
-	if err != nil {
-		return nil, err
-	}
-
 	return &CheckpointedRequest{
 		Algorithm:               c.Algorithm,
 		Id:                      c.Id,
@@ -215,13 +214,20 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, erro
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
 		ParentJob:               parentJob,
-		PayloadValidFor:         duration,
+		PayloadValidFor:         c.PayloadValidFor,
 	}, nil
 }
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
 	hostname, _ := os.Hostname()
 	serializedPayload, err := json.Marshal(request.AlgorithmParameters)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// check time.Duration
+	_, err = time.ParseDuration(request.PayloadValidFor)
 
 	if err != nil {
 		return nil, nil, err

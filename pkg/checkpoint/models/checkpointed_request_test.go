@@ -57,7 +57,7 @@ func getFakeRequest() *CheckpointedRequest {
 		ApiVersion:             "1.2",
 		JobUid:                 "1231",
 		ParentJob:              nil,
-		PayloadValidFor:        128,
+		PayloadValidFor:        "86400s",
 	}
 }
 

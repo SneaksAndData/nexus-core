@@ -2,7 +2,6 @@ package models
 
 import (
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
-	"time"
 )
 
 type AlgorithmRequestRef struct {
@@ -16,5 +15,5 @@ type AlgorithmRequest struct {
 	RequestApiVersion   string                 `json:"requestApiVersion,omitempty"`
 	Tag                 string                 `json:"tag,omitempty"`
 	ParentRequest       *AlgorithmRequestRef   `json:"parentRequest,omitempty"`
-	PayloadValidFor     time.Duration          `json:"payloadValidFor,omitempty"`
+	PayloadValidFor     string                 `json:"payloadValidFor,omitempty"`
 }

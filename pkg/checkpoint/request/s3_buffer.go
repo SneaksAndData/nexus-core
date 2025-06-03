@@ -121,7 +121,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
-	payloadUri, err := buffer.blobStore.GetBlobUri(buffer.ctx, payloadPath, *util.CoalescePointer(&input.Checkpoint.PayloadValidFor, &buffer.config.BufferConfig.PayloadValidFor))
+	payloadUri, err := buffer.blobStore.GetBlobUri(buffer.ctx, payloadPath, *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor))
 	if err != nil {
 		return nil, err
 	}
