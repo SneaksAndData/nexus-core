@@ -88,7 +88,7 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 		ReceivedByHost:          fakeRequest.ReceivedByHost,
 		ReceivedAt:              fakeRequest.ReceivedAt,
 		SentAt:                  fakeRequest.SentAt,
-		AppliedConfiguration:    "{\"container\":{\"image\":\"test.io\",\"registry\":\"algorithms/test\",\"versionTag\":\"v1.0.0\",\"serviceAccountName\":\"test-sa\"},\"computeResources\":{\"cpuLimit\":\"1000m\",\"memoryLimit\":\"2000Mi\"},\"workgroupRef\":{\"name\":\"test-workgroup\",\"group\":\"nexus-workgroup.io\",\"kind\":\"KarpenterWorkgroupV1\"},\"command\":\"python\",\"args\":[\"job.py\",\"--request-id 111-222-333 --arg1 true\"],\"runtimeEnvironment\":{\"deadlineSeconds\":120,\"maximumRetries\":3},\"errorHandlingBehaviour\":{},\"datadogIntegrationSettings\":{\"mountDatadogSocket\":true}}",
+		AppliedConfiguration:    "{\"container\":{\"image\":\"test.io\",\"registry\":\"algorithms/test\",\"versionTag\":\"v1.0.0\",\"serviceAccountName\":\"test-sa\"},\"computeResources\":{\"cpuLimit\":\"1000m\",\"memoryLimit\":\"2000Mi\"},\"workgroupRef\":{\"name\":\"test-workgroup\",\"group\":\"nexus-workgroup.io\",\"kind\":\"KarpenterWorkgroupV1\"},\"command\":\"python\",\"args\":[\"job.py\",\"--request-id 111-222-333 --arg1 true\"],\"runtimeEnvironment\":{\"deadlineSeconds\":120,\"maximumRetries\":3},\"datadogIntegrationSettings\":{\"mountDatadogSocket\":true}}",
 		ConfigurationOverrides:  "{}",
 		ContentHash:             fakeRequest.ContentHash,
 		LastModified:            fakeRequest.LastModified,
@@ -96,7 +96,7 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 		ApiVersion:              fakeRequest.ApiVersion,
 		JobUid:                  fakeRequest.JobUid,
 		ParentJob:               "",
-		PayloadValidFor:         "128ns",
+		PayloadValidFor:         "86400s",
 	}
 
 	if !reflect.DeepEqual(expectedCqlModel, cqlModel) {
