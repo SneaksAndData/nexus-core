@@ -21,8 +21,8 @@ func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) e
 
 	cqls.logger.V(0).Info("upserting checkpoint", "checkpoint", serialized)
 
-	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*serialized)
-	cqls.logger.V(0).Info("executing query", "query", query.Query.Statement())
+	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*serialized).Strict()
+	cqls.logger.V(0).Info("executing query", "query", query.String())
 
 	if err := query.ExecRelease(); err != nil {
 		cqls.logger.V(1).Error(err, "error when inserting a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)

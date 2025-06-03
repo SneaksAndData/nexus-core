@@ -134,6 +134,14 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 	serializedConfig, _ := json.Marshal(c.AppliedConfiguration)
 	serializedOverrides, _ := json.Marshal(c.ConfigurationOverrides)
 
+	if serializedOverrides == nil {
+		serializedOverrides = []byte("{}")
+	}
+
+	if serializedConfig == nil {
+		serializedConfig = []byte("{}")
+	}
+
 	return &CheckpointedRequestCqlModel{
 		Algorithm:               c.Algorithm,
 		Id:                      c.Id,
@@ -160,8 +168,10 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 	var appliedConfig *v1.NexusAlgorithmSpec
 	var overrides *v1.NexusAlgorithmSpec
+
 	_ = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
 	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), overrides)
+
 	duration, _ := time.ParseDuration(c.PayloadValidFor)
 
 	return &CheckpointedRequest{
