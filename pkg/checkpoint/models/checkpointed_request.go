@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/aws/smithy-go/ptr"
@@ -130,16 +131,16 @@ var CheckpointedRequestTableIndexByTag = table.New(table.Metadata{
 	SortKey: []string{},
 })
 
-func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
-	serializedConfig, _ := json.Marshal(c.AppliedConfiguration)
-	serializedOverrides, _ := json.Marshal(c.ConfigurationOverrides)
+func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error) {
+	serializedOverrides := []byte("{}")
+	serializedConfig, err := json.Marshal(c.AppliedConfiguration)
 
-	if serializedOverrides == nil {
-		serializedOverrides = []byte("{}")
+	if err != nil {
+		return nil, err
 	}
 
-	if serializedConfig == nil {
-		serializedConfig = []byte("{}")
+	if c.ConfigurationOverrides != nil {
+		serializedOverrides, _ = json.Marshal(c.ConfigurationOverrides)
 	}
 
 	return &CheckpointedRequestCqlModel{
@@ -162,17 +163,38 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 		JobUid:                  c.JobUid,
 		ParentJob:               "", // TODO: fixme
 		PayloadValidFor:         c.PayloadValidFor.String(),
-	}
+	}, nil
 }
 
-func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
-	var appliedConfig *v1.NexusAlgorithmSpec
+func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, error) {
+	appliedConfig := &v1.NexusAlgorithmSpec{}
 	var overrides *v1.NexusAlgorithmSpec
+	var parentJob *ParentJobReference
 
-	_ = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
-	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), overrides)
+	var unmarshalErr error
 
-	duration, _ := time.ParseDuration(c.PayloadValidFor)
+	// ignore override unmarshal if set to empty object
+	if c.ConfigurationOverrides == "{}" || c.ConfigurationOverrides == "" {
+		unmarshalErr = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
+	} else {
+		overrides = &v1.NexusAlgorithmSpec{}
+		unmarshalErr = errors.Join(json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig), json.Unmarshal([]byte(c.ConfigurationOverrides), overrides))
+	}
+
+	if c.ParentJob != "" && c.ParentJob != "{}" {
+		parentJob = &ParentJobReference{}
+		unmarshalErr = errors.Join(unmarshalErr, json.Unmarshal([]byte(c.ParentJob), parentJob))
+	}
+
+	if unmarshalErr != nil {
+		return nil, unmarshalErr
+	}
+
+	duration, err := time.ParseDuration(c.PayloadValidFor)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return &CheckpointedRequest{
 		Algorithm:               c.Algorithm,
@@ -192,9 +214,9 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               &ParentJobReference{},
+		ParentJob:               parentJob,
 		PayloadValidFor:         duration,
-	}
+	}, nil
 }
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {

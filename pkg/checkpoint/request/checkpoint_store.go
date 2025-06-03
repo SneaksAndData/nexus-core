@@ -17,19 +17,22 @@ func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) e
 	cloned := checkpoint.DeepCopy()
 
 	cloned.LastModified = time.Now()
-	serialized := cloned.ToCqlModel()
+	if serialized, err := cloned.ToCqlModel(); err == nil {
+		cqls.logger.V(0).Info("upserting checkpoint", "checkpoint", serialized)
 
-	cqls.logger.V(0).Info("upserting checkpoint", "checkpoint", serialized)
+		var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*serialized).Strict()
+		cqls.logger.V(0).Info("executing query", "query", query.String())
 
-	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*serialized).Strict()
-	cqls.logger.V(0).Info("executing query", "query", query.String())
+		if err := query.ExecRelease(); err != nil {
+			cqls.logger.V(1).Error(err, "error when inserting a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+			return err
+		}
 
-	if err := query.ExecRelease(); err != nil {
-		cqls.logger.V(1).Error(err, "error when inserting a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+		return nil
+	} else {
+		cqls.logger.V(0).Error(err, "error when preparing an insert of a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 		return err
 	}
-
-	return nil
 }
 
 func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error) {
@@ -44,10 +47,10 @@ func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.Check
 		return nil, err
 	}
 
-	return result.FromCqlModel(), nil
+	return result.FromCqlModel()
 }
 
-func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq[*models.CheckpointedRequest], error) {
+func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	predicate := &models.CheckpointedRequestCqlModel{
 		ReceivedByHost: host,
 		LifecycleStage: models.LifecycleStageBuffered,
@@ -60,7 +63,7 @@ func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq[*mode
 		return nil, err
 	}
 
-	return func(yield func(*models.CheckpointedRequest) bool) {
+	return func(yield func(*models.CheckpointedRequest, error) bool) {
 		for _, model := range queryResult {
 			if !yield(model.FromCqlModel()) {
 				return
@@ -69,7 +72,7 @@ func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq[*mode
 	}, nil
 }
 
-func (cqls *CqlStore) ReadCheckpointsByTag(requestTag string) (iter.Seq[*models.CheckpointedRequest], error) {
+func (cqls *CqlStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	predicate := &models.CheckpointedRequestCqlModel{
 		Tag: requestTag,
 	}
@@ -81,7 +84,7 @@ func (cqls *CqlStore) ReadCheckpointsByTag(requestTag string) (iter.Seq[*models.
 		return nil, err
 	}
 
-	return func(yield func(*models.CheckpointedRequest) bool) {
+	return func(yield func(*models.CheckpointedRequest, error) bool) {
 		for _, model := range queryResult {
 			if !yield(model.FromCqlModel()) {
 				return

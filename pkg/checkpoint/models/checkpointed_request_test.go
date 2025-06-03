@@ -45,10 +45,7 @@ func getFakeRequest() *CheckpointedRequest {
 				DeadlineSeconds:            ptr.Int32(120),
 				MaximumRetries:             ptr.Int32(3),
 			},
-			ErrorHandlingBehaviour: &v1.NexusErrorHandlingBehaviour{
-				TransientExitCodes: []int32{},
-				FatalExitCodes:     []int32{},
-			},
+			ErrorHandlingBehaviour: nil,
 			DatadogIntegrationSettings: &v1.NexusDatadogIntegrationSettings{
 				MountDatadogSocket: ptr.Bool(true),
 			},
@@ -76,7 +73,10 @@ func TestCheckpointedRequest_DeepCopy(t *testing.T) {
 
 func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 	fakeRequest := getFakeRequest()
-	cqlModel := fakeRequest.ToCqlModel()
+	cqlModel, err := fakeRequest.ToCqlModel()
+	if err != nil {
+		t.Errorf("Error when creating CQL model: %s", err)
+	}
 	expectedCqlModel := &CheckpointedRequestCqlModel{
 		Algorithm:               fakeRequest.Algorithm,
 		Id:                      fakeRequest.Id,
@@ -89,7 +89,7 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 		ReceivedAt:              fakeRequest.ReceivedAt,
 		SentAt:                  fakeRequest.SentAt,
 		AppliedConfiguration:    "{\"container\":{\"image\":\"test.io\",\"registry\":\"algorithms/test\",\"versionTag\":\"v1.0.0\",\"serviceAccountName\":\"test-sa\"},\"computeResources\":{\"cpuLimit\":\"1000m\",\"memoryLimit\":\"2000Mi\"},\"workgroupRef\":{\"name\":\"test-workgroup\",\"group\":\"nexus-workgroup.io\",\"kind\":\"KarpenterWorkgroupV1\"},\"command\":\"python\",\"args\":[\"job.py\",\"--request-id 111-222-333 --arg1 true\"],\"runtimeEnvironment\":{\"deadlineSeconds\":120,\"maximumRetries\":3},\"errorHandlingBehaviour\":{},\"datadogIntegrationSettings\":{\"mountDatadogSocket\":true}}",
-		ConfigurationOverrides:  "null",
+		ConfigurationOverrides:  "{}",
 		ContentHash:             fakeRequest.ContentHash,
 		LastModified:            fakeRequest.LastModified,
 		Tag:                     fakeRequest.Tag,
@@ -103,4 +103,22 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 		t.Errorf("Failed to convert request to a cql model %s: values do not match", diff.ObjectGoPrintSideBySide(expectedCqlModel, cqlModel))
 	}
 	t.Log("CheckpointedRequest.ToCqlModel() returns correct result")
+}
+
+func TestCheckpointedRequest_FromCqlModel(t *testing.T) {
+	fakeRequest := getFakeRequest()
+	cqlModel, err := fakeRequest.ToCqlModel()
+	if err != nil {
+		t.Errorf("Error when creating CQL model: %s", err)
+	}
+	fakeRequestFromModel, err := cqlModel.FromCqlModel()
+
+	if err != nil {
+		t.Errorf("Error when converting a CQL model back to a checkpoint: %s", err)
+	}
+
+	if !reflect.DeepEqual(fakeRequest, fakeRequestFromModel) {
+		t.Errorf("Failed to deserialize a checkpoint from its cql model %s: values do not match", diff.ObjectGoPrintSideBySide(fakeRequest, fakeRequestFromModel))
+	}
+	t.Log("CheckpointedRequest.FromCqlModel() returns correct result")
 }
