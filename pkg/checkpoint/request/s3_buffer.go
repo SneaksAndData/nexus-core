@@ -121,12 +121,14 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
-	payloadUri, err := buffer.blobStore.GetBlobUri(buffer.ctx, payloadPath, *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor))
+	payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
+	payloadUri, err := buffer.blobStore.GetBlobUri(buffer.ctx, payloadPath, payloadValidity)
 	if err != nil {
 		return nil, err
 	}
 
 	bufferedCheckpoint.PayloadUri = payloadUri
+	bufferedCheckpoint.PayloadValidFor = payloadValidity.String()
 	bufferedCheckpoint.LifecycleStage = models.LifecycleStageBuffered
 	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup)
 
