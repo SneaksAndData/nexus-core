@@ -9,8 +9,8 @@ import (
 type CheckpointStore interface {
 	UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error
 	ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error)
-	ReadBufferedCheckpointsByHost(host string) (iter.Seq[*models.CheckpointedRequest], error)
-	ReadCheckpointsByTag(requestTag string) (iter.Seq[*models.CheckpointedRequest], error)
+	ReadBufferedCheckpointsByHost(host string) (iter.Seq2[*models.CheckpointedRequest, error], error)
+	ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error)
 }
 
 func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {
