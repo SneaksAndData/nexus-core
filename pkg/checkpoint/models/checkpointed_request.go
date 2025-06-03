@@ -167,6 +167,10 @@ func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error)
 }
 
 func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
+	if c.PayloadValidFor == "" {
+		return nil
+	}
+
 	result, _ := time.ParseDuration(c.PayloadValidFor)
 	return &result
 }
@@ -227,10 +231,12 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 	}
 
 	// check time.Duration
-	_, err = time.ParseDuration(request.PayloadValidFor)
+	if request.PayloadValidFor != "" {
+		_, err = time.ParseDuration(request.PayloadValidFor)
 
-	if err != nil {
-		return nil, nil, err
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return &CheckpointedRequest{
