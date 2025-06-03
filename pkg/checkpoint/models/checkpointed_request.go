@@ -94,6 +94,7 @@ var checkpointColumns = []string{
 	"last_modified",
 	"tag",
 	"api_version",
+	"job_uid",
 	"parent_job",
 	"payload_valid_for",
 }
