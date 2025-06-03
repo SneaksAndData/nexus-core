@@ -397,7 +397,7 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 								Requests: jobResourceList,
 								Limits:   jobResourceList,
 							},
-							Command: strings.Split(" ", c.AppliedConfiguration.Command),
+							Command: strings.Split(c.AppliedConfiguration.Command, " "),
 							Args:    jobArgs,
 							Env: append(c.AppliedConfiguration.RuntimeEnvironment.EnvironmentVariables, []corev1.EnvVar{
 								{
