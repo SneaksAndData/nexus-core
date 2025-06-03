@@ -24,7 +24,7 @@ type BufferConfig struct {
 type BufferInput struct {
 	Checkpoint        *models.CheckpointedRequest
 	ResolvedWorkgroup *v1.NexusAlgorithmWorkgroupSpec
-	SerializedPayload []byte
+	SerializedPayload *[]byte
 	Config            *v1.NexusAlgorithmSpec
 }
 
@@ -50,7 +50,7 @@ func NewBufferInput(requestId string, algorithmName string, request *models.Algo
 	return &BufferInput{
 		Checkpoint:        checkpoint,
 		ResolvedWorkgroup: workgroup,
-		SerializedPayload: serializedPayload,
+		SerializedPayload: &serializedPayload,
 		Config:            config,
 	}, nil
 }

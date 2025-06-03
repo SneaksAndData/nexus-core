@@ -11,6 +11,7 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 	s3credentials "github.com/aws/aws-sdk-go-v2/credentials"
+	"iter"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 )
@@ -85,8 +86,20 @@ func (buffer *DefaultBuffer) Get(requestId string, algorithmName string) (*model
 	return buffer.checkpointStore.ReadCheckpoint(algorithmName, requestId)
 }
 
+func (buffer *DefaultBuffer) GetBuffered(host string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
+	return buffer.checkpointStore.ReadBufferedCheckpointsByHost(host)
+}
+
+func (buffer *DefaultBuffer) GetTagged(tag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
+	return buffer.checkpointStore.ReadCheckpointsByTag(tag)
+}
+
 func (buffer *DefaultBuffer) Update(checkpoint *models.CheckpointedRequest) error {
 	return buffer.checkpointStore.UpsertCheckpoint(checkpoint)
+}
+
+func (buffer *DefaultBuffer) GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
+	return buffer.metadataStore.ReadMetadata(checkpoint)
 }
 
 func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
@@ -103,17 +116,19 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	}
 
 	// TODO: add parent handling
-	if err := buffer.blobStore.SaveTextAsBlob(buffer.ctx, string(input.SerializedPayload), payloadPath); err != nil {
+	if err := buffer.blobStore.SaveTextAsBlob(buffer.ctx, string(*input.SerializedPayload), payloadPath); err != nil {
 		return nil, err
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
-	payloadUri, err := buffer.blobStore.GetBlobUri(buffer.ctx, payloadPath, *util.CoalescePointer(&input.Checkpoint.PayloadValidFor, &buffer.config.BufferConfig.PayloadValidFor))
+	payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
+	payloadUri, err := buffer.blobStore.GetBlobUri(buffer.ctx, payloadPath, payloadValidity)
 	if err != nil {
 		return nil, err
 	}
 
 	bufferedCheckpoint.PayloadUri = payloadUri
+	bufferedCheckpoint.PayloadValidFor = payloadValidity.String()
 	bufferedCheckpoint.LifecycleStage = models.LifecycleStageBuffered
 	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup)
 

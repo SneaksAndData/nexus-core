@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/aws/smithy-go/ptr"
@@ -52,7 +53,7 @@ type CheckpointedRequest struct {
 	ApiVersion              string                 `json:"api_version"`
 	JobUid                  string                 `json:"job_uid,omitempty"`
 	ParentJob               *ParentJobReference    `json:"parent_job,omitempty"`
-	PayloadValidFor         time.Duration          `json:"payload_valid_for,omitempty"`
+	PayloadValidFor         string                 `json:"payload_valid_for,omitempty"`
 }
 
 type CheckpointedRequestCqlModel struct {
@@ -77,28 +78,33 @@ type CheckpointedRequestCqlModel struct {
 	PayloadValidFor         string
 }
 
+var checkpointColumns = []string{
+	"algorithm",
+	"id",
+	"lifecycle_stage",
+	"payload_uri",
+	"result_uri",
+	"algorithm_failure_cause",
+	"algorithm_failure_details",
+	"received_by_host",
+	"received_at",
+	"sent_at",
+	"applied_configuration",
+	"configuration_overrides",
+	"content_hash",
+	"last_modified",
+	"tag",
+	"api_version",
+	"job_uid",
+	"parent_job",
+	"payload_valid_for",
+}
+
+const tableName = "nexus.checkpoints"
+
 var CheckpointedRequestTable = table.New(table.Metadata{
-	Name: "nexus.checkpoints",
-	Columns: []string{
-		"algorithm",
-		"id",
-		"lifecycle_stage",
-		"payload_uri",
-		"result_uri",
-		"algorithm_failure_cause",
-		"algorithm_failure_details",
-		"received_by_host",
-		"received_at",
-		"sent_at",
-		"applied_configuration",
-		"configuration_overrides",
-		"content_hash",
-		"last_modified",
-		"tag",
-		"api_version",
-		"parent_job",
-		"payload_valid_for",
-	},
+	Name:    tableName,
+	Columns: checkpointColumns,
 	PartKey: []string{
 		"algorithm",
 		"id",
@@ -106,9 +112,36 @@ var CheckpointedRequestTable = table.New(table.Metadata{
 	SortKey: []string{},
 })
 
-func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
-	serializedConfig, _ := json.Marshal(c.AppliedConfiguration)
-	serializedOverrides, _ := json.Marshal(c.ConfigurationOverrides)
+var CheckpointedRequestTableIndexByHost = table.New(table.Metadata{
+	Name:    tableName,
+	Columns: checkpointColumns,
+	PartKey: []string{
+		"received_by_host",
+		"lifecycle_stage",
+	},
+	SortKey: []string{},
+})
+
+var CheckpointedRequestTableIndexByTag = table.New(table.Metadata{
+	Name:    tableName,
+	Columns: checkpointColumns,
+	PartKey: []string{
+		"tag",
+	},
+	SortKey: []string{},
+})
+
+func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error) {
+	serializedOverrides := []byte("{}")
+	serializedConfig, err := json.Marshal(c.AppliedConfiguration)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if c.ConfigurationOverrides != nil {
+		serializedOverrides, _ = json.Marshal(c.ConfigurationOverrides)
+	}
 
 	return &CheckpointedRequestCqlModel{
 		Algorithm:               c.Algorithm,
@@ -129,16 +162,42 @@ func (c *CheckpointedRequest) ToCqlModel() *CheckpointedRequestCqlModel {
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
 		ParentJob:               "", // TODO: fixme
-		PayloadValidFor:         c.PayloadValidFor.String(),
-	}
+		PayloadValidFor:         c.PayloadValidFor,
+	}, nil
 }
 
-func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
-	var appliedConfig *v1.NexusAlgorithmSpec
+func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
+	if c.PayloadValidFor == "" {
+		return nil
+	}
+
+	result, _ := time.ParseDuration(c.PayloadValidFor)
+	return &result
+}
+
+func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, error) {
+	appliedConfig := &v1.NexusAlgorithmSpec{}
 	var overrides *v1.NexusAlgorithmSpec
-	_ = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
-	_ = json.Unmarshal([]byte(c.ConfigurationOverrides), overrides)
-	duration, _ := time.ParseDuration(c.PayloadValidFor)
+	var parentJob *ParentJobReference
+
+	var unmarshalErr error
+
+	// ignore override unmarshal if set to empty object
+	if c.ConfigurationOverrides == "{}" || c.ConfigurationOverrides == "" {
+		unmarshalErr = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
+	} else {
+		overrides = &v1.NexusAlgorithmSpec{}
+		unmarshalErr = errors.Join(json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig), json.Unmarshal([]byte(c.ConfigurationOverrides), overrides))
+	}
+
+	if c.ParentJob != "" && c.ParentJob != "{}" {
+		parentJob = &ParentJobReference{}
+		unmarshalErr = errors.Join(unmarshalErr, json.Unmarshal([]byte(c.ParentJob), parentJob))
+	}
+
+	if unmarshalErr != nil {
+		return nil, unmarshalErr
+	}
 
 	return &CheckpointedRequest{
 		Algorithm:               c.Algorithm,
@@ -158,9 +217,9 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() *CheckpointedRequest {
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               &ParentJobReference{},
-		PayloadValidFor:         duration,
-	}
+		ParentJob:               parentJob,
+		PayloadValidFor:         c.PayloadValidFor,
+	}, nil
 }
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
@@ -169,6 +228,15 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// check time.Duration
+	if request.PayloadValidFor != "" {
+		_, err = time.ParseDuration(request.PayloadValidFor)
+
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	return &CheckpointedRequest{
@@ -183,7 +251,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		JobUid:                 "",
 		ParentJob:              &ParentJobReference{}, // TODO: add support for parent job
 		ApiVersion:             request.RequestApiVersion,
-		AppliedConfiguration:   config,
+		AppliedConfiguration:   config.Merge(request.CustomConfiguration),
 		PayloadValidFor:        request.PayloadValidFor,
 	}, serializedPayload, nil
 }
@@ -207,7 +275,7 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               &ParentJobReference{},
+		ParentJob:               c.ParentJob,
 		PayloadValidFor:         c.PayloadValidFor,
 	}
 }
@@ -329,7 +397,7 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 								Requests: jobResourceList,
 								Limits:   jobResourceList,
 							},
-							Command: strings.Split(" ", c.AppliedConfiguration.Command),
+							Command: strings.Split(c.AppliedConfiguration.Command, " "),
 							Args:    jobArgs,
 							Env: append(c.AppliedConfiguration.RuntimeEnvironment.EnvironmentVariables, []corev1.EnvVar{
 								{

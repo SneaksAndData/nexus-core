@@ -125,6 +125,10 @@ type NexusAlgorithmSpec struct {
 }
 
 func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithmSpec {
+	if other == nil {
+		return spec
+	}
+
 	cloned := spec.DeepCopy()
 	otherCloned := other.DeepCopy()
 
