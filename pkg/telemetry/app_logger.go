@@ -30,8 +30,8 @@ import (
 // LoggingDisabled holds a value to use when logging should be globally disabled, without removing the log handler
 const LoggingDisabled = "DISABLED"
 
-// LevelLoggingEnabled sets the slog log level for LoggingDisabled string constant
-const LevelLoggingEnabled slog.Level = 100
+// LevelLoggingDisabled sets the slog log level for LoggingDisabled string constant
+const LevelLoggingDisabled slog.Level = 100
 
 type DatadogLoggerConfiguration struct {
 	Endpoint    string
@@ -73,7 +73,7 @@ func newDatadogClient(endpoint string, apiKey string, rootCtx context.Context) (
 
 func parseSLogLevel(levelText string) slog.Level { // coverage-ignore
 	if levelText == LoggingDisabled {
-		return LevelLoggingEnabled
+		return LevelLoggingDisabled
 	}
 
 	var level slog.Level
@@ -88,7 +88,7 @@ func parseSLogLevel(levelText string) slog.Level { // coverage-ignore
 func ConfigureLogger(ctx context.Context, globalTags map[string]string, logLevel string) (*slog.Logger, error) { // coverage-ignore
 	slogLevel := parseSLogLevel(logLevel)
 
-	if slogLevel == LevelLoggingEnabled {
+	if slogLevel == LevelLoggingDisabled {
 		return slog.New(slog.DiscardHandler), nil
 	}
 
