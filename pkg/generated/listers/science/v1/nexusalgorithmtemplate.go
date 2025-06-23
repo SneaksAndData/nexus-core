@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // NexusAlgorithmTemplateLister helps list NexusAlgorithmTemplates.
@@ -30,7 +30,7 @@ import (
 type NexusAlgorithmTemplateLister interface {
 	// List lists all NexusAlgorithmTemplates in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.NexusAlgorithmTemplate, err error)
+	List(selector labels.Selector) (ret []*sciencev1.NexusAlgorithmTemplate, err error)
 	// NexusAlgorithmTemplates returns an object that can list and get NexusAlgorithmTemplates.
 	NexusAlgorithmTemplates(namespace string) NexusAlgorithmTemplateNamespaceLister
 	NexusAlgorithmTemplateListerExpansion
@@ -38,17 +38,17 @@ type NexusAlgorithmTemplateLister interface {
 
 // nexusAlgorithmTemplateLister implements the NexusAlgorithmTemplateLister interface.
 type nexusAlgorithmTemplateLister struct {
-	listers.ResourceIndexer[*v1.NexusAlgorithmTemplate]
+	listers.ResourceIndexer[*sciencev1.NexusAlgorithmTemplate]
 }
 
 // NewNexusAlgorithmTemplateLister returns a new NexusAlgorithmTemplateLister.
 func NewNexusAlgorithmTemplateLister(indexer cache.Indexer) NexusAlgorithmTemplateLister {
-	return &nexusAlgorithmTemplateLister{listers.New[*v1.NexusAlgorithmTemplate](indexer, v1.Resource("nexusalgorithmtemplate"))}
+	return &nexusAlgorithmTemplateLister{listers.New[*sciencev1.NexusAlgorithmTemplate](indexer, sciencev1.Resource("nexusalgorithmtemplate"))}
 }
 
 // NexusAlgorithmTemplates returns an object that can list and get NexusAlgorithmTemplates.
 func (s *nexusAlgorithmTemplateLister) NexusAlgorithmTemplates(namespace string) NexusAlgorithmTemplateNamespaceLister {
-	return nexusAlgorithmTemplateNamespaceLister{listers.NewNamespaced[*v1.NexusAlgorithmTemplate](s.ResourceIndexer, namespace)}
+	return nexusAlgorithmTemplateNamespaceLister{listers.NewNamespaced[*sciencev1.NexusAlgorithmTemplate](s.ResourceIndexer, namespace)}
 }
 
 // NexusAlgorithmTemplateNamespaceLister helps list and get NexusAlgorithmTemplates.
@@ -56,15 +56,15 @@ func (s *nexusAlgorithmTemplateLister) NexusAlgorithmTemplates(namespace string)
 type NexusAlgorithmTemplateNamespaceLister interface {
 	// List lists all NexusAlgorithmTemplates in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.NexusAlgorithmTemplate, err error)
+	List(selector labels.Selector) (ret []*sciencev1.NexusAlgorithmTemplate, err error)
 	// Get retrieves the NexusAlgorithmTemplate from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.NexusAlgorithmTemplate, error)
+	Get(name string) (*sciencev1.NexusAlgorithmTemplate, error)
 	NexusAlgorithmTemplateNamespaceListerExpansion
 }
 
 // nexusAlgorithmTemplateNamespaceLister implements the NexusAlgorithmTemplateNamespaceLister
 // interface.
 type nexusAlgorithmTemplateNamespaceLister struct {
-	listers.ResourceIndexer[*v1.NexusAlgorithmTemplate]
+	listers.ResourceIndexer[*sciencev1.NexusAlgorithmTemplate]
 }

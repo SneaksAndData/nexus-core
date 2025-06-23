@@ -92,7 +92,7 @@ func filterInformerActions(actions []core.Action) []core.Action {
 // checkAction verifies that expected and actual actions are equal and both have
 // same attached resources
 func checkAction(expected, actual core.Action, t *testing.T) {
-	if !(expected.Matches(actual.GetVerb(), actual.GetResource().Resource) && actual.GetSubresource() == expected.GetSubresource()) {
+	if !expected.Matches(actual.GetVerb(), actual.GetResource().Resource) || (actual.GetSubresource() != expected.GetSubresource()) {
 		t.Errorf("Expected\n\t%#v\ngot\n\t%#v", expected, actual)
 		return
 	}
@@ -393,8 +393,8 @@ func TestShard_CreateSecret(t *testing.T) {
 	_, ctx := ktesting.NewTestContext(t)
 
 	expectedSecret := secret.DeepCopy()
-	expectedSecret.ObjectMeta.Labels = fakeReferenceLabels()
-	expectedSecret.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+	expectedSecret.Labels = fakeReferenceLabels()
+	expectedSecret.OwnerReferences = []metav1.OwnerReference{
 		{
 			APIVersion: nexusv1.SchemeGroupVersion.String(),
 			Kind:       "NexusAlgorithmTemplate",
@@ -441,8 +441,8 @@ func TestShard_CreateConfigMap(t *testing.T) {
 	_, ctx := ktesting.NewTestContext(t)
 
 	expectedConfigMap := configMap.DeepCopy()
-	expectedConfigMap.ObjectMeta.Labels = fakeReferenceLabels()
-	expectedConfigMap.ObjectMeta.OwnerReferences = []metav1.OwnerReference{
+	expectedConfigMap.Labels = fakeReferenceLabels()
+	expectedConfigMap.OwnerReferences = []metav1.OwnerReference{
 		{
 			APIVersion: nexusv1.SchemeGroupVersion.String(),
 			Kind:       "NexusAlgorithmTemplate",

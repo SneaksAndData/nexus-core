@@ -19,8 +19,8 @@ limitations under the License.
 package versioned
 
 import (
-	"fmt"
-	"net/http"
+	fmt "fmt"
+	http "net/http"
 
 	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
 	discovery "k8s.io/client-go/discovery"

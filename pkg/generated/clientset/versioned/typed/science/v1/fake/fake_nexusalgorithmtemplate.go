@@ -19,129 +19,34 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeNexusAlgorithmTemplates implements NexusAlgorithmTemplateInterface
-type FakeNexusAlgorithmTemplates struct {
+// fakeNexusAlgorithmTemplates implements NexusAlgorithmTemplateInterface
+type fakeNexusAlgorithmTemplates struct {
+	*gentype.FakeClientWithList[*v1.NexusAlgorithmTemplate, *v1.NexusAlgorithmTemplateList]
 	Fake *FakeScienceV1
-	ns   string
 }
 
-var nexusalgorithmtemplatesResource = v1.SchemeGroupVersion.WithResource("nexusalgorithmtemplates")
-
-var nexusalgorithmtemplatesKind = v1.SchemeGroupVersion.WithKind("NexusAlgorithmTemplate")
-
-// Get takes name of the nexusAlgorithmTemplate, and returns the corresponding nexusAlgorithmTemplate object, and an error if there is any.
-func (c *FakeNexusAlgorithmTemplates) Get(ctx context.Context, name string, options metav1.GetOptions) (result *v1.NexusAlgorithmTemplate, err error) {
-	emptyResult := &v1.NexusAlgorithmTemplate{}
-	obj, err := c.Fake.
-		Invokes(testing.NewGetActionWithOptions(nexusalgorithmtemplatesResource, c.ns, name, options), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
+func newFakeNexusAlgorithmTemplates(fake *FakeScienceV1, namespace string) sciencev1.NexusAlgorithmTemplateInterface {
+	return &fakeNexusAlgorithmTemplates{
+		gentype.NewFakeClientWithList[*v1.NexusAlgorithmTemplate, *v1.NexusAlgorithmTemplateList](
+			fake.Fake,
+			namespace,
+			v1.SchemeGroupVersion.WithResource("nexusalgorithmtemplates"),
+			v1.SchemeGroupVersion.WithKind("NexusAlgorithmTemplate"),
+			func() *v1.NexusAlgorithmTemplate { return &v1.NexusAlgorithmTemplate{} },
+			func() *v1.NexusAlgorithmTemplateList { return &v1.NexusAlgorithmTemplateList{} },
+			func(dst, src *v1.NexusAlgorithmTemplateList) { dst.ListMeta = src.ListMeta },
+			func(list *v1.NexusAlgorithmTemplateList) []*v1.NexusAlgorithmTemplate {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1.NexusAlgorithmTemplateList, items []*v1.NexusAlgorithmTemplate) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1.NexusAlgorithmTemplate), err
-}
-
-// List takes label and field selectors, and returns the list of NexusAlgorithmTemplates that match those selectors.
-func (c *FakeNexusAlgorithmTemplates) List(ctx context.Context, opts metav1.ListOptions) (result *v1.NexusAlgorithmTemplateList, err error) {
-	emptyResult := &v1.NexusAlgorithmTemplateList{}
-	obj, err := c.Fake.
-		Invokes(testing.NewListActionWithOptions(nexusalgorithmtemplatesResource, nexusalgorithmtemplatesKind, c.ns, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1.NexusAlgorithmTemplateList{ListMeta: obj.(*v1.NexusAlgorithmTemplateList).ListMeta}
-	for _, item := range obj.(*v1.NexusAlgorithmTemplateList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested nexusAlgorithmTemplates.
-func (c *FakeNexusAlgorithmTemplates) Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchActionWithOptions(nexusalgorithmtemplatesResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a nexusAlgorithmTemplate and creates it.  Returns the server's representation of the nexusAlgorithmTemplate, and an error, if there is any.
-func (c *FakeNexusAlgorithmTemplates) Create(ctx context.Context, nexusAlgorithmTemplate *v1.NexusAlgorithmTemplate, opts metav1.CreateOptions) (result *v1.NexusAlgorithmTemplate, err error) {
-	emptyResult := &v1.NexusAlgorithmTemplate{}
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateActionWithOptions(nexusalgorithmtemplatesResource, c.ns, nexusAlgorithmTemplate, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1.NexusAlgorithmTemplate), err
-}
-
-// Update takes the representation of a nexusAlgorithmTemplate and updates it. Returns the server's representation of the nexusAlgorithmTemplate, and an error, if there is any.
-func (c *FakeNexusAlgorithmTemplates) Update(ctx context.Context, nexusAlgorithmTemplate *v1.NexusAlgorithmTemplate, opts metav1.UpdateOptions) (result *v1.NexusAlgorithmTemplate, err error) {
-	emptyResult := &v1.NexusAlgorithmTemplate{}
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateActionWithOptions(nexusalgorithmtemplatesResource, c.ns, nexusAlgorithmTemplate, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1.NexusAlgorithmTemplate), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeNexusAlgorithmTemplates) UpdateStatus(ctx context.Context, nexusAlgorithmTemplate *v1.NexusAlgorithmTemplate, opts metav1.UpdateOptions) (result *v1.NexusAlgorithmTemplate, err error) {
-	emptyResult := &v1.NexusAlgorithmTemplate{}
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceActionWithOptions(nexusalgorithmtemplatesResource, "status", c.ns, nexusAlgorithmTemplate, opts), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1.NexusAlgorithmTemplate), err
-}
-
-// Delete takes name of the nexusAlgorithmTemplate and deletes it. Returns an error if one occurs.
-func (c *FakeNexusAlgorithmTemplates) Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(nexusalgorithmtemplatesResource, c.ns, name, opts), &v1.NexusAlgorithmTemplate{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeNexusAlgorithmTemplates) DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error {
-	action := testing.NewDeleteCollectionActionWithOptions(nexusalgorithmtemplatesResource, c.ns, opts, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1.NexusAlgorithmTemplateList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched nexusAlgorithmTemplate.
-func (c *FakeNexusAlgorithmTemplates) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.NexusAlgorithmTemplate, err error) {
-	emptyResult := &v1.NexusAlgorithmTemplate{}
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceActionWithOptions(nexusalgorithmtemplatesResource, c.ns, name, pt, data, opts, subresources...), emptyResult)
-
-	if obj == nil {
-		return emptyResult, err
-	}
-	return obj.(*v1.NexusAlgorithmTemplate), err
 }

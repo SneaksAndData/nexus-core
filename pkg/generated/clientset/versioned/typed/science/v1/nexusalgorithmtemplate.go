@@ -19,9 +19,9 @@ limitations under the License.
 package v1
 
 import (
-	"context"
+	context "context"
 
-	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	scheme "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -37,33 +37,34 @@ type NexusAlgorithmTemplatesGetter interface {
 
 // NexusAlgorithmTemplateInterface has methods to work with NexusAlgorithmTemplate resources.
 type NexusAlgorithmTemplateInterface interface {
-	Create(ctx context.Context, nexusAlgorithmTemplate *v1.NexusAlgorithmTemplate, opts metav1.CreateOptions) (*v1.NexusAlgorithmTemplate, error)
-	Update(ctx context.Context, nexusAlgorithmTemplate *v1.NexusAlgorithmTemplate, opts metav1.UpdateOptions) (*v1.NexusAlgorithmTemplate, error)
+	Create(ctx context.Context, nexusAlgorithmTemplate *sciencev1.NexusAlgorithmTemplate, opts metav1.CreateOptions) (*sciencev1.NexusAlgorithmTemplate, error)
+	Update(ctx context.Context, nexusAlgorithmTemplate *sciencev1.NexusAlgorithmTemplate, opts metav1.UpdateOptions) (*sciencev1.NexusAlgorithmTemplate, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, nexusAlgorithmTemplate *v1.NexusAlgorithmTemplate, opts metav1.UpdateOptions) (*v1.NexusAlgorithmTemplate, error)
+	UpdateStatus(ctx context.Context, nexusAlgorithmTemplate *sciencev1.NexusAlgorithmTemplate, opts metav1.UpdateOptions) (*sciencev1.NexusAlgorithmTemplate, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.NexusAlgorithmTemplate, error)
-	List(ctx context.Context, opts metav1.ListOptions) (*v1.NexusAlgorithmTemplateList, error)
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*sciencev1.NexusAlgorithmTemplate, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*sciencev1.NexusAlgorithmTemplateList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.NexusAlgorithmTemplate, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *sciencev1.NexusAlgorithmTemplate, err error)
 	NexusAlgorithmTemplateExpansion
 }
 
 // nexusAlgorithmTemplates implements NexusAlgorithmTemplateInterface
 type nexusAlgorithmTemplates struct {
-	*gentype.ClientWithList[*v1.NexusAlgorithmTemplate, *v1.NexusAlgorithmTemplateList]
+	*gentype.ClientWithList[*sciencev1.NexusAlgorithmTemplate, *sciencev1.NexusAlgorithmTemplateList]
 }
 
 // newNexusAlgorithmTemplates returns a NexusAlgorithmTemplates
 func newNexusAlgorithmTemplates(c *ScienceV1Client, namespace string) *nexusAlgorithmTemplates {
 	return &nexusAlgorithmTemplates{
-		gentype.NewClientWithList[*v1.NexusAlgorithmTemplate, *v1.NexusAlgorithmTemplateList](
+		gentype.NewClientWithList[*sciencev1.NexusAlgorithmTemplate, *sciencev1.NexusAlgorithmTemplateList](
 			"nexusalgorithmtemplates",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1.NexusAlgorithmTemplate { return &v1.NexusAlgorithmTemplate{} },
-			func() *v1.NexusAlgorithmTemplateList { return &v1.NexusAlgorithmTemplateList{} }),
+			func() *sciencev1.NexusAlgorithmTemplate { return &sciencev1.NexusAlgorithmTemplate{} },
+			func() *sciencev1.NexusAlgorithmTemplateList { return &sciencev1.NexusAlgorithmTemplateList{} },
+		),
 	}
 }
