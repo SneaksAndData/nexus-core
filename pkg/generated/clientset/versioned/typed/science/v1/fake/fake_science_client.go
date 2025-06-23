@@ -29,11 +29,11 @@ type FakeScienceV1 struct {
 }
 
 func (c *FakeScienceV1) NexusAlgorithmTemplates(namespace string) v1.NexusAlgorithmTemplateInterface {
-	return &FakeNexusAlgorithmTemplates{c, namespace}
+	return newFakeNexusAlgorithmTemplates(c, namespace)
 }
 
 func (c *FakeScienceV1) NexusAlgorithmWorkgroups(namespace string) v1.NexusAlgorithmWorkgroupInterface {
-	return &FakeNexusAlgorithmWorkgroups{c, namespace}
+	return newFakeNexusAlgorithmWorkgroups(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

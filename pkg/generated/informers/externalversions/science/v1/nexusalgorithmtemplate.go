@@ -19,13 +19,13 @@ limitations under the License.
 package v1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	apissciencev1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	versioned "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned"
 	internalinterfaces "github.com/SneaksAndData/nexus-core/pkg/generated/informers/externalversions/internalinterfaces"
-	v1 "github.com/SneaksAndData/nexus-core/pkg/generated/listers/science/v1"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/listers/science/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -36,7 +36,7 @@ import (
 // NexusAlgorithmTemplates.
 type NexusAlgorithmTemplateInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1.NexusAlgorithmTemplateLister
+	Lister() sciencev1.NexusAlgorithmTemplateLister
 }
 
 type nexusAlgorithmTemplateInformer struct {
@@ -62,16 +62,28 @@ func NewFilteredNexusAlgorithmTemplateInformer(client versioned.Interface, names
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ScienceV1().NexusAlgorithmTemplates(namespace).List(context.TODO(), options)
+				return client.ScienceV1().NexusAlgorithmTemplates(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.ScienceV1().NexusAlgorithmTemplates(namespace).Watch(context.TODO(), options)
+				return client.ScienceV1().NexusAlgorithmTemplates(namespace).Watch(context.Background(), options)
+			},
+			ListWithContextFunc: func(ctx context.Context, options metav1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ScienceV1().NexusAlgorithmTemplates(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options metav1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.ScienceV1().NexusAlgorithmTemplates(namespace).Watch(ctx, options)
 			},
 		},
-		&sciencev1.NexusAlgorithmTemplate{},
+		&apissciencev1.NexusAlgorithmTemplate{},
 		resyncPeriod,
 		indexers,
 	)
@@ -82,9 +94,9 @@ func (f *nexusAlgorithmTemplateInformer) defaultInformer(client versioned.Interf
 }
 
 func (f *nexusAlgorithmTemplateInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&sciencev1.NexusAlgorithmTemplate{}, f.defaultInformer)
+	return f.factory.InformerFor(&apissciencev1.NexusAlgorithmTemplate{}, f.defaultInformer)
 }
 
-func (f *nexusAlgorithmTemplateInformer) Lister() v1.NexusAlgorithmTemplateLister {
-	return v1.NewNexusAlgorithmTemplateLister(f.Informer().GetIndexer())
+func (f *nexusAlgorithmTemplateInformer) Lister() sciencev1.NexusAlgorithmTemplateLister {
+	return sciencev1.NewNexusAlgorithmTemplateLister(f.Informer().GetIndexer())
 }

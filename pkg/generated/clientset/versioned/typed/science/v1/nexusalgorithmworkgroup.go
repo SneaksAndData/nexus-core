@@ -19,9 +19,9 @@ limitations under the License.
 package v1
 
 import (
-	"context"
+	context "context"
 
-	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	scheme "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -37,33 +37,34 @@ type NexusAlgorithmWorkgroupsGetter interface {
 
 // NexusAlgorithmWorkgroupInterface has methods to work with NexusAlgorithmWorkgroup resources.
 type NexusAlgorithmWorkgroupInterface interface {
-	Create(ctx context.Context, nexusAlgorithmWorkgroup *v1.NexusAlgorithmWorkgroup, opts metav1.CreateOptions) (*v1.NexusAlgorithmWorkgroup, error)
-	Update(ctx context.Context, nexusAlgorithmWorkgroup *v1.NexusAlgorithmWorkgroup, opts metav1.UpdateOptions) (*v1.NexusAlgorithmWorkgroup, error)
+	Create(ctx context.Context, nexusAlgorithmWorkgroup *sciencev1.NexusAlgorithmWorkgroup, opts metav1.CreateOptions) (*sciencev1.NexusAlgorithmWorkgroup, error)
+	Update(ctx context.Context, nexusAlgorithmWorkgroup *sciencev1.NexusAlgorithmWorkgroup, opts metav1.UpdateOptions) (*sciencev1.NexusAlgorithmWorkgroup, error)
 	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-	UpdateStatus(ctx context.Context, nexusAlgorithmWorkgroup *v1.NexusAlgorithmWorkgroup, opts metav1.UpdateOptions) (*v1.NexusAlgorithmWorkgroup, error)
+	UpdateStatus(ctx context.Context, nexusAlgorithmWorkgroup *sciencev1.NexusAlgorithmWorkgroup, opts metav1.UpdateOptions) (*sciencev1.NexusAlgorithmWorkgroup, error)
 	Delete(ctx context.Context, name string, opts metav1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts metav1.DeleteOptions, listOpts metav1.ListOptions) error
-	Get(ctx context.Context, name string, opts metav1.GetOptions) (*v1.NexusAlgorithmWorkgroup, error)
-	List(ctx context.Context, opts metav1.ListOptions) (*v1.NexusAlgorithmWorkgroupList, error)
+	Get(ctx context.Context, name string, opts metav1.GetOptions) (*sciencev1.NexusAlgorithmWorkgroup, error)
+	List(ctx context.Context, opts metav1.ListOptions) (*sciencev1.NexusAlgorithmWorkgroupList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *v1.NexusAlgorithmWorkgroup, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *sciencev1.NexusAlgorithmWorkgroup, err error)
 	NexusAlgorithmWorkgroupExpansion
 }
 
 // nexusAlgorithmWorkgroups implements NexusAlgorithmWorkgroupInterface
 type nexusAlgorithmWorkgroups struct {
-	*gentype.ClientWithList[*v1.NexusAlgorithmWorkgroup, *v1.NexusAlgorithmWorkgroupList]
+	*gentype.ClientWithList[*sciencev1.NexusAlgorithmWorkgroup, *sciencev1.NexusAlgorithmWorkgroupList]
 }
 
 // newNexusAlgorithmWorkgroups returns a NexusAlgorithmWorkgroups
 func newNexusAlgorithmWorkgroups(c *ScienceV1Client, namespace string) *nexusAlgorithmWorkgroups {
 	return &nexusAlgorithmWorkgroups{
-		gentype.NewClientWithList[*v1.NexusAlgorithmWorkgroup, *v1.NexusAlgorithmWorkgroupList](
+		gentype.NewClientWithList[*sciencev1.NexusAlgorithmWorkgroup, *sciencev1.NexusAlgorithmWorkgroupList](
 			"nexusalgorithmworkgroups",
 			c.RESTClient(),
 			scheme.ParameterCodec,
 			namespace,
-			func() *v1.NexusAlgorithmWorkgroup { return &v1.NexusAlgorithmWorkgroup{} },
-			func() *v1.NexusAlgorithmWorkgroupList { return &v1.NexusAlgorithmWorkgroupList{} }),
+			func() *sciencev1.NexusAlgorithmWorkgroup { return &sciencev1.NexusAlgorithmWorkgroup{} },
+			func() *sciencev1.NexusAlgorithmWorkgroupList { return &sciencev1.NexusAlgorithmWorkgroupList{} },
+		),
 	}
 }

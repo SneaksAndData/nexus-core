@@ -19,10 +19,10 @@ limitations under the License.
 package v1
 
 import (
-	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/listers"
-	"k8s.io/client-go/tools/cache"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // NexusAlgorithmWorkgroupLister helps list NexusAlgorithmWorkgroups.
@@ -30,7 +30,7 @@ import (
 type NexusAlgorithmWorkgroupLister interface {
 	// List lists all NexusAlgorithmWorkgroups in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.NexusAlgorithmWorkgroup, err error)
+	List(selector labels.Selector) (ret []*sciencev1.NexusAlgorithmWorkgroup, err error)
 	// NexusAlgorithmWorkgroups returns an object that can list and get NexusAlgorithmWorkgroups.
 	NexusAlgorithmWorkgroups(namespace string) NexusAlgorithmWorkgroupNamespaceLister
 	NexusAlgorithmWorkgroupListerExpansion
@@ -38,17 +38,17 @@ type NexusAlgorithmWorkgroupLister interface {
 
 // nexusAlgorithmWorkgroupLister implements the NexusAlgorithmWorkgroupLister interface.
 type nexusAlgorithmWorkgroupLister struct {
-	listers.ResourceIndexer[*v1.NexusAlgorithmWorkgroup]
+	listers.ResourceIndexer[*sciencev1.NexusAlgorithmWorkgroup]
 }
 
 // NewNexusAlgorithmWorkgroupLister returns a new NexusAlgorithmWorkgroupLister.
 func NewNexusAlgorithmWorkgroupLister(indexer cache.Indexer) NexusAlgorithmWorkgroupLister {
-	return &nexusAlgorithmWorkgroupLister{listers.New[*v1.NexusAlgorithmWorkgroup](indexer, v1.Resource("nexusalgorithmworkgroup"))}
+	return &nexusAlgorithmWorkgroupLister{listers.New[*sciencev1.NexusAlgorithmWorkgroup](indexer, sciencev1.Resource("nexusalgorithmworkgroup"))}
 }
 
 // NexusAlgorithmWorkgroups returns an object that can list and get NexusAlgorithmWorkgroups.
 func (s *nexusAlgorithmWorkgroupLister) NexusAlgorithmWorkgroups(namespace string) NexusAlgorithmWorkgroupNamespaceLister {
-	return nexusAlgorithmWorkgroupNamespaceLister{listers.NewNamespaced[*v1.NexusAlgorithmWorkgroup](s.ResourceIndexer, namespace)}
+	return nexusAlgorithmWorkgroupNamespaceLister{listers.NewNamespaced[*sciencev1.NexusAlgorithmWorkgroup](s.ResourceIndexer, namespace)}
 }
 
 // NexusAlgorithmWorkgroupNamespaceLister helps list and get NexusAlgorithmWorkgroups.
@@ -56,15 +56,15 @@ func (s *nexusAlgorithmWorkgroupLister) NexusAlgorithmWorkgroups(namespace strin
 type NexusAlgorithmWorkgroupNamespaceLister interface {
 	// List lists all NexusAlgorithmWorkgroups in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1.NexusAlgorithmWorkgroup, err error)
+	List(selector labels.Selector) (ret []*sciencev1.NexusAlgorithmWorkgroup, err error)
 	// Get retrieves the NexusAlgorithmWorkgroup from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1.NexusAlgorithmWorkgroup, error)
+	Get(name string) (*sciencev1.NexusAlgorithmWorkgroup, error)
 	NexusAlgorithmWorkgroupNamespaceListerExpansion
 }
 
 // nexusAlgorithmWorkgroupNamespaceLister implements the NexusAlgorithmWorkgroupNamespaceLister
 // interface.
 type nexusAlgorithmWorkgroupNamespaceLister struct {
-	listers.ResourceIndexer[*v1.NexusAlgorithmWorkgroup]
+	listers.ResourceIndexer[*sciencev1.NexusAlgorithmWorkgroup]
 }
