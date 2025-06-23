@@ -27,6 +27,12 @@ import (
 	"time"
 )
 
+// LoggingDisabled holds a value to use when logging should be globally disabled, without removing the log handler
+const LoggingDisabled = "DISABLED"
+
+// LevelLoggingEnabled sets the slog log level for LoggingDisabled string constant
+const LevelLoggingEnabled slog.Level = 100
+
 type DatadogLoggerConfiguration struct {
 	Endpoint    string
 	ApiKey      string
@@ -66,6 +72,10 @@ func newDatadogClient(endpoint string, apiKey string, rootCtx context.Context) (
 }
 
 func parseSLogLevel(levelText string) slog.Level { // coverage-ignore
+	if levelText == LoggingDisabled {
+		return LevelLoggingEnabled
+	}
+
 	var level slog.Level
 	var err = level.UnmarshalText([]byte(levelText))
 	if err != nil {
