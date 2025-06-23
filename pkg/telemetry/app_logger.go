@@ -87,6 +87,11 @@ func parseSLogLevel(levelText string) slog.Level { // coverage-ignore
 
 func ConfigureLogger(ctx context.Context, globalTags map[string]string, logLevel string) (*slog.Logger, error) { // coverage-ignore
 	slogLevel := parseSLogLevel(logLevel)
+
+	if slogLevel == LevelLoggingEnabled {
+		return slog.New(slog.DiscardHandler), nil
+	}
+
 	loggerConfig, err := NewDatadogLoggerConfiguration()
 	// in case DD logger cannot be configured, use text handler and return error, so we can warn the user they are not getting DD logs recorded
 	if err != nil {
