@@ -132,16 +132,31 @@ func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithm
 	cloned := spec.DeepCopy()
 	otherCloned := other.DeepCopy()
 
-	cloned.Container = util.CoalescePointer(otherCloned.Container, cloned.Container)
-	cloned.ComputeResources = util.CoalescePointer(otherCloned.ComputeResources, cloned.ComputeResources)
-	cloned.WorkgroupRef = util.CoalescePointer(otherCloned.WorkgroupRef, cloned.WorkgroupRef)
-	cloned.Command = util.CoalesceString(otherCloned.Command, cloned.Command)
-	cloned.Args = util.CoalesceCollection[string](otherCloned.Args, cloned.Args)
+	if otherCloned.Container != nil {
+		cloned.Container.Image = util.CoalesceString(otherCloned.Container.Image, cloned.Container.Image)
+		cloned.Container.Registry = util.CoalesceString(otherCloned.Container.Registry, cloned.Container.Registry)
+		cloned.Container.VersionTag = util.CoalesceString(otherCloned.Container.VersionTag, cloned.Container.VersionTag)
+		// ServiceAccountName override is always ignored
+	}
 
-	cloned.RuntimeEnvironment = util.CoalescePointer(otherCloned.RuntimeEnvironment, cloned.RuntimeEnvironment)
-	cloned.ErrorHandlingBehaviour = util.CoalescePointer(otherCloned.ErrorHandlingBehaviour, cloned.ErrorHandlingBehaviour)
+	if otherCloned.ComputeResources != nil {
+		cloned.ComputeResources.CpuLimit = util.CoalesceString(otherCloned.ComputeResources.CpuLimit, cloned.ComputeResources.CpuLimit)
+		cloned.ComputeResources.MemoryLimit = util.CoalesceString(otherCloned.ComputeResources.MemoryLimit, cloned.ComputeResources.MemoryLimit)
+		// CustomResources override is always ignored
+	}
 
-	cloned.DatadogIntegrationSettings = util.CoalescePointer(otherCloned.DatadogIntegrationSettings, cloned.DatadogIntegrationSettings)
+	if otherCloned.WorkgroupRef != nil {
+		cloned.WorkgroupRef.Name = util.CoalesceString(otherCloned.WorkgroupRef.Name, cloned.WorkgroupRef.Name)
+		cloned.WorkgroupRef.Group = util.CoalesceString(otherCloned.WorkgroupRef.Group, cloned.WorkgroupRef.Group)
+		cloned.WorkgroupRef.Kind = util.CoalesceString(otherCloned.WorkgroupRef.Kind, cloned.WorkgroupRef.Kind)
+	}
+
+	if otherCloned.RuntimeEnvironment != nil {
+		cloned.RuntimeEnvironment.DeadlineSeconds = util.CoalescePointer(otherCloned.RuntimeEnvironment.DeadlineSeconds, cloned.RuntimeEnvironment.DeadlineSeconds)
+		cloned.RuntimeEnvironment.MaximumRetries = util.CoalescePointer(otherCloned.RuntimeEnvironment.MaximumRetries, cloned.RuntimeEnvironment.MaximumRetries)
+	}
+
+	// Command, Args, RuntimeEnvironment except for MaximumRetries and DeadlineSeconds, ErrorHandlingBehaviour, DatadogIntegrationSettings overrides are always ignored
 
 	return cloned
 }

@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-func newFakeMla(withConfigs bool) *NexusAlgorithmTemplate {
+func newFakeTemplate(withConfigs bool) *NexusAlgorithmTemplate {
 	var envFrom []corev1.EnvFromSource
 	var env []corev1.EnvVar
 
@@ -113,7 +113,7 @@ func newFakeMla(withConfigs bool) *NexusAlgorithmTemplate {
 }
 
 func TestNexusAlgorithmTemplate_GetSecretNames(t *testing.T) {
-	secretsNames := newFakeMla(true).GetSecretNames()
+	secretsNames := newFakeTemplate(true).GetSecretNames()
 	expectedSecretNames := []string{
 		"test-secret",
 	}
@@ -128,7 +128,7 @@ func TestNexusAlgorithmTemplate_GetSecretNames(t *testing.T) {
 }
 
 func TestNexusAlgorithmTemplate_GetConfigMapNames(t *testing.T) {
-	configMapNames := newFakeMla(true).GetConfigMapNames()
+	configMapNames := newFakeTemplate(true).GetConfigMapNames()
 	expectedConfigMapNames := []string{
 		"test-cfg1",
 		"test-cfg2",
@@ -145,7 +145,7 @@ func TestNexusAlgorithmTemplate_GetConfigMapNames(t *testing.T) {
 }
 
 func TestNexusAlgorithmTemplate_GetSecretNamesNames_Empty(t *testing.T) {
-	secretsNames := newFakeMla(false).GetSecretNames()
+	secretsNames := newFakeTemplate(false).GetSecretNames()
 
 	if secretsNames != nil {
 		t.Errorf("GetSecretNames returns non-empty result when algorithm has no secret references")
@@ -154,7 +154,7 @@ func TestNexusAlgorithmTemplate_GetSecretNamesNames_Empty(t *testing.T) {
 }
 
 func TestNexusAlgorithmTemplate_GetConfigMapNames_Empty(t *testing.T) {
-	configMapNames := newFakeMla(false).GetConfigMapNames()
+	configMapNames := newFakeTemplate(false).GetConfigMapNames()
 
 	if configMapNames != nil {
 		t.Errorf("GetConfigMapNames returns non-empty result when algorithm has no configmap references")
@@ -163,7 +163,7 @@ func TestNexusAlgorithmTemplate_GetConfigMapNames_Empty(t *testing.T) {
 }
 
 func TestNexusAlgorithmTemplate_GetConfigMapDiff(t *testing.T) {
-	mla1 := newFakeMla(true)
+	mla1 := newFakeTemplate(true)
 	mla2 := mla1.DeepCopy()
 	// remove test-secret and test-cfg3 references
 	// however, test-secret is also referenced in EnvFrom, so we should only have test-cfg3 reported as diff
@@ -177,7 +177,7 @@ func TestNexusAlgorithmTemplate_GetConfigMapDiff(t *testing.T) {
 }
 
 func TestNexusAlgorithmTemplate_GetSecretDiff(t *testing.T) {
-	mla1 := newFakeMla(true)
+	mla1 := newFakeTemplate(true)
 	mla2 := mla1.DeepCopy()
 	// remove test-secret and test-cfg3 references
 	// however, test-secret is also referenced in EnvFrom, so we should only have test-cfg3 reported as diff
@@ -189,4 +189,87 @@ func TestNexusAlgorithmTemplate_GetSecretDiff(t *testing.T) {
 		t.Errorf("Incorrect difference %s returned", diff.ObjectGoPrintSideBySide(diffs, diffs))
 	}
 	t.Log("GetSecretDiff evaluates difference in secret references correctly")
+}
+
+func TestNexusAlgorithmSpec_Merge(t *testing.T) {
+	spec := &NexusAlgorithmSpec{
+		Container: &NexusAlgorithmContainer{
+			Image:              "test.io",
+			Registry:           "algorithms/test",
+			VersionTag:         "v1.0.0",
+			ServiceAccountName: "test-sa",
+		},
+		ComputeResources: &NexusAlgorithmResources{
+			CpuLimit:        "1000m",
+			MemoryLimit:     "2000Mi",
+			CustomResources: map[string]string{},
+		},
+		WorkgroupRef: &NexusAlgorithmWorkgroupRef{
+			Name:  "test-workgroup",
+			Group: "nexus-workgroup.io",
+			Kind:  "KarpenterWorkgroupV1",
+		},
+		Command: "python",
+		Args:    []string{},
+		RuntimeEnvironment: &NexusAlgorithmRuntimeEnvironment{
+			DeadlineSeconds: ptr.Int32(900),
+			MaximumRetries:  ptr.Int32(10),
+		},
+		DatadogIntegrationSettings: &NexusDatadogIntegrationSettings{},
+		ErrorHandlingBehaviour:     &NexusErrorHandlingBehaviour{},
+	}
+
+	specOverride := &NexusAlgorithmSpec{
+		Container: &NexusAlgorithmContainer{
+			VersionTag: "v1.1.0-dev",
+		},
+		ComputeResources: &NexusAlgorithmResources{
+			CpuLimit:    "2000m",
+			MemoryLimit: "3000Mi",
+		},
+		WorkgroupRef: &NexusAlgorithmWorkgroupRef{
+			Name: "test-workgroup-2",
+		},
+		Command: "python",
+		Args:    []string{"--should-not-override", "123"},
+		RuntimeEnvironment: &NexusAlgorithmRuntimeEnvironment{
+			DeadlineSeconds: ptr.Int32(700),
+			MaximumRetries:  ptr.Int32(1),
+		},
+		DatadogIntegrationSettings: &NexusDatadogIntegrationSettings{},
+		ErrorHandlingBehaviour:     &NexusErrorHandlingBehaviour{},
+	}
+
+	result := spec.Merge(specOverride)
+	expected := &NexusAlgorithmSpec{
+		Container: &NexusAlgorithmContainer{
+			Image:              "test.io",
+			Registry:           "algorithms/test",
+			VersionTag:         specOverride.Container.VersionTag,
+			ServiceAccountName: "test-sa",
+		},
+		ComputeResources: &NexusAlgorithmResources{
+			CpuLimit:        specOverride.ComputeResources.CpuLimit,
+			MemoryLimit:     specOverride.ComputeResources.MemoryLimit,
+			CustomResources: map[string]string{},
+		},
+		WorkgroupRef: &NexusAlgorithmWorkgroupRef{
+			Name:  specOverride.WorkgroupRef.Name,
+			Group: "nexus-workgroup.io",
+			Kind:  "KarpenterWorkgroupV1",
+		},
+		Command: "python",
+		Args:    []string{},
+		RuntimeEnvironment: &NexusAlgorithmRuntimeEnvironment{
+			DeadlineSeconds: specOverride.RuntimeEnvironment.DeadlineSeconds,
+			MaximumRetries:  specOverride.RuntimeEnvironment.MaximumRetries,
+		},
+		DatadogIntegrationSettings: &NexusDatadogIntegrationSettings{},
+		ErrorHandlingBehaviour:     &NexusErrorHandlingBehaviour{},
+	}
+
+	if !reflect.DeepEqual(result, expected) {
+		t.Errorf("Incorrect merge result returned (result vs expected) %s", diff.ObjectGoPrintSideBySide(result, expected))
+	}
+	t.Log("Merge correctly merges base configuration and overrides")
 }
