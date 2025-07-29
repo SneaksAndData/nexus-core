@@ -26,12 +26,22 @@ type AstraBundleConfig struct {
 	GatewayPassword              string `mapstructure:"gateway-password"`
 }
 
+// AstraCqlStoreConfig defines configuration for gocql needed to connect to AstraDB
 type AstraCqlStoreConfig struct {
 	GatewayHost string
 	GatewayPort string
 	GatewayUser string
 	GatewayPass string
 	TlsConfig   *tls.Config
+}
+
+// ScyllaCqlStoreConfig defines configuration for gocql needed to connect to ScyllaDB
+type ScyllaCqlStoreConfig struct {
+	Hosts    []string `mapstructure:"hosts"`
+	Port     string   `mapstructure:"port"`
+	User     string   `mapstructure:"user"`
+	Password string   `mapstructure:"password"`
+	LocalDC  string   `mapstructure:"local-dc"`
 }
 
 func getContent(zipFile *zip.File) ([]byte, error) {
@@ -132,4 +142,35 @@ func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore {
 	}
 	cluster.Consistency = gocql.LocalQuorum
 	return NewCqlStore(cluster, logger)
+}
+
+func NewScyllaCqlStore(logger klog.Logger, config *ScyllaCqlStoreConfig) *CqlStore {
+	cluster := gocql.NewCluster(config.Hosts...)
+	fallback := gocql.RoundRobinHostPolicy()
+	if config.LocalDC != "" {
+		fallback = gocql.DCAwareRoundRobinPolicy(config.LocalDC)
+	}
+
+	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(fallback)
+	if config.LocalDC != "" {
+		cluster.Consistency = gocql.LocalQuorum
+	}
+
+	if config.Password != "" {
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: config.User,
+			Password: config.Password,
+		}
+	}
+
+	session, err := gocqlx.WrapSession(cluster.CreateSession())
+	if err != nil {
+		logger.V(0).Error(err, "failed to create CQL session")
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+	return &CqlStore{
+		cluster:    cluster,
+		cqlSession: session,
+		logger:     logger,
+	}
 }

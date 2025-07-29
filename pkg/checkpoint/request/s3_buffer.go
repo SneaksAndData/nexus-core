@@ -37,8 +37,8 @@ type DefaultBuffer struct {
 	tags            map[string]string
 }
 
-// NewDefaultBuffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
-func NewDefaultBuffer(ctx context.Context, config *S3BufferConfig, astraConfig *AstraBundleConfig, metricTags map[string]string) *DefaultBuffer {
+// NewAstraS3Buffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
+func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *AstraBundleConfig, metricTags map[string]string) *DefaultBuffer {
 	logger := klog.FromContext(ctx)
 
 	cqlStore := NewAstraCqlStore(logger, astraConfig)
@@ -51,7 +51,26 @@ func NewDefaultBuffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 		metrics:         ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
 		ctx:             ctx,
 		actor:           nil,
-		name:            "default_cassandra_s3",
+		name:            "default_astradb_s3",
+		tags:            metricTags,
+	}
+}
+
+// NewScyllaS3Buffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
+func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig *ScyllaCqlStoreConfig, metricTags map[string]string) *DefaultBuffer {
+	logger := klog.FromContext(ctx)
+
+	cqlStore := NewScyllaCqlStore(logger, scyllaConfig)
+	return &DefaultBuffer{
+		checkpointStore: cqlStore,
+		metadataStore:   cqlStore,
+		blobStore:       payload.NewS3PayloadStore(ctx, logger, s3credentials.NewStaticCredentialsProvider(config.AccessKeyID, config.SecretAccessKey, ""), config.Endpoint, config.Region),
+		config:          config,
+		logger:          &logger,
+		metrics:         ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
+		ctx:             ctx,
+		actor:           nil,
+		name:            "default_scylladb_s3",
 		tags:            metricTags,
 	}
 }
