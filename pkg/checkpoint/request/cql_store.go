@@ -163,14 +163,5 @@ func NewScyllaCqlStore(logger klog.Logger, config *ScyllaCqlStoreConfig) *CqlSto
 		}
 	}
 
-	session, err := gocqlx.WrapSession(cluster.CreateSession())
-	if err != nil {
-		logger.V(0).Error(err, "failed to create CQL session")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-	}
-	return &CqlStore{
-		cluster:    cluster,
-		cqlSession: session,
-		logger:     logger,
-	}
+	return NewCqlStore(cluster, logger)
 }
