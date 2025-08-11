@@ -52,16 +52,31 @@ func WithStatsd(ctx context.Context, metricsNamespace string) context.Context { 
 
 // Gauge reports a GAUGE metric using best-effort approach
 func Gauge(metrics *statsd.Client, name string, value float64, tags map[string]string, rate float64) { // coverage-ignore
-	_ = metrics.Gauge(name, value, convertTags(tags), rate)
+	if metrics != nil {
+		_ = metrics.Gauge(name, value, convertTags(tags), rate)
+	}
 }
 
 // GaugeDuration reports a GAUGE metric corresponding to a duration of an operation that started at a specified time, in milliseconds
 func GaugeDuration(metrics *statsd.Client, name string, startedAt time.Time, tags map[string]string, rate float64) { // coverage-ignore
-	duration := time.Since(startedAt).Milliseconds()
-	_ = metrics.Gauge(name, float64(duration), convertTags(tags), rate)
+	if metrics != nil {
+		duration := time.Since(startedAt).Milliseconds()
+		_ = metrics.Gauge(name, float64(duration), convertTags(tags), rate)
+	}
 }
 
 // Increment reports COUNT metric with a value of 1
 func Increment(metrics *statsd.Client, name string, tags map[string]string) {
-	_ = metrics.Incr(name, convertTags(tags), 1)
+	if metrics != nil {
+		_ = metrics.Incr(name, convertTags(tags), 1)
+	}
+}
+
+// GetClient returns an initialized statsd client, if it exists
+func GetClient(ctx context.Context) *statsd.Client {
+	if client, ok := ctx.Value(MetricsClientContextKey).(*statsd.Client); ok {
+		return client
+	}
+
+	return nil
 }
