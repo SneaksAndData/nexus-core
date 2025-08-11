@@ -15,3 +15,6 @@ exclude:
     - ^pkg/buildmeta                                    # exclude build metadata
     - pkg/checkpoint/payload/s3_payload_store.go        # exclude plain vendor API wrappers
     - pkg/checkpoint/request/cql_store.go               # exclude plain vendor API wrappers
+    - pkg/checkpoint/request/s3_buffer.go               # exclude S3 Buffer tests as they should be covered in the scheduler/SDK e2e pipelines
+    - pkg/checkpoint/request/metadata_store.go          # exclude Metadata Store as it requires CqlStore - should be covered in scheduler/SDK e2e pipelines
+    - pkg/checkpoint/request/checkpoint_store.go        # exclude Checkpoint Store as it requires CqlStore - should be covered in scheduler/SDK e2e pipelines
