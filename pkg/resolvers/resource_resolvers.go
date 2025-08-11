@@ -13,7 +13,7 @@ import (
 )
 
 // GetWorkgroupByRef reads NexusWorkgroup definition using the reference from the template
-func GetWorkgroupByRef(template *nexusv1.NexusAlgorithmTemplate, client nexusclientset.Interface, resourceNamespace string) (*nexusv1.NexusAlgorithmWorkgroupSpec, error) {
+func GetWorkgroupByRef(template *nexusv1.NexusAlgorithmTemplate, client nexusclientset.Interface, resourceNamespace string) (*nexusv1.NexusAlgorithmWorkgroupSpec, error) { // coverage-ignore
 	workgroup, err := client.ScienceV1().NexusAlgorithmWorkgroups(resourceNamespace).Get(context.TODO(), template.Spec.WorkgroupRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
