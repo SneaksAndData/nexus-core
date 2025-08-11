@@ -1,0 +1,291 @@
+{
+  TypeMeta: (v1.TypeMeta) {
+    Kind: (string) (len=3) "Job",
+    APIVersion: (string) (len=8) "batch/v1"
+  },
+  ObjectMeta: (v1.ObjectMeta) {
+    Name: (string) (len=7) "test-id",
+    GenerateName: (string) "",
+    Namespace: (string) "",
+    SelfLink: (string) "",
+    UID: (types.UID) "",
+    ResourceVersion: (string) "",
+    Generation: (int64) 0,
+    CreationTimestamp: (v1.Time) {
+      Time: (time.Time) {
+        wall: (uint64) 0,
+        ext: (int64) 0,
+        loc: (*time.Location)(<nil>)
+      }
+    },
+    DeletionTimestamp: (*v1.Time)(<nil>),
+    DeletionGracePeriodSeconds: (*int64)(<nil>),
+    Labels: (map[string]string) (len=3) {
+      (string) (len=39) "science.sneaksanddata.com/nexus-version": (string) (len=6) "v0.0.0",
+      (string) (len=41) "science.sneaksanddata.com/nexus-component": (string) (len=13) "algorithm-run"
+      (string) (len=49) "science.sneaksanddata.com/algorithm-template-name": (string) (len=4) "test"
+    },
+    Annotations: (map[string]string) <nil>,
+    OwnerReferences: ([]v1.OwnerReference) <nil>,
+    Finalizers: ([]string) <nil>,
+    ManagedFields: ([]v1.ManagedFieldsEntry) <nil>
+  },
+  Spec: (v1.JobSpec) {
+    Parallelism: (*int32)(<nil>),
+    Completions: (*int32)(<nil>),
+    ActiveDeadlineSeconds: (*int64)(<nil>),
+    PodFailurePolicy: (*v1.PodFailurePolicy)({
+      Rules: ([]v1.PodFailurePolicyRule) (len=1) {
+        (v1.PodFailurePolicyRule) {
+          Action: (v1.PodFailurePolicyAction) (len=6) "Ignore",
+          OnExitCodes: (*v1.PodFailurePolicyOnExitCodesRequirement)(<nil>),
+          OnPodConditions: ([]v1.PodFailurePolicyOnPodConditionsPattern) (len=1) {
+            (v1.PodFailurePolicyOnPodConditionsPattern) {
+              Type: (v1.PodConditionType) (len=16) "DisruptionTarget",
+              Status: (v1.ConditionStatus) (len=4) "True"
+            }
+          }
+        }
+      }
+    }),
+    SuccessPolicy: (*v1.SuccessPolicy)(<nil>),
+    BackoffLimit: (*int32)(3),
+    BackoffLimitPerIndex: (*int32)(<nil>),
+    MaxFailedIndexes: (*int32)(<nil>),
+    Selector: (*v1.LabelSelector)(<nil>),
+    ManualSelector: (*bool)(<nil>),
+    Template: (v1.PodTemplateSpec) {
+      ObjectMeta: (v1.ObjectMeta) {
+        Name: (string) "",
+        GenerateName: (string) "",
+        Namespace: (string) "",
+        SelfLink: (string) "",
+        UID: (types.UID) "",
+        ResourceVersion: (string) "",
+        Generation: (int64) 0,
+        CreationTimestamp: (v1.Time) {
+          Time: (time.Time) {
+            wall: (uint64) 0,
+            ext: (int64) 0,
+            loc: (*time.Location)(<nil>)
+          }
+        },
+        DeletionTimestamp: (*v1.Time)(<nil>),
+        DeletionGracePeriodSeconds: (*int64)(<nil>),
+        Labels: (map[string]string) (len=3) {
+          (string) (len=49) "science.sneaksanddata.com/algorithm-template-name": (string) (len=4) "tes
+          (string) (len=39) "science.sneaksanddata.com/nexus-version": (string) (len=6) "v0.0.0",
+          (string) (len=41) "science.sneaksanddata.com/nexus-component": (string) (len=13) "algorithm-
+        },
+        Annotations: (map[string]string) <nil>,
+        OwnerReferences: ([]v1.OwnerReference) <nil>,
+        Finalizers: ([]string) <nil>,
+        ManagedFields: ([]v1.ManagedFieldsEntry) <nil>
+      },
+      Spec: (v1.PodSpec) {
+        Volumes: ([]v1.Volume) (len=1) {
+          (v1.Volume) {
+            Name: (string) (len=9) "dsdsocket",
+            VolumeSource: (v1.VolumeSource) {
+              HostPath: (*v1.HostPathVolumeSource)({
+                Path: (string) (len=16) "/var/run/datadog",
+                Type: (*v1.HostPathType)(<nil>)
+              }),
+              EmptyDir: (*v1.EmptyDirVolumeSource)(<nil>),
+              GCEPersistentDisk: (*v1.GCEPersistentDiskVolumeSource)(<nil>),
+              AWSElasticBlockStore: (*v1.AWSElasticBlockStoreVolumeSource)(<nil>),
+              GitRepo: (*v1.GitRepoVolumeSource)(<nil>),
+              Secret: (*v1.SecretVolumeSource)(<nil>),
+              NFS: (*v1.NFSVolumeSource)(<nil>),
+              ISCSI: (*v1.ISCSIVolumeSource)(<nil>),
+              Glusterfs: (*v1.GlusterfsVolumeSource)(<nil>),
+              PersistentVolumeClaim: (*v1.PersistentVolumeClaimVolumeSource)(<nil>),
+              RBD: (*v1.RBDVolumeSource)(<nil>),
+              FlexVolume: (*v1.FlexVolumeSource)(<nil>),
+              Cinder: (*v1.CinderVolumeSource)(<nil>),
+              CephFS: (*v1.CephFSVolumeSource)(<nil>),
+              Flocker: (*v1.FlockerVolumeSource)(<nil>),
+              DownwardAPI: (*v1.DownwardAPIVolumeSource)(<nil>),
+              FC: (*v1.FCVolumeSource)(<nil>),
+              AzureFile: (*v1.AzureFileVolumeSource)(<nil>),
+              ConfigMap: (*v1.ConfigMapVolumeSource)(<nil>),
+              VsphereVolume: (*v1.VsphereVirtualDiskVolumeSource)(<nil>),
+              Quobyte: (*v1.QuobyteVolumeSource)(<nil>),
+              AzureDisk: (*v1.AzureDiskVolumeSource)(<nil>),
+              PhotonPersistentDisk: (*v1.PhotonPersistentDiskVolumeSource)(<nil>),
+              Projected: (*v1.ProjectedVolumeSource)(<nil>),
+              PortworxVolume: (*v1.PortworxVolumeSource)(<nil>),
+              ScaleIO: (*v1.ScaleIOVolumeSource)(<nil>),
+              StorageOS: (*v1.StorageOSVolumeSource)(<nil>),
+              CSI: (*v1.CSIVolumeSource)(<nil>),
+              Ephemeral: (*v1.EphemeralVolumeSource)(<nil>),
+              Image: (*v1.ImageVolumeSource)(<nil>)
+            }
+          }
+        },
+        InitContainers: ([]v1.Container) <nil>,
+        Containers: ([]v1.Container) (len=1) {
+          (v1.Container) {
+            Name: (string) (len=7) "test-id",
+            Image: (string) (len=30) "algorithms/test/test.io:v1.0.0",
+            Command: ([]string) (len=1) {
+              (string) (len=6) "python"
+            },
+            Args: ([]string) (len=4) {
+              (string) (len=6) "job.py",
+              (string) (len=27) "--sas-uri=https://somewhere",
+              (string) (len=20) "--request-id=test-id",
+              (string) (len=11) "--arg1=true"
+            },
+            WorkingDir: (string) "",
+            Ports: ([]v1.ContainerPort) <nil>,
+            EnvFrom: ([]v1.EnvFromSource) <nil>,
+            Env: ([]v1.EnvVar) (len=2) {
+              (v1.EnvVar) {
+                Name: (string) (len=21) "NEXUS__ALGORITHM_NAME",
+                Value: (string) (len=4) "test",
+                ValueFrom: (*v1.EnvVarSource)(<nil>)
+              },
+              (v1.EnvVar) {
+                Name: (string) (len=17) "NEXUS__SHARD_NAME",
+                Value: (string) (len=7) "shard-0",
+                ValueFrom: (*v1.EnvVarSource)(<nil>)
+              }
+            },
+            Resources: (v1.ResourceRequirements) {
+              Limits: (v1.ResourceList) (len=2) {
+                (v1.ResourceName) (len=3) "cpu": (resource.Quantity) {
+                  i: (resource.int64Amount) {
+                    value: (int64) 1000,
+                    scale: (resource.Scale) -3
+                  },
+                  d: (resource.infDecAmount) {
+                    Dec: (*inf.Dec)(<nil>)
+                  },
+                  s: (string) "",
+                  Format: (resource.Format) (len=9) "DecimalSI"
+                },
+                (v1.ResourceName) (len=6) "memory": (resource.Quantity) {
+                  i: (resource.int64Amount) {
+                    value: (int64) 2097152000,
+                    scale: (resource.Scale) 0
+                  },
+                  d: (resource.infDecAmount) {
+                    Dec: (*inf.Dec)(<nil>)
+                  },
+                  s: (string) "",
+                  Format: (resource.Format) (len=8) "BinarySI"
+                }
+              },
+              Requests: (v1.ResourceList) (len=2) {
+                (v1.ResourceName) (len=3) "cpu": (resource.Quantity) {
+                  i: (resource.int64Amount) {
+                    value: (int64) 1000,
+                    scale: (resource.Scale) -3
+                  },
+                  d: (resource.infDecAmount) {
+                    Dec: (*inf.Dec)(<nil>)
+                  },
+                  s: (string) "",
+                  Format: (resource.Format) (len=9) "DecimalSI"
+                },
+                (v1.ResourceName) (len=6) "memory": (resource.Quantity) {
+                  i: (resource.int64Amount) {
+                    value: (int64) 2097152000,
+                    scale: (resource.Scale) 0
+                  },
+                  d: (resource.infDecAmount) {
+                    Dec: (*inf.Dec)(<nil>)
+                  },
+                  s: (string) "",
+                  Format: (resource.Format) (len=8) "BinarySI"
+                }
+              },
+              Claims: ([]v1.ResourceClaim) <nil>
+            },
+            ResizePolicy: ([]v1.ContainerResizePolicy) <nil>,
+            RestartPolicy: (*v1.ContainerRestartPolicy)(<nil>),
+            VolumeMounts: ([]v1.VolumeMount) (len=1) {
+              (v1.VolumeMount) {
+                Name: (string) (len=9) "dsdsocket",
+                ReadOnly: (bool) false,
+                RecursiveReadOnly: (*v1.RecursiveReadOnlyMode)(<nil>),
+                MountPath: (string) (len=16) "/var/run/datadog",
+                SubPath: (string) "",
+                MountPropagation: (*v1.MountPropagationMode)(<nil>),
+                SubPathExpr: (string) ""
+              }
+            },
+            VolumeDevices: ([]v1.VolumeDevice) <nil>,
+            LivenessProbe: (*v1.Probe)(<nil>),
+            ReadinessProbe: (*v1.Probe)(<nil>),
+            StartupProbe: (*v1.Probe)(<nil>),
+            Lifecycle: (*v1.Lifecycle)(<nil>),
+            TerminationMessagePath: (string) "",
+            TerminationMessagePolicy: (v1.TerminationMessagePolicy) "",
+            ImagePullPolicy: (v1.PullPolicy) (len=12) "IfNotPresent",
+            SecurityContext: (*v1.SecurityContext)(<nil>),
+            Stdin: (bool) false,
+            StdinOnce: (bool) false,
+            TTY: (bool) false
+          }
+        },
+        EphemeralContainers: ([]v1.EphemeralContainer) <nil>,
+        RestartPolicy: (v1.RestartPolicy) "",
+        TerminationGracePeriodSeconds: (*int64)(<nil>),
+        ActiveDeadlineSeconds: (*int64)(<nil>),
+        DNSPolicy: (v1.DNSPolicy) "",
+        NodeSelector: (map[string]string) <nil>,
+        ServiceAccountName: (string) (len=7) "test-sa",
+        DeprecatedServiceAccount: (string) "",
+        AutomountServiceAccountToken: (*bool)(<nil>),
+        NodeName: (string) "",
+        HostNetwork: (bool) false,
+        HostPID: (bool) false,
+        HostIPC: (bool) false,
+        ShareProcessNamespace: (*bool)(<nil>),
+        SecurityContext: (*v1.PodSecurityContext)(<nil>),
+        ImagePullSecrets: ([]v1.LocalObjectReference) <nil>,
+        Hostname: (string) "",
+        Subdomain: (string) "",
+        Affinity: (*v1.Affinity)(<nil>),
+        SchedulerName: (string) "",
+        Tolerations: ([]v1.Toleration) <nil>,
+        HostAliases: ([]v1.HostAlias) <nil>,
+        PriorityClassName: (string) "",
+        Priority: (*int32)(<nil>),
+        DNSConfig: (*v1.PodDNSConfig)(<nil>),
+        ReadinessGates: ([]v1.PodReadinessGate) <nil>,
+        RuntimeClassName: (*string)(<nil>),
+        EnableServiceLinks: (*bool)(<nil>),
+        PreemptionPolicy: (*v1.PreemptionPolicy)(<nil>),
+        Overhead: (v1.ResourceList) <nil>,
+        TopologySpreadConstraints: ([]v1.TopologySpreadConstraint) <nil>,
+        SetHostnameAsFQDN: (*bool)(<nil>),
+        OS: (*v1.PodOS)(<nil>),
+        HostUsers: (*bool)(<nil>),
+        SchedulingGates: ([]v1.PodSchedulingGate) <nil>,
+        ResourceClaims: ([]v1.PodResourceClaim) <nil>,
+        Resources: (*v1.ResourceRequirements)(<nil>)
+      }
+    },
+    TTLSecondsAfterFinished: (*int32)(300),
+    CompletionMode: (*v1.CompletionMode)(<nil>),
+    Suspend: (*bool)(<nil>),
+    PodReplacementPolicy: (*v1.PodReplacementPolicy)(<nil>),
+    ManagedBy: (*string)(<nil>)
+  },
+  Status: (v1.JobStatus) {
+    Conditions: ([]v1.JobCondition) <nil>,
+    StartTime: (*v1.Time)(<nil>),
+    CompletionTime: (*v1.Time)(<nil>),
+    Active: (int32) 0,
+    Succeeded: (int32) 0,
+    Failed: (int32) 0,
+    Terminating: (*int32)(<nil>),
+    CompletedIndexes: (string) "",
+    FailedIndexes: (*string)(<nil>),
+    UncountedTerminatedPods: (*v1.UncountedTerminatedPods)(<nil>),
+    Ready: (*int32)(<nil>)
+  }
+}
