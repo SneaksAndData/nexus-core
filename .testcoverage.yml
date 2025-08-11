@@ -1,7 +1,5 @@
 profile: cover.out
 
-local-prefix: "science.sneaksanddata.com/nexus"
-
 threshold:
   file: 70
   package: 70
@@ -14,3 +12,4 @@ exclude:
     - ^pkg/signals        # exclude signal handlers from sample controller
     - ^pkg/telemetry      # exclude logging and telemetry wrappers
     - hack/*.go           # exclude hack folder
+    - ^pkg/buildmeta      # exclude build metadata

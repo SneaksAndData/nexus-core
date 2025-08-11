@@ -1,4 +1,4 @@
-![coverage](https://raw.githubusercontent.com/SneaksAndData/nexus-configuration-controller/badges/.badges/main/coverage.svg)
+![coverage](https://raw.githubusercontent.com/SneaksAndData/nexus-core/badges/.badges/main/coverage.svg)
 
 # Introduction
 Nexus Core is a core library used by Nexus (Go) application stack:
