@@ -15,5 +15,5 @@ exclude:
     - hack/*.go                                         # exclude hack folder
     - ^pkg/buildmeta                                    # exclude build metadata
     - pkg/checkpoint/payload/s3_payload_store.go        # exclude plain vendor API wrappers
-    - pkg/checkpoint/request/*.go                       # exclude vendor integration implementations - those should be covered by e2e tests
+    - ^pkg/checkpoint/request                           # exclude vendor integration implementations - those should be covered by e2e tests
     - pkg/checkpoint/models/submission_buffer_entry.go  # temporary exclude SBE code
