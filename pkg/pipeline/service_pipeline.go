@@ -90,7 +90,7 @@ func (a *DefaultPipelineStageActor[TIn, TOut]) processNextElement(ctx context.Co
 }
 
 func (a *DefaultPipelineStageActor[TIn, TOut]) runActor(ctx context.Context) {
-	for a.processNextElement(ctx, klog.FromContext(ctx), ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client)) {
+	for a.processNextElement(ctx, klog.FromContext(ctx), telemetry.GetClient(ctx)) {
 	}
 }
 

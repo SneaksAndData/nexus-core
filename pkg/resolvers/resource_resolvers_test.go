@@ -17,7 +17,6 @@ import (
 type fixture struct {
 	kubeClient kubernetes.Interface
 
-	//kubeObjects  []runtime.Object
 	k8sFactory   kubeinformers.SharedInformerFactory
 	k8sInformers map[string]cache.SharedIndexInformer
 }

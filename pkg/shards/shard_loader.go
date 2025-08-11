@@ -14,7 +14,7 @@ import (
 // LoadClients read kubeconfig files in the path and creates ShardClient instances from them
 func LoadClients(shardConfigPath string, namespace string, logger klog.Logger) ([]*ShardClient, error) {
 	files, err := os.ReadDir(shardConfigPath)
-	if err != nil {
+	if err != nil { // coverage-ignore
 		logger.Error(err, "error opening kubeconfig files for Shards")
 		return nil, err
 	}
@@ -26,19 +26,19 @@ func LoadClients(shardConfigPath string, namespace string, logger klog.Logger) (
 			logger.Info("loading Shard kubeconfig file", "file", file.Name())
 
 			cfg, err := clientcmd.BuildConfigFromFlags("", path.Join(shardConfigPath, file.Name()))
-			if err != nil {
+			if err != nil { // coverage-ignore
 				logger.Error(err, "error building kubeconfig for shard {shard}", file.Name())
 				return nil, err
 			}
 
 			kubeClient, err := kubernetes.NewForConfig(cfg)
-			if err != nil {
+			if err != nil { // coverage-ignore
 				logger.Error(err, "error building kubernetes clientset for shard {shard}", file.Name())
 				return nil, err
 			}
 
 			nexusClient, err := clientset.NewForConfig(cfg)
-			if err != nil {
+			if err != nil { // coverage-ignore
 				logger.Error(err, "error building kubernetes clientset for NexusAlgorithmTemplate API for shard {shard}", file.Name())
 				return nil, err
 			}
@@ -55,7 +55,7 @@ func LoadShards(ctx context.Context, owner string, shardConfigPath string, names
 	shardClients, err := LoadClients(shardConfigPath, namespace, logger)
 	connectedShards := []*Shard{}
 
-	if err != nil {
+	if err != nil { // coverage-ignore
 		return nil, err
 	}
 

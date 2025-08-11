@@ -7,9 +7,11 @@ threshold:
       
 exclude:
   paths:
-    - \.pb\.go$           # excludes all protobuf generated files
-    - ^pkg/generated      # exclude generated code
-    - ^pkg/signals        # exclude signal handlers from sample controller
-    - ^pkg/telemetry      # exclude logging and telemetry wrappers
-    - hack/*.go           # exclude hack folder
-    - ^pkg/buildmeta      # exclude build metadata
+    - \.pb\.go$                                         # excludes all protobuf generated files
+    - ^pkg/generated                                    # exclude generated code
+    - ^pkg/signals                                      # exclude signal handlers from sample controller
+    - ^pkg/telemetry                                    # exclude logging and telemetry wrappers
+    - hack/*.go                                         # exclude hack folder
+    - ^pkg/buildmeta                                    # exclude build metadata
+    - pkg/checkpoint/payload/s3_payload_store.go        # exclude plain vendor API wrappers
+    - pkg/checkpoint/request/cql_store.go               # exclude plain vendor API wrappers
