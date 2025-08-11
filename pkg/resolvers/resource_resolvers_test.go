@@ -39,7 +39,7 @@ func (f *fixture) populatePods(pods []corev1.Pod) *fixture {
 
 var noResyncPeriodFunc = func() time.Duration { return 0 }
 
-func newFixture(t *testing.T) *fixture {
+func newFixture(_ *testing.T) *fixture {
 	f := &fixture{}
 	f.k8sInformers = map[string]cache.SharedIndexInformer{}
 
