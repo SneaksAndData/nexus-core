@@ -56,7 +56,7 @@ jobs:
         with:
           cluster_name: 'nexus-shard-0'
 
-      - name: Launch Compose Stack
+      - name: Export kubeconfig
         run: |
           mkdir -p ./test-resources/kubecfg/shards
           kind export kubeconfig --name nexus-shard-0 --kubeconfig ./test-resources/kubecfg/shards/kind-nexus-shard-0.kubeconfig
