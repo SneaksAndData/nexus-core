@@ -240,3 +240,46 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 		t.Errorf("Generated job does not match expected job, diff: %s", diff.ObjectGoPrintSideBySide(*expectedJob, job))
 	}
 }
+
+func TestFromAlgorithmRequest(t *testing.T) {
+	checkpoint, payload, err := FromAlgorithmRequest("test-id", "test", &AlgorithmRequest{
+		AlgorithmParameters: map[string]interface{}{
+			"parameterA": "a",
+			"parameterB": "b",
+		},
+		CustomConfiguration: nil,
+		RequestApiVersion:   "",
+		Tag:                 "test",
+		ParentRequest:       nil,
+		PayloadValidFor:     "24h",
+	}, &v1.NexusAlgorithmSpec{
+		Container:        nil,
+		ComputeResources: nil,
+		WorkgroupRef: &v1.NexusAlgorithmWorkgroupRef{
+			Name:  "test",
+			Group: "science.sneaksanddata.com/v1",
+			Kind:  "NexusAlgorithmWorkgroup",
+		},
+		Command:                    "python",
+		Args:                       nil,
+		RuntimeEnvironment:         nil,
+		ErrorHandlingBehaviour:     nil,
+		DatadogIntegrationSettings: nil,
+	})
+
+	if err != nil {
+		t.Errorf("failed to create a checkpoint: %s", err)
+	}
+
+	if string(payload) != "{\"parameterA\":\"a\",\"parameterB\":\"b\"}" {
+		t.Errorf("serialized payload does not match expected: %s", string(payload))
+	}
+
+	if checkpoint == nil {
+		t.Errorf("checkpoint is not expected to be nil")
+	}
+
+	if checkpoint != nil && checkpoint.Id != "test-id" {
+		t.Errorf("checkpoint id does not match expected: %s", checkpoint.Id)
+	}
+}

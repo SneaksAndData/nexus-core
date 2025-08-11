@@ -36,7 +36,7 @@ func RemoveOwner[T corev1.Secret | corev1.ConfigMap](ctx context.Context, obj de
 			if err != nil {
 				return err
 			}
-		default:
+		default: // coverage-ignore
 			return fmt.Errorf("unknown type: %T", obj)
 		}
 
