@@ -283,3 +283,23 @@ func TestFromAlgorithmRequest(t *testing.T) {
 		t.Errorf("checkpoint id does not match expected: %s", checkpoint.Id)
 	}
 }
+
+func TestCheckpointedRequest_IsFinished(t *testing.T) {
+	request := getFakeRequest()
+
+	for _, stage := range []string{LifecycleStageFailed, LifecycleStageCompleted, LifecycleStageDeadlineExceeded, LifecycleStageSchedulingFailed, LifecycleStageCancelled} {
+		request.LifecycleStage = stage
+
+		if !request.IsFinished() {
+			t.Errorf("a %s request is expected to be finished", stage)
+		}
+	}
+
+	for _, stage := range []string{LifecycleStageRunning, LifecycleStageBuffered, LifecycleStageNew} {
+		request.LifecycleStage = stage
+
+		if request.IsFinished() {
+			t.Errorf("a %s request is not expected to be finished", stage)
+		}
+	}
+}
