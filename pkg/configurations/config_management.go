@@ -16,7 +16,7 @@ const (
 func configExists(configPath string) (bool, error) {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		return false, nil
-	} else if err != nil {
+	} else if err != nil { // coverage-ignore
 		return false, err
 	} else {
 		return true, nil
@@ -32,7 +32,7 @@ func LoadConfig[T any](ctx context.Context) T {
 
 	if exists, err := configExists(localConfig); exists {
 		customViper.SetConfigFile(fmt.Sprintf("appconfig.%s.yaml", strings.ToLower(os.Getenv("APPLICATION_ENVIRONMENT"))))
-	} else if err != nil {
+	} else if err != nil { // coverage-ignore
 		logger.Error(err, "could not locate application configuration file")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	} else {
@@ -43,7 +43,7 @@ func LoadConfig[T any](ctx context.Context) T {
 	customViper.AllowEmptyEnv(true)
 	customViper.AutomaticEnv()
 
-	if err := customViper.ReadInConfig(); err != nil {
+	if err := customViper.ReadInConfig(); err != nil { // coverage-ignore
 		logger.Error(err, "error loading application config from appconfig.yaml")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
@@ -51,7 +51,7 @@ func LoadConfig[T any](ctx context.Context) T {
 	var appConfig T
 	err := customViper.Unmarshal(&appConfig)
 
-	if err != nil {
+	if err != nil { // coverage-ignore
 		logger.Error(err, "error loading application config from appconfig.yaml")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}

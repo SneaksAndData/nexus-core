@@ -50,7 +50,19 @@ jobs:
         run: |
           set -e
           hack/verify-codegen.sh
-          
+
+      - name: Create Kind Cluster
+        uses: helm/kind-action@v1
+        with:
+          cluster_name: 'nexus-shard-0'
+
+      - name: Export kubeconfig
+        run: |
+          mkdir -p ./test-resources/kubecfg/shards
+          kind export kubeconfig --name nexus-shard-0 --kubeconfig ./test-resources/kubecfg/shards/kind-nexus-shard-0.kubeconfig
+
+          chmod 777 ./test-resources/kubecfg/shards/kind-nexus-shard-0.kubeconfig
+
       - name: Test
         env: 
           APPLICATION_ENVIRONMENT: units

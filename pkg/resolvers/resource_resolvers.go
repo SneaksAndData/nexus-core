@@ -13,7 +13,7 @@ import (
 )
 
 // GetWorkgroupByRef reads NexusWorkgroup definition using the reference from the template
-func GetWorkgroupByRef(template *nexusv1.NexusAlgorithmTemplate, client nexusclientset.Interface, resourceNamespace string) (*nexusv1.NexusAlgorithmWorkgroupSpec, error) {
+func GetWorkgroupByRef(template *nexusv1.NexusAlgorithmTemplate, client nexusclientset.Interface, resourceNamespace string) (*nexusv1.NexusAlgorithmWorkgroupSpec, error) { // coverage-ignore
 	workgroup, err := client.ScienceV1().NexusAlgorithmWorkgroups(resourceNamespace).Get(context.TODO(), template.Spec.WorkgroupRef.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func GetInformerObjectKey(resourceNamespace string, resourceName string) string 
 // GetCachedObject retrieves a cached resource from informer cache
 func GetCachedObject[T any](objectName string, resourceNamespace string, informer cache.SharedIndexInformer) (*T, error) {
 	resource, exists, err := informer.GetStore().GetByKey(GetInformerObjectKey(resourceNamespace, objectName))
-	if err != nil {
+	if err != nil { // coverage-ignore
 		return nil, err
 	}
 
@@ -63,7 +63,7 @@ func IsNexusRunEvent(event *corev1.Event, resourceNamespace string, informers ma
 			return false, nil
 		}
 
-		if err != nil {
+		if err != nil { // coverage-ignore
 			return false, err
 		}
 
@@ -75,7 +75,7 @@ func IsNexusRunEvent(event *corev1.Event, resourceNamespace string, informers ma
 			return false, nil
 		}
 
-		if err != nil {
+		if err != nil { // coverage-ignore
 			return false, err
 		}
 

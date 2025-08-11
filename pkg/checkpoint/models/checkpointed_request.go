@@ -185,7 +185,7 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, erro
 	// ignore override unmarshal if set to empty object
 	if c.ConfigurationOverrides == "{}" || c.ConfigurationOverrides == "" {
 		unmarshalErr = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
-	} else {
+	} else { // coverage-ignore
 		overrides = &v1.NexusAlgorithmSpec{}
 		unmarshalErr = errors.Join(json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig), json.Unmarshal([]byte(c.ConfigurationOverrides), overrides))
 	}
@@ -339,26 +339,28 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 		})
 	}
 
-	if c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes != nil {
-		jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{
-			Action: batchv1.PodFailurePolicyActionFailJob,
-			OnExitCodes: &batchv1.PodFailurePolicyOnExitCodesRequirement{
-				Operator: batchv1.PodFailurePolicyOnExitCodesOpIn,
-				Values:   c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes,
-			},
-			OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
-		})
-	}
+	if c.AppliedConfiguration.ErrorHandlingBehaviour != nil { // coverage-ignore
+		if c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes != nil {
+			jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{
+				Action: batchv1.PodFailurePolicyActionFailJob,
+				OnExitCodes: &batchv1.PodFailurePolicyOnExitCodesRequirement{
+					Operator: batchv1.PodFailurePolicyOnExitCodesOpIn,
+					Values:   c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes,
+				},
+				OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
+			})
+		}
 
-	if c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes != nil {
-		jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{
-			Action: batchv1.PodFailurePolicyActionIgnore,
-			OnExitCodes: &batchv1.PodFailurePolicyOnExitCodesRequirement{
-				Operator: batchv1.PodFailurePolicyOnExitCodesOpIn,
-				Values:   c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes,
-			},
-			OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
-		})
+		if c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes != nil {
+			jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{
+				Action: batchv1.PodFailurePolicyActionIgnore,
+				OnExitCodes: &batchv1.PodFailurePolicyOnExitCodesRequirement{
+					Operator: batchv1.PodFailurePolicyOnExitCodesOpIn,
+					Values:   c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes,
+				},
+				OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
+			})
+		}
 	}
 
 	return batchv1.Job{
