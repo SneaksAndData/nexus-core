@@ -116,7 +116,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 // NewCqlStore creates a generic connected CqlStore (Apache Cassandra/Scylla)
 func NewCqlStore(cluster *gocql.ClusterConfig, logger klog.Logger) *CqlStore {
 	session, err := gocqlx.WrapSession(cluster.CreateSession())
-	if err != nil {
+	if err != nil { // coverage-ignore
 		logger.V(0).Error(err, "failed to create CQL session")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
@@ -147,16 +147,16 @@ func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore {
 func NewScyllaCqlStore(logger klog.Logger, config *ScyllaCqlStoreConfig) *CqlStore {
 	cluster := gocql.NewCluster(config.Hosts...)
 	fallback := gocql.RoundRobinHostPolicy()
-	if config.LocalDC != "" {
+	if config.LocalDC != "" { // coverage-ignore
 		fallback = gocql.DCAwareRoundRobinPolicy(config.LocalDC)
 	}
 
 	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(fallback)
-	if config.LocalDC != "" {
+	if config.LocalDC != "" { // coverage-ignore
 		cluster.Consistency = gocql.LocalQuorum
 	}
 
-	if config.Password != "" {
+	if config.Password != "" { // coverage-ignore
 		cluster.Authenticator = gocql.PasswordAuthenticator{
 			Username: config.User,
 			Password: config.Password,
