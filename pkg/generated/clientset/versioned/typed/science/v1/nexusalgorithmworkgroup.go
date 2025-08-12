@@ -22,6 +22,7 @@ import (
 	context "context"
 
 	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	applyconfigurationsciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/applyconfiguration/science/v1"
 	scheme "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -47,18 +48,21 @@ type NexusAlgorithmWorkgroupInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*sciencev1.NexusAlgorithmWorkgroupList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *sciencev1.NexusAlgorithmWorkgroup, err error)
+	Apply(ctx context.Context, nexusAlgorithmWorkgroup *applyconfigurationsciencev1.NexusAlgorithmWorkgroupApplyConfiguration, opts metav1.ApplyOptions) (result *sciencev1.NexusAlgorithmWorkgroup, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+	ApplyStatus(ctx context.Context, nexusAlgorithmWorkgroup *applyconfigurationsciencev1.NexusAlgorithmWorkgroupApplyConfiguration, opts metav1.ApplyOptions) (result *sciencev1.NexusAlgorithmWorkgroup, err error)
 	NexusAlgorithmWorkgroupExpansion
 }
 
 // nexusAlgorithmWorkgroups implements NexusAlgorithmWorkgroupInterface
 type nexusAlgorithmWorkgroups struct {
-	*gentype.ClientWithList[*sciencev1.NexusAlgorithmWorkgroup, *sciencev1.NexusAlgorithmWorkgroupList]
+	*gentype.ClientWithListAndApply[*sciencev1.NexusAlgorithmWorkgroup, *sciencev1.NexusAlgorithmWorkgroupList, *applyconfigurationsciencev1.NexusAlgorithmWorkgroupApplyConfiguration]
 }
 
 // newNexusAlgorithmWorkgroups returns a NexusAlgorithmWorkgroups
 func newNexusAlgorithmWorkgroups(c *ScienceV1Client, namespace string) *nexusAlgorithmWorkgroups {
 	return &nexusAlgorithmWorkgroups{
-		gentype.NewClientWithList[*sciencev1.NexusAlgorithmWorkgroup, *sciencev1.NexusAlgorithmWorkgroupList](
+		gentype.NewClientWithListAndApply[*sciencev1.NexusAlgorithmWorkgroup, *sciencev1.NexusAlgorithmWorkgroupList, *applyconfigurationsciencev1.NexusAlgorithmWorkgroupApplyConfiguration](
 			"nexusalgorithmworkgroups",
 			c.RESTClient(),
 			scheme.ParameterCodec,
