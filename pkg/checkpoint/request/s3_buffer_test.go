@@ -228,9 +228,16 @@ func TestDefaultBuffer_Add(t *testing.T) {
 
 	if checkpoint == nil {
 		t.Errorf("expected checkpoint not found in the buffer after calling Add")
+		t.FailNow()
 	}
 
+	if checkpoint.LifecycleStage != models.LifecycleStageBuffered {
+		t.Errorf("lifecycle stage should be Buffered, but is %s", checkpoint.LifecycleStage)
+	}
+
+	// stop the buffer
 	f.buffer.ctx.Done()
 
+	// let it gracefully finish
 	time.Sleep(1 * time.Second)
 }
