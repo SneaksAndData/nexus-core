@@ -57,7 +57,7 @@ func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq2[*mod
 	}
 	queryResult := []*models.CheckpointedRequestCqlModel{}
 
-	var query = cqls.cqlSession.Query(models.CheckpointedRequestTableIndexByHost.Get()).BindStruct(*predicate)
+	var query = cqls.cqlSession.Query(models.CheckpointedRequestTableIndexByHost.GetBuilder().AllowFiltering().ToCql()).BindStruct(*predicate)
 	if err := query.SelectRelease(&queryResult); err != nil {
 		cqls.logger.V(1).Error(err, "error when reading buffered checkpoints", "host", host)
 		return nil, err

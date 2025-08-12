@@ -42,7 +42,7 @@ INSERT INTO nexus.checkpoints (algorithm, id, lifecycle_stage, payload_uri, resu
                                configuration_overrides, content_hash, last_modified, tag, api_version,
                                job_uid, parent_job, payload_valid_for)
 VALUES ('test-algorithm', '2c7b6e8d-cc3c-4b5b-a3f6-5d7b9e2c7f2a', 'BUFFERED', 'http://localhost/payload',
-        'http://localhost/result', NULL, NULL, 'host456', '2023-10-02T10:00:00.000Z',
+        'http://localhost/result', NULL, NULL, 'host123', '2023-10-02T10:00:00.000Z',
         '2023-10-02T10:30:00.000Z', '{}', '{}', 'buffered_hash', '2023-10-02T10:45:00.000Z',
         'buffered_tag', 'v2.0', '1f7b6e8d-cc3c-4b5b-a3f6-5d7b9e2c7f2a', '{}', '15m');
 
