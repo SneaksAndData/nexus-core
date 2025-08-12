@@ -9,6 +9,8 @@ package request
 import (
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/aws/smithy-go/ptr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2/ktesting"
 	"testing"
 	"time"
@@ -136,18 +138,46 @@ func TestDefaultBuffer_Add(t *testing.T) {
 		ParentRequest:       nil,
 		PayloadValidFor:     "24h",
 	}, &v1.NexusAlgorithmSpec{
-		Container:        nil,
-		ComputeResources: nil,
+		Container: &v1.NexusAlgorithmContainer{
+			Image:              "test-image",
+			Registry:           "test",
+			VersionTag:         "v1.2.3",
+			ServiceAccountName: "test-sa",
+		},
+		ComputeResources: &v1.NexusAlgorithmResources{
+			CpuLimit:        "1000m",
+			MemoryLimit:     "2000Mi",
+			CustomResources: nil,
+		},
 		WorkgroupRef: &v1.NexusAlgorithmWorkgroupRef{
 			Name:  "default",
 			Group: "science.sneaksanddata.com/v1",
 			Kind:  "NexusAlgorithmWorkgroup",
 		},
-		Command:                    "python",
-		Args:                       []string{"main.py", "--request-id=%s", "--sas-uri=%s"},
-		RuntimeEnvironment:         nil,
+		Command: "python",
+		Args:    []string{"main.py", "--request-id=%s", "--sas-uri=%s"},
+		RuntimeEnvironment: &v1.NexusAlgorithmRuntimeEnvironment{
+			EnvironmentVariables: []corev1.EnvVar{
+				{
+					Name:  "TEST_ENV_VAR",
+					Value: "TEST_VALUE",
+				},
+			},
+			MappedEnvironmentVariables: []corev1.EnvFromSource{
+				{
+					SecretRef: &corev1.SecretEnvSource{
+						LocalObjectReference: corev1.LocalObjectReference{
+							Name: "test-secret",
+						},
+					},
+				},
+			},
+			Annotations:     nil,
+			DeadlineSeconds: ptr.Int32(300),
+			MaximumRetries:  ptr.Int32(10),
+		},
 		ErrorHandlingBehaviour:     nil,
-		DatadogIntegrationSettings: nil,
+		DatadogIntegrationSettings: &v1.NexusDatadogIntegrationSettings{MountDatadogSocket: ptr.Bool(true)},
 	}, &v1.NexusAlgorithmWorkgroupSpec{
 		Description:  "test",
 		Capabilities: nil,
@@ -161,7 +191,7 @@ func TestDefaultBuffer_Add(t *testing.T) {
 		t.FailNow()
 	}
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 5)
 
 	checkpoint, err := f.buffer.Get("new-id", "test-algorithm-v2")
 
@@ -173,4 +203,8 @@ func TestDefaultBuffer_Add(t *testing.T) {
 	if checkpoint == nil {
 		t.Errorf("expected checkpoint not found in the buffer after calling Add")
 	}
+
+	f.buffer.ctx.Done()
+
+	time.Sleep(1 * time.Second)
 }
