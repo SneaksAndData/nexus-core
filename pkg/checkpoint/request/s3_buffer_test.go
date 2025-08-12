@@ -7,6 +7,7 @@
 package request
 
 import (
+	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"k8s.io/klog/v2/ktesting"
 	"testing"
@@ -70,6 +71,7 @@ func TestDefaultBuffer_GetBuffered(t *testing.T) {
 	for checkpoint, err := range checkpoints {
 		if err != nil {
 			t.Errorf("error when deserializing a buffered checkpoint: %v", err)
+			t.FailNow()
 		}
 
 		result = append(result, checkpoint)
@@ -82,5 +84,93 @@ func TestDefaultBuffer_GetBuffered(t *testing.T) {
 
 	if result[0].Id != "2c7b6e8d-cc3c-4b5b-a3f6-5d7b9e2c7f2a" {
 		t.Errorf("Only a checkpoint with id 2c7b6e8d-cc3c-4b5b-a3f6-5d7b9e2c7f2a should be BUFFERED for host123, but found %s", result[0].Id)
+	}
+}
+
+func TestDefaultBuffer_GetTagged(t *testing.T) {
+	f := newFixture(t)
+
+	checkpoints, err := f.buffer.GetTagged("running_tag")
+
+	if err != nil {
+		t.Errorf("error when reading checkpoints by tag: %v", err)
+		t.FailNow()
+	}
+
+	result := []*models.CheckpointedRequest{}
+
+	for checkpoint, err := range checkpoints {
+		if err != nil {
+			t.Errorf("error when deserializing a checkpoint: %v", err)
+			t.FailNow()
+		}
+
+		result = append(result, checkpoint)
+	}
+
+	if len(result) != 1 {
+		t.Errorf("expected only one checkpoint, but got %d", len(result))
+		t.FailNow()
+	}
+
+	if result[0].Id != "8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f" {
+		t.Errorf("Only a checkpoint with id 8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f should be RUNNING with tag running_tag, but found %s", result[0].Id)
+	}
+}
+
+func TestDefaultBuffer_Add(t *testing.T) {
+	f := newFixture(t)
+
+	go f.buffer.Start(nil)
+
+	time.Sleep(1 * time.Second)
+
+	err := f.buffer.Add("new-id", "test-algorithm-v2", &models.AlgorithmRequest{
+		AlgorithmParameters: map[string]interface{}{
+			"parameterA": "a",
+			"parameterB": "b",
+		},
+		CustomConfiguration: nil,
+		RequestApiVersion:   "",
+		Tag:                 "",
+		ParentRequest:       nil,
+		PayloadValidFor:     "24h",
+	}, &v1.NexusAlgorithmSpec{
+		Container:        nil,
+		ComputeResources: nil,
+		WorkgroupRef: &v1.NexusAlgorithmWorkgroupRef{
+			Name:  "default",
+			Group: "science.sneaksanddata.com/v1",
+			Kind:  "NexusAlgorithmWorkgroup",
+		},
+		Command:                    "python",
+		Args:                       []string{"main.py", "--request-id=%s", "--sas-uri=%s"},
+		RuntimeEnvironment:         nil,
+		ErrorHandlingBehaviour:     nil,
+		DatadogIntegrationSettings: nil,
+	}, &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "test",
+		Capabilities: nil,
+		Cluster:      "test-shard",
+		Tolerations:  nil,
+		Affinity:     nil,
+	})
+
+	if err != nil {
+		t.Errorf("error when buffering checkpoint: %v", err)
+		t.FailNow()
+	}
+
+	time.Sleep(time.Second)
+
+	checkpoint, err := f.buffer.Get("new-id", "test-algorithm-v2")
+
+	if err != nil {
+		t.Errorf("error when reading an expected checkpoint entry: %v", err)
+		t.FailNow()
+	}
+
+	if checkpoint == nil {
+		t.Errorf("expected checkpoint not found in the buffer after calling Add")
 	}
 }
