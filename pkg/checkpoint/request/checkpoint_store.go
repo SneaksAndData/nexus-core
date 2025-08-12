@@ -23,7 +23,7 @@ func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) e
 		var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Insert()).BindStruct(*serialized).Strict()
 		cqls.logger.V(0).Info("executing query", "query", query.String())
 
-		if err := query.ExecRelease(); err != nil {
+		if err := query.ExecRelease(); err != nil { // coverage-ignore
 			cqls.logger.V(1).Error(err, "error when inserting a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 			return err
 		}
@@ -42,7 +42,7 @@ func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.Check
 	}
 
 	var query = cqls.cqlSession.Query(models.CheckpointedRequestTable.Get()).BindStruct(*result)
-	if err := query.GetRelease(result); err != nil {
+	if err := query.GetRelease(result); err != nil { // coverage-ignore
 		cqls.logger.V(1).Error(err, "error when reading a checkpoint", "algorithm", algorithm, "id", id)
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq2[*mod
 	queryResult := []*models.CheckpointedRequestCqlModel{}
 
 	var query = cqls.cqlSession.Query(models.CheckpointedRequestTableIndexByHost.GetBuilder().AllowFiltering().ToCql()).BindStruct(*predicate)
-	if err := query.SelectRelease(&queryResult); err != nil {
+	if err := query.SelectRelease(&queryResult); err != nil { // coverage-ignore
 		cqls.logger.V(1).Error(err, "error when reading buffered checkpoints", "host", host)
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (cqls *CqlStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models
 	queryResult := []*models.CheckpointedRequestCqlModel{}
 
 	var query = cqls.cqlSession.Query(models.CheckpointedRequestTableIndexByTag.Get()).BindStruct(*predicate)
-	if err := query.SelectRelease(&queryResult); err != nil {
+	if err := query.SelectRelease(&queryResult); err != nil { // coverage-ignore
 		cqls.logger.V(1).Error(err, "error when reading checkpoints by a tag", "tag", requestTag)
 		return nil, err
 	}

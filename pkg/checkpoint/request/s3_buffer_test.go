@@ -120,6 +120,32 @@ func TestDefaultBuffer_GetTagged(t *testing.T) {
 	}
 }
 
+func TestDefaultBuffer_GetMetadata(t *testing.T) {
+	f := newFixture(t)
+
+	metadataEntry, err := f.buffer.GetBufferedEntry(&models.CheckpointedRequest{Id: "123e4567-e89b-12d3-a456-426614174000", Algorithm: "test-algorithm"})
+
+	if err != nil {
+		t.Errorf("error when reading checkpoint metadata: %v", err)
+		t.FailNow()
+	}
+
+	if metadataEntry == nil {
+		t.Errorf("checkpoint metadata entry must not be nil")
+		t.FailNow()
+	}
+
+	job, err := metadataEntry.SubmissionTemplate()
+
+	if err != nil {
+		t.Errorf("error when deserializing checkpoint metadata: %v", err)
+	}
+
+	if job == nil {
+		t.Errorf("checkpoint metadata job must not be nil")
+	}
+}
+
 func TestDefaultBuffer_Add(t *testing.T) {
 	f := newFixture(t)
 

@@ -44,7 +44,7 @@ type ScyllaCqlStoreConfig struct {
 	LocalDC  string   `mapstructure:"local-dc"`
 }
 
-func getContent(zipFile *zip.File) ([]byte, error) {
+func getContent(zipFile *zip.File) ([]byte, error) { // coverage-ignore
 	handle, err := zipFile.Open()
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func getContent(zipFile *zip.File) ([]byte, error) {
 	return io.ReadAll(handle)
 }
 
-func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *AstraCqlStoreConfig {
+func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *AstraCqlStoreConfig { // coverage-ignore
 	bundleBytes, err := base64.StdEncoding.DecodeString(config.SecureConnectionBundleBase64)
 	if err != nil {
 		logger.V(0).Error(err, "bundle value is not a valid base64-encoded string")
@@ -128,7 +128,7 @@ func NewCqlStore(cluster *gocql.ClusterConfig, logger klog.Logger) *CqlStore {
 }
 
 // NewAstraCqlStore creates a CqlStore connected to DataStax AstraDB serverless instance
-func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore {
+func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore { // coverage-ignore
 	config := NewAstraCqlStoreConfig(logger, bundle)
 	cluster := gocql.NewCluster(config.GatewayHost)
 	cluster.Authenticator = gocql.PasswordAuthenticator{
