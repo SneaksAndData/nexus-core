@@ -59,6 +59,14 @@ jobs:
 
           chmod 777 ./test-resources/kubecfg/shards/kind-nexus-shard-0.kubeconfig
 
+      - name: Launch Compose Stack
+        run: |
+          docker compose up --quiet-pull -d
+
+      - name: Get Compose Logs
+        if: always()
+        run: docker compose logs
+
       - name: Test
         env: 
           APPLICATION_ENVIRONMENT: units
