@@ -13,7 +13,7 @@ import (
 	kubeinformers "k8s.io/client-go/informers"
 	k8sfake "k8s.io/client-go/kubernetes/fake"
 	core "k8s.io/client-go/testing"
-	ktesting "k8s.io/klog/v2/ktesting"
+	"k8s.io/klog/v2/ktesting"
 	"reflect"
 	"testing"
 	"time"
@@ -195,8 +195,8 @@ func fakeReferenceLabels() map[string]string {
 }
 
 func (f *fixture) newShard() (*Shard, *FakeInformers) {
-	f.nexusClient = fake.NewSimpleClientset(f.nexusObjects...)
-	f.kubeClient = k8sfake.NewSimpleClientset(f.kubeObjects...)
+	f.nexusClient = fake.NewClientset(f.nexusObjects...)
+	f.kubeClient = k8sfake.NewClientset(f.kubeObjects...)
 
 	nexusInf := informers.NewSharedInformerFactory(f.nexusClient, noResyncPeriodFunc())
 	kubeInf := kubeinformers.NewSharedInformerFactory(f.kubeClient, noResyncPeriodFunc())

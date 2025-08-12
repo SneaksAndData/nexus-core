@@ -22,6 +22,7 @@ import (
 	context "context"
 
 	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	applyconfigurationsciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/applyconfiguration/science/v1"
 	scheme "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/scheme"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -47,18 +48,21 @@ type NexusAlgorithmTemplateInterface interface {
 	List(ctx context.Context, opts metav1.ListOptions) (*sciencev1.NexusAlgorithmTemplateList, error)
 	Watch(ctx context.Context, opts metav1.ListOptions) (watch.Interface, error)
 	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions, subresources ...string) (result *sciencev1.NexusAlgorithmTemplate, err error)
+	Apply(ctx context.Context, nexusAlgorithmTemplate *applyconfigurationsciencev1.NexusAlgorithmTemplateApplyConfiguration, opts metav1.ApplyOptions) (result *sciencev1.NexusAlgorithmTemplate, err error)
+	// Add a +genclient:noStatus comment above the type to avoid generating ApplyStatus().
+	ApplyStatus(ctx context.Context, nexusAlgorithmTemplate *applyconfigurationsciencev1.NexusAlgorithmTemplateApplyConfiguration, opts metav1.ApplyOptions) (result *sciencev1.NexusAlgorithmTemplate, err error)
 	NexusAlgorithmTemplateExpansion
 }
 
 // nexusAlgorithmTemplates implements NexusAlgorithmTemplateInterface
 type nexusAlgorithmTemplates struct {
-	*gentype.ClientWithList[*sciencev1.NexusAlgorithmTemplate, *sciencev1.NexusAlgorithmTemplateList]
+	*gentype.ClientWithListAndApply[*sciencev1.NexusAlgorithmTemplate, *sciencev1.NexusAlgorithmTemplateList, *applyconfigurationsciencev1.NexusAlgorithmTemplateApplyConfiguration]
 }
 
 // newNexusAlgorithmTemplates returns a NexusAlgorithmTemplates
 func newNexusAlgorithmTemplates(c *ScienceV1Client, namespace string) *nexusAlgorithmTemplates {
 	return &nexusAlgorithmTemplates{
-		gentype.NewClientWithList[*sciencev1.NexusAlgorithmTemplate, *sciencev1.NexusAlgorithmTemplateList](
+		gentype.NewClientWithListAndApply[*sciencev1.NexusAlgorithmTemplate, *sciencev1.NexusAlgorithmTemplateList, *applyconfigurationsciencev1.NexusAlgorithmTemplateApplyConfiguration](
 			"nexusalgorithmtemplates",
 			c.RESTClient(),
 			scheme.ParameterCodec,

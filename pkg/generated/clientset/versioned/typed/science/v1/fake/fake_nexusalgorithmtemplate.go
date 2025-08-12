@@ -20,19 +20,20 @@ package fake
 
 import (
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
-	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/applyconfiguration/science/v1"
+	typedsciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
 	gentype "k8s.io/client-go/gentype"
 )
 
 // fakeNexusAlgorithmTemplates implements NexusAlgorithmTemplateInterface
 type fakeNexusAlgorithmTemplates struct {
-	*gentype.FakeClientWithList[*v1.NexusAlgorithmTemplate, *v1.NexusAlgorithmTemplateList]
+	*gentype.FakeClientWithListAndApply[*v1.NexusAlgorithmTemplate, *v1.NexusAlgorithmTemplateList, *sciencev1.NexusAlgorithmTemplateApplyConfiguration]
 	Fake *FakeScienceV1
 }
 
-func newFakeNexusAlgorithmTemplates(fake *FakeScienceV1, namespace string) sciencev1.NexusAlgorithmTemplateInterface {
+func newFakeNexusAlgorithmTemplates(fake *FakeScienceV1, namespace string) typedsciencev1.NexusAlgorithmTemplateInterface {
 	return &fakeNexusAlgorithmTemplates{
-		gentype.NewFakeClientWithList[*v1.NexusAlgorithmTemplate, *v1.NexusAlgorithmTemplateList](
+		gentype.NewFakeClientWithListAndApply[*v1.NexusAlgorithmTemplate, *v1.NexusAlgorithmTemplateList, *sciencev1.NexusAlgorithmTemplateApplyConfiguration](
 			fake.Fake,
 			namespace,
 			v1.SchemeGroupVersion.WithResource("nexusalgorithmtemplates"),

@@ -20,19 +20,20 @@ package fake
 
 import (
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
-	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
+	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/applyconfiguration/science/v1"
+	typedsciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/typed/science/v1"
 	gentype "k8s.io/client-go/gentype"
 )
 
 // fakeNexusAlgorithmWorkgroups implements NexusAlgorithmWorkgroupInterface
 type fakeNexusAlgorithmWorkgroups struct {
-	*gentype.FakeClientWithList[*v1.NexusAlgorithmWorkgroup, *v1.NexusAlgorithmWorkgroupList]
+	*gentype.FakeClientWithListAndApply[*v1.NexusAlgorithmWorkgroup, *v1.NexusAlgorithmWorkgroupList, *sciencev1.NexusAlgorithmWorkgroupApplyConfiguration]
 	Fake *FakeScienceV1
 }
 
-func newFakeNexusAlgorithmWorkgroups(fake *FakeScienceV1, namespace string) sciencev1.NexusAlgorithmWorkgroupInterface {
+func newFakeNexusAlgorithmWorkgroups(fake *FakeScienceV1, namespace string) typedsciencev1.NexusAlgorithmWorkgroupInterface {
 	return &fakeNexusAlgorithmWorkgroups{
-		gentype.NewFakeClientWithList[*v1.NexusAlgorithmWorkgroup, *v1.NexusAlgorithmWorkgroupList](
+		gentype.NewFakeClientWithListAndApply[*v1.NexusAlgorithmWorkgroup, *v1.NexusAlgorithmWorkgroupList, *sciencev1.NexusAlgorithmWorkgroupApplyConfiguration](
 			fake.Fake,
 			namespace,
 			v1.SchemeGroupVersion.WithResource("nexusalgorithmworkgroups"),

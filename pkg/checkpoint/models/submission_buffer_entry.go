@@ -32,7 +32,7 @@ type SubmissionBufferEntry struct {
 
 // SubmissionTemplate returns a Kubernetes Job object generated for the algorithm request
 func (sbe *SubmissionBufferEntry) SubmissionTemplate() (*batchv1.Job, error) {
-	var result *batchv1.Job
+	result := &batchv1.Job{}
 	err := json.Unmarshal([]byte(sbe.Template), result)
 	if err != nil {
 		return nil, err

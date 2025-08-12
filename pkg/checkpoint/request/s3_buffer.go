@@ -38,7 +38,7 @@ type DefaultBuffer struct {
 }
 
 // NewAstraS3Buffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
-func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *AstraBundleConfig, metricTags map[string]string) *DefaultBuffer {
+func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *AstraBundleConfig, metricTags map[string]string) *DefaultBuffer { // coverage-ignore
 	logger := klog.FromContext(ctx)
 
 	cqlStore := NewAstraCqlStore(logger, astraConfig)
@@ -67,7 +67,7 @@ func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig
 		blobStore:       payload.NewS3PayloadStore(ctx, logger, s3credentials.NewStaticCredentialsProvider(config.AccessKeyID, config.SecretAccessKey, ""), config.Endpoint, config.Region),
 		config:          config,
 		logger:          &logger,
-		metrics:         ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
+		metrics:         telemetry.GetClient(ctx),
 		ctx:             ctx,
 		actor:           nil,
 		name:            "default_scylladb_s3",

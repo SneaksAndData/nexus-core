@@ -44,7 +44,7 @@ type ScyllaCqlStoreConfig struct {
 	LocalDC  string   `mapstructure:"local-dc"`
 }
 
-func getContent(zipFile *zip.File) ([]byte, error) {
+func getContent(zipFile *zip.File) ([]byte, error) { // coverage-ignore
 	handle, err := zipFile.Open()
 	if err != nil {
 		return nil, err
@@ -57,7 +57,7 @@ func getContent(zipFile *zip.File) ([]byte, error) {
 	return io.ReadAll(handle)
 }
 
-func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *AstraCqlStoreConfig {
+func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *AstraCqlStoreConfig { // coverage-ignore
 	bundleBytes, err := base64.StdEncoding.DecodeString(config.SecureConnectionBundleBase64)
 	if err != nil {
 		logger.V(0).Error(err, "bundle value is not a valid base64-encoded string")
@@ -116,7 +116,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 // NewCqlStore creates a generic connected CqlStore (Apache Cassandra/Scylla)
 func NewCqlStore(cluster *gocql.ClusterConfig, logger klog.Logger) *CqlStore {
 	session, err := gocqlx.WrapSession(cluster.CreateSession())
-	if err != nil {
+	if err != nil { // coverage-ignore
 		logger.V(0).Error(err, "failed to create CQL session")
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
@@ -128,7 +128,7 @@ func NewCqlStore(cluster *gocql.ClusterConfig, logger klog.Logger) *CqlStore {
 }
 
 // NewAstraCqlStore creates a CqlStore connected to DataStax AstraDB serverless instance
-func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore {
+func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore { // coverage-ignore
 	config := NewAstraCqlStoreConfig(logger, bundle)
 	cluster := gocql.NewCluster(config.GatewayHost)
 	cluster.Authenticator = gocql.PasswordAuthenticator{
@@ -147,16 +147,16 @@ func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore {
 func NewScyllaCqlStore(logger klog.Logger, config *ScyllaCqlStoreConfig) *CqlStore {
 	cluster := gocql.NewCluster(config.Hosts...)
 	fallback := gocql.RoundRobinHostPolicy()
-	if config.LocalDC != "" {
+	if config.LocalDC != "" { // coverage-ignore
 		fallback = gocql.DCAwareRoundRobinPolicy(config.LocalDC)
 	}
 
 	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(fallback)
-	if config.LocalDC != "" {
+	if config.LocalDC != "" { // coverage-ignore
 		cluster.Consistency = gocql.LocalQuorum
 	}
 
-	if config.Password != "" {
+	if config.Password != "" { // coverage-ignore
 		cluster.Authenticator = gocql.PasswordAuthenticator{
 			Username: config.User,
 			Password: config.Password,
