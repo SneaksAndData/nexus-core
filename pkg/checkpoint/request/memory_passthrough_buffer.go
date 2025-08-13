@@ -71,8 +71,8 @@ func (buffer *MemoryPassthroughBuffer) GetTagged(tag string) (iter.Seq2[*models.
 
 func (buffer *MemoryPassthroughBuffer) Update(checkpoint *models.CheckpointedRequest) error {
 	var checkpointToUpdate int
-	for index, checkpoint := range buffer.checkpoints {
-		if checkpoint.Id == checkpoint.Id && checkpoint.Algorithm == checkpoint.Algorithm {
+	for index, bufferedCheckpoint := range buffer.checkpoints {
+		if checkpoint.Id == bufferedCheckpoint.Id && checkpoint.Algorithm == bufferedCheckpoint.Algorithm {
 			checkpointToUpdate = index
 			break
 		}
