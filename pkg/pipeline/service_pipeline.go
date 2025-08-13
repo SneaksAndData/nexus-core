@@ -17,8 +17,7 @@ type ActorElementProcessor[TIn comparable, TOut comparable] func(element TIn) (T
 type ActorPostStart func(ctx context.Context) error
 
 func NewActorPostStart(postStart func(ctx context.Context) error) *ActorPostStart {
-	var result ActorPostStart
-	result = postStart
+	var result ActorPostStart = postStart
 	return &result
 }
 
