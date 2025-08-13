@@ -14,8 +14,8 @@ import (
 )
 
 type MemoryPassthroughBuffer struct {
-	checkpoints     []*models.CheckpointedRequest
-	bufferedEntries []*models.SubmissionBufferEntry
+	Checkpoints     []*models.CheckpointedRequest
+	BufferedEntries []*models.SubmissionBufferEntry
 	logger          *klog.Logger
 	metrics         *statsd.Client
 	ctx             context.Context
@@ -29,7 +29,7 @@ type MemoryPassthroughBuffer struct {
 func NewMemoryPassthroughBuffer(ctx context.Context, metricTags map[string]string) *MemoryPassthroughBuffer {
 	logger := klog.FromContext(ctx)
 	return &MemoryPassthroughBuffer{
-		checkpoints: []*models.CheckpointedRequest{},
+		Checkpoints: []*models.CheckpointedRequest{},
 		logger:      &logger,
 		metrics:     telemetry.GetClient(ctx),
 		ctx:         ctx,
@@ -40,7 +40,7 @@ func NewMemoryPassthroughBuffer(ctx context.Context, metricTags map[string]strin
 }
 
 func (buffer *MemoryPassthroughBuffer) Get(requestId string, algorithmName string) (*models.CheckpointedRequest, error) {
-	for _, checkpoint := range buffer.checkpoints {
+	for _, checkpoint := range buffer.Checkpoints {
 		if checkpoint.Id == requestId && checkpoint.Algorithm == algorithmName {
 			return checkpoint, nil
 		}
@@ -51,7 +51,7 @@ func (buffer *MemoryPassthroughBuffer) Get(requestId string, algorithmName strin
 
 func (buffer *MemoryPassthroughBuffer) GetBuffered(host string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	return func(yield func(*models.CheckpointedRequest, error) bool) {
-		for _, checkpoint := range buffer.checkpoints {
+		for _, checkpoint := range buffer.Checkpoints {
 			if checkpoint.ReceivedByHost == host {
 				yield(checkpoint, nil)
 			}
@@ -61,7 +61,7 @@ func (buffer *MemoryPassthroughBuffer) GetBuffered(host string) (iter.Seq2[*mode
 
 func (buffer *MemoryPassthroughBuffer) GetTagged(tag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	return func(yield func(*models.CheckpointedRequest, error) bool) {
-		for _, checkpoint := range buffer.checkpoints {
+		for _, checkpoint := range buffer.Checkpoints {
 			if checkpoint.Tag == tag {
 				yield(checkpoint, nil)
 			}
@@ -71,20 +71,20 @@ func (buffer *MemoryPassthroughBuffer) GetTagged(tag string) (iter.Seq2[*models.
 
 func (buffer *MemoryPassthroughBuffer) Update(checkpoint *models.CheckpointedRequest) error {
 	var checkpointToUpdate int
-	for index, bufferedCheckpoint := range buffer.checkpoints {
+	for index, bufferedCheckpoint := range buffer.Checkpoints {
 		if checkpoint.Id == bufferedCheckpoint.Id && checkpoint.Algorithm == bufferedCheckpoint.Algorithm {
 			checkpointToUpdate = index
 			break
 		}
 	}
 
-	buffer.checkpoints[checkpointToUpdate] = checkpoint
+	buffer.Checkpoints[checkpointToUpdate] = checkpoint
 
 	return nil
 }
 
 func (buffer *MemoryPassthroughBuffer) GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
-	for _, entry := range buffer.bufferedEntries {
+	for _, entry := range buffer.BufferedEntries {
 		if checkpoint.Id == entry.Id && checkpoint.Algorithm == entry.Algorithm {
 			return entry, nil
 		}
@@ -110,8 +110,8 @@ func (buffer *MemoryPassthroughBuffer) bufferRequest(input *BufferInput) (*Buffe
 	bufferedCheckpoint.PayloadValidFor = "24h"
 	entry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup)
 
-	buffer.checkpoints = append(buffer.checkpoints, input.Checkpoint)
-	buffer.bufferedEntries = append(buffer.bufferedEntries, entry)
+	buffer.Checkpoints = append(buffer.Checkpoints, input.Checkpoint)
+	buffer.BufferedEntries = append(buffer.BufferedEntries, entry)
 
 	return &BufferOutput{
 		Checkpoint: bufferedCheckpoint,
