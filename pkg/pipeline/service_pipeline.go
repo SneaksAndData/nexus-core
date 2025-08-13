@@ -14,6 +14,12 @@ import (
 )
 
 type ActorElementProcessor[TIn comparable, TOut comparable] func(element TIn) (TOut, error)
+type ActorPostStart func(ctx context.Context) error
+
+func NewActorPostStart(postStart func(ctx context.Context) error) *ActorPostStart {
+	var result ActorPostStart = postStart
+	return &result
+}
 
 type StageActor[TIn comparable, TOut comparable] interface {
 	Receive(element TIn)
@@ -94,7 +100,7 @@ func (a *DefaultPipelineStageActor[TIn, TOut]) runActor(ctx context.Context) {
 	}
 }
 
-func (a *DefaultPipelineStageActor[TIn, TOut]) Start(ctx context.Context) {
+func (a *DefaultPipelineStageActor[TIn, TOut]) Start(ctx context.Context, postStart *ActorPostStart) {
 	defer utilruntime.HandleCrash()
 	defer a.queue.ShutDown()
 
@@ -105,6 +111,14 @@ func (a *DefaultPipelineStageActor[TIn, TOut]) Start(ctx context.Context) {
 		go wait.UntilWithContext(ctx, a.runActor, time.Second)
 	}
 	logger.V(0).Info("started workers", "workers", a.workers, "stage", a.stageName)
+
+	if postStart != nil { // coverage-ignore
+		postStartErr := (*postStart)(ctx)
+		if postStartErr != nil {
+			logger.V(0).Error(postStartErr, "failed to execute actor post-start", "stage", a.stageName)
+			klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+		}
+	}
 
 	<-ctx.Done()
 
