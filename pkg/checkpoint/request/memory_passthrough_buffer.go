@@ -133,5 +133,5 @@ func (buffer *MemoryPassthroughBuffer) Start(submitter pipeline.StageActor[*Buff
 		submitter,
 	)
 
-	buffer.actor.Start(buffer.ctx)
+	buffer.actor.Start(buffer.ctx, nil)
 }

@@ -47,8 +47,8 @@ func Test_DefaultPipelineStageActor(t *testing.T) {
 		},
 		receiver)
 
-	go sender.Start(ctx)
-	go receiver.Start(ctx)
+	go sender.Start(ctx, NewActorPostStart(func(ctx context.Context) error { return nil }))
+	go receiver.Start(ctx, nil)
 
 	total := 10
 	expected := 0

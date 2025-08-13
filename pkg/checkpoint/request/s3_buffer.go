@@ -88,7 +88,7 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 		submitter,
 	)
 
-	buffer.actor.Start(buffer.ctx)
+	buffer.actor.Start(buffer.ctx, nil)
 }
 
 func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec) error {
