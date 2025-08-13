@@ -7,12 +7,13 @@ threshold:
 
 exclude:
   paths:
-    - \.pb\.go$                                         # excludes all protobuf generated files
-    - ^pkg/generated                                    # exclude generated code
-    - pkg/apis/science/v1/zz_generated.deepcopy.go      # exclude generated deep copy methods
-    - ^pkg/signals                                      # exclude signal handlers from sample controller
-    - ^pkg/telemetry                                    # exclude logging and telemetry wrappers
-    - hack/*.go                                         # exclude hack folder
-    - ^pkg/buildmeta                                    # exclude build metadata
-    - pkg/checkpoint/payload/s3_payload_store.go        # exclude plain vendor API wrappers
-    - pkg/checkpoint/models/submission_buffer_entry.go  # temporary exclude SBE code
+    - \.pb\.go$                                             # excludes all protobuf generated files
+    - ^pkg/generated                                        # exclude generated code
+    - pkg/apis/science/v1/zz_generated.deepcopy.go          # exclude generated deep copy methods
+    - ^pkg/signals                                          # exclude signal handlers from sample controller
+    - ^pkg/telemetry                                        # exclude logging and telemetry wrappers
+    - hack/*.go                                             # exclude hack folder
+    - ^pkg/buildmeta                                        # exclude build metadata
+    - pkg/checkpoint/payload/s3_payload_store.go            # exclude plain vendor API wrappers
+    - pkg/checkpoint/models/submission_buffer_entry.go      # temporary exclude SBE code
+    - pkg/checkpoint/request/memory_passthrough_buffer.go   # exclude test support code
