@@ -1,14 +1,22 @@
 package request
 
 import (
-	"context"
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/SneaksAndData/nexus-core/pkg/pipeline"
+	"iter"
+	"k8s.io/apimachinery/pkg/types"
 	"time"
 )
 
 type Buffer interface {
-	BufferRequest(ctx context.Context, requestId string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*models.SubmissionBufferEntry, error)
+	Get(requestId string, algorithmName string) (*models.CheckpointedRequest, error)
+	GetBuffered(host string) (iter.Seq2[*models.CheckpointedRequest, error], error)
+	GetTagged(tag string) (iter.Seq2[*models.CheckpointedRequest, error], error)
+	Update(checkpoint *models.CheckpointedRequest) error
+	GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error)
+	Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec) error
+	Start(submitter pipeline.StageActor[*BufferOutput, types.UID])
 }
 
 type BufferConfig struct {

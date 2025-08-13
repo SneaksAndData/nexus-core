@@ -56,7 +56,7 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 	}
 }
 
-// NewScyllaS3Buffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
+// NewScyllaS3Buffer creates a default buffer that uses ScyllaDb for checkpointing and S3-compatible storage for payload persistence
 func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig *ScyllaCqlStoreConfig, metricTags map[string]string) *DefaultBuffer {
 	logger := klog.FromContext(ctx)
 
