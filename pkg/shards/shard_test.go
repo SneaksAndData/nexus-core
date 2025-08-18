@@ -740,3 +740,68 @@ func TestShard_CreateNexusAlgorithmWorkgroup(t *testing.T) {
 	f.checkActions(f.nexusActions, f.nexusClient.Actions())
 	t.Log("Shard client created a new Workgroup resource")
 }
+
+// TestShard_UpdateNexusAlgorithmWorkgroup tests that workgroup update action works correctly
+func TestShard_UpdateNexusAlgorithmWorkgroup(t *testing.T) {
+	f := newFixture(t)
+	workgroup := newWorkgroupOnShard()
+	updatedWorkgroup := workgroup.DeepCopy()
+	updatedWorkgroup.Spec.Tolerations = append(updatedWorkgroup.Spec.Tolerations, corev1.Toleration{
+		Key:      "key",
+		Operator: corev1.TolerationOpEqual,
+		Value:    "value",
+		Effect:   corev1.TaintEffectNoSchedule,
+	})
+
+	_, ctx := ktesting.NewTestContext(t)
+
+	f = f.configure(
+		&ApiFixture{
+			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{},
+			workgroupListResults: []*nexusv1.NexusAlgorithmWorkgroup{workgroup},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingNexusObjects: []runtime.Object{workgroup},
+		},
+	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f.nexusActions = append(f.nexusActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "nexusalgorithmworkgroups"}, workgroup.Namespace, updatedWorkgroup))
+	_, _ = shard.UpdateWorkgroup(workgroup, updatedWorkgroup.Spec, "test")
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client updated an existing Workgroup resource")
+}
+
+// TestShard_DeleteNexusAlgorithmWorkgroup tests that workgroup delete action happens correctly
+func TestShard_DeleteNexusAlgorithmWorkgroup(t *testing.T) {
+	f := newFixture(t)
+	workgroup := newWorkgroupOnShard()
+
+	_, ctx := ktesting.NewTestContext(t)
+
+	f = f.configure(
+		&ApiFixture{
+			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{},
+			workgroupListResults: []*nexusv1.NexusAlgorithmWorkgroup{workgroup},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingNexusObjects: []runtime.Object{workgroup},
+		},
+	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f.nexusActions = append(f.nexusActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "nexusalgorithmworkgroups"}, workgroup.Namespace, workgroup.Name))
+	_ = shard.DeleteWorkgroup(workgroup)
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client deleted an existing Workgroup resource")
+}
