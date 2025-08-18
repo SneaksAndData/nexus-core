@@ -30,9 +30,10 @@ type fixture struct {
 	nexusClient *fake.Clientset
 	kubeClient  *k8sfake.Clientset
 
-	templateLister []*nexusv1.NexusAlgorithmTemplate
-	secretLister   []*corev1.Secret
-	configLister   []*corev1.ConfigMap
+	templateLister  []*nexusv1.NexusAlgorithmTemplate
+	workgroupLister []*nexusv1.NexusAlgorithmWorkgroup
+	secretLister    []*corev1.Secret
+	configLister    []*corev1.ConfigMap
 
 	// actions to expect on the Kubernetes API
 	kubeActions  []core.Action
@@ -48,6 +49,7 @@ func newFixture(t *testing.T) *fixture {
 	f.t = t
 
 	f.templateLister = []*nexusv1.NexusAlgorithmTemplate{}
+	f.workgroupLister = []*nexusv1.NexusAlgorithmWorkgroup{}
 	f.secretLister = []*corev1.Secret{}
 	f.configLister = []*corev1.ConfigMap{}
 
@@ -61,11 +63,12 @@ type FakeInformers struct {
 
 type ApiFixture struct {
 	templateListResults  []*nexusv1.NexusAlgorithmTemplate
+	workgroupListResults []*nexusv1.NexusAlgorithmWorkgroup
 	secretListResults    []*corev1.Secret
 	configMapListResults []*corev1.ConfigMap
 
-	existingCoreObjects []runtime.Object
-	existingMlaObjects  []runtime.Object
+	existingCoreObjects  []runtime.Object
+	existingNexusObjects []runtime.Object
 }
 
 // filterInformerActions filters list and watch actions for testing resources.
@@ -77,6 +80,8 @@ func filterInformerActions(actions []core.Action) []core.Action {
 		if len(action.GetNamespace()) == 0 &&
 			(action.Matches("list", "nexusalgorithmtemplates") ||
 				action.Matches("watch", "nexusalgorithmtemplates") ||
+				action.Matches("list", "nexusalgorithmworkgroups") ||
+				action.Matches("watch", "nexusalgorithmworkgroups") ||
 				action.Matches("list", "configmaps") ||
 				action.Matches("watch", "configmaps") ||
 				action.Matches("list", "secrets") ||
@@ -179,9 +184,10 @@ func (f *fixture) checkActions(expected []core.Action, actual []core.Action) {
 // and adds existing objects to the respective containers
 func (f *fixture) configure(apiFixture *ApiFixture) *fixture {
 	f.templateLister = append(f.templateLister, apiFixture.templateListResults...)
+	f.workgroupLister = append(f.workgroupLister, apiFixture.workgroupListResults...)
 	f.secretLister = append(f.secretLister, apiFixture.secretListResults...)
 	f.configLister = append(f.configLister, apiFixture.configMapListResults...)
-	f.nexusObjects = append(f.nexusObjects, apiFixture.existingMlaObjects...)
+	f.nexusObjects = append(f.nexusObjects, apiFixture.existingNexusObjects...)
 	f.kubeObjects = append(f.kubeObjects, apiFixture.existingCoreObjects...)
 
 	return f
@@ -207,15 +213,21 @@ func (f *fixture) newShard() (*Shard, *FakeInformers) {
 		f.kubeClient,
 		f.nexusClient,
 		nexusInf.Science().V1().NexusAlgorithmTemplates(),
+		nexusInf.Science().V1().NexusAlgorithmWorkgroups(),
 		kubeInf.Core().V1().Secrets(),
 		kubeInf.Core().V1().ConfigMaps())
 
 	newShard.TemplateSynced = alwaysReady
+	newShard.WorkgroupSynced = alwaysReady
 	newShard.SecretsSynced = alwaysReady
 	newShard.ConfigMapsSynced = alwaysReady
 
 	for _, d := range f.templateLister {
 		_ = nexusInf.Science().V1().NexusAlgorithmTemplates().Informer().GetIndexer().Add(d)
+	}
+
+	for _, d := range f.workgroupLister {
+		_ = nexusInf.Science().V1().NexusAlgorithmWorkgroups().Informer().GetIndexer().Add(d)
 	}
 
 	for _, d := range f.secretLister {
@@ -255,7 +267,7 @@ func newTemplateOnShard() *nexusv1.NexusAlgorithmTemplate {
 			},
 			WorkgroupRef: &nexusv1.NexusAlgorithmWorkgroupRef{
 				Name:  "default",
-				Group: "test.io",
+				Group: nexusv1.SchemeGroupVersion.String(),
 				Kind:  "NexusAlgorithmWorkgroup",
 			},
 			Command: "python",
@@ -290,6 +302,29 @@ func newTemplateOnShard() *nexusv1.NexusAlgorithmTemplate {
 	return template
 }
 
+func newWorkgroupOnShard() *nexusv1.NexusAlgorithmWorkgroup {
+	workgroup := &nexusv1.NexusAlgorithmWorkgroup{
+		TypeMeta: metav1.TypeMeta{APIVersion: nexusv1.SchemeGroupVersion.String()},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "default",
+			Namespace: metav1.NamespaceDefault,
+			Labels: map[string]string{
+				"science.sneaksanddata.com/controller-app":      "nexus-configuration-controller",
+				"science.sneaksanddata.com/configuration-owner": "test-controller-cluster",
+			},
+		},
+		Spec: nexusv1.NexusAlgorithmWorkgroupSpec{
+			Description:  "test workgroup",
+			Capabilities: map[string]bool{},
+			Cluster:      "shard0",
+			Tolerations:  []corev1.Toleration{},
+			Affinity:     &corev1.Affinity{},
+		},
+	}
+
+	return workgroup
+}
+
 // TestShard_CreateNexusAlgorithmTemplate tests that resource creation action happens correctly
 func TestShard_CreateNexusAlgorithmTemplate(t *testing.T) {
 	f := newFixture(t)
@@ -302,7 +337,7 @@ func TestShard_CreateNexusAlgorithmTemplate(t *testing.T) {
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
-			existingMlaObjects:   []runtime.Object{},
+			existingNexusObjects: []runtime.Object{},
 		},
 	)
 
@@ -314,7 +349,7 @@ func TestShard_CreateNexusAlgorithmTemplate(t *testing.T) {
 	_, _ = shard.CreateTemplate(template.Name, template.Namespace, template.Spec, "test")
 
 	f.checkActions(f.nexusActions, f.nexusClient.Actions())
-	t.Log("Shard client created a new MLA resource")
+	t.Log("Shard client created a new Template resource")
 }
 
 // TestUpdateNexusAlgorithmTemplate tests that resource update action happens correctly
@@ -332,7 +367,7 @@ func TestShard_UpdateNexusAlgorithmTemplate(t *testing.T) {
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
-			existingMlaObjects:   []runtime.Object{template},
+			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
@@ -344,7 +379,7 @@ func TestShard_UpdateNexusAlgorithmTemplate(t *testing.T) {
 	_, _ = shard.UpdateTemplate(template, updatedTemplate.Spec, "test")
 
 	f.checkActions(f.nexusActions, f.nexusClient.Actions())
-	t.Log("Shard client update an existing MLA resource")
+	t.Log("Shard client update an existing Template resource")
 }
 
 // TestDeleteNexusAlgorithmTemplate tests that resource delete action happens correctly
@@ -360,7 +395,7 @@ func TestShard_DeleteNexusAlgorithmTemplate(t *testing.T) {
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
-			existingMlaObjects:   []runtime.Object{template},
+			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
@@ -372,7 +407,7 @@ func TestShard_DeleteNexusAlgorithmTemplate(t *testing.T) {
 	_ = shard.DeleteTemplate(template)
 
 	f.checkActions(f.nexusActions, f.nexusClient.Actions())
-	t.Log("Shard client deleted an existing MLA resource")
+	t.Log("Shard client deleted an existing Template resource")
 }
 
 // TestShard_CreateSecret tests that resource delete action happens correctly
@@ -409,7 +444,7 @@ func TestShard_CreateSecret(t *testing.T) {
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
-			existingMlaObjects:   []runtime.Object{template},
+			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
@@ -457,7 +492,7 @@ func TestShard_CreateConfigMap(t *testing.T) {
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{},
-			existingMlaObjects:   []runtime.Object{template},
+			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
@@ -509,7 +544,7 @@ func TestShard_UpdateConfigMap(t *testing.T) {
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{configMap},
 			existingCoreObjects:  []runtime.Object{},
-			existingMlaObjects:   []runtime.Object{template},
+			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
@@ -562,7 +597,7 @@ func TestShard_UpdateSecret(t *testing.T) {
 			secretListResults:    []*corev1.Secret{secret},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{secret},
-			existingMlaObjects:   []runtime.Object{template},
+			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
@@ -612,7 +647,7 @@ func TestShard_DereferenceSecret(t *testing.T) {
 			secretListResults:    []*corev1.Secret{secret},
 			configMapListResults: []*corev1.ConfigMap{},
 			existingCoreObjects:  []runtime.Object{secret},
-			existingMlaObjects:   []runtime.Object{template},
+			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
@@ -662,7 +697,7 @@ func TestShard_DereferenceConfigMap(t *testing.T) {
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{configMap},
 			existingCoreObjects:  []runtime.Object{configMap},
-			existingMlaObjects:   []runtime.Object{template},
+			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
@@ -676,4 +711,97 @@ func TestShard_DereferenceConfigMap(t *testing.T) {
 
 	f.checkActions(f.kubeActions, f.kubeClient.Actions())
 	t.Log("Shard client dereferenced an existing configMap")
+}
+
+// TestShard_CreateNexusAlgorithmWorkgroup tests that workgroup creation action happens correctly
+func TestShard_CreateNexusAlgorithmWorkgroup(t *testing.T) {
+	f := newFixture(t)
+	workgroup := newWorkgroupOnShard()
+	_, ctx := ktesting.NewTestContext(t)
+
+	f = f.configure(
+		&ApiFixture{
+			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{},
+			workgroupListResults: []*nexusv1.NexusAlgorithmWorkgroup{},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingNexusObjects: []runtime.Object{},
+		},
+	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f.nexusActions = append(f.nexusActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "nexusalgorithmworkgroups"}, workgroup.Namespace, workgroup))
+	_, _ = shard.CreateWorkgroup(workgroup.Name, workgroup.Namespace, workgroup.Spec, "test")
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client created a new Workgroup resource")
+}
+
+// TestShard_UpdateNexusAlgorithmWorkgroup tests that workgroup update action works correctly
+func TestShard_UpdateNexusAlgorithmWorkgroup(t *testing.T) {
+	f := newFixture(t)
+	workgroup := newWorkgroupOnShard()
+	updatedWorkgroup := workgroup.DeepCopy()
+	updatedWorkgroup.Spec.Tolerations = append(updatedWorkgroup.Spec.Tolerations, corev1.Toleration{
+		Key:      "key",
+		Operator: corev1.TolerationOpEqual,
+		Value:    "value",
+		Effect:   corev1.TaintEffectNoSchedule,
+	})
+
+	_, ctx := ktesting.NewTestContext(t)
+
+	f = f.configure(
+		&ApiFixture{
+			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{},
+			workgroupListResults: []*nexusv1.NexusAlgorithmWorkgroup{workgroup},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingNexusObjects: []runtime.Object{workgroup},
+		},
+	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f.nexusActions = append(f.nexusActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "nexusalgorithmworkgroups"}, workgroup.Namespace, updatedWorkgroup))
+	_, _ = shard.UpdateWorkgroup(workgroup, updatedWorkgroup.Spec, "test")
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client updated an existing Workgroup resource")
+}
+
+// TestShard_DeleteNexusAlgorithmWorkgroup tests that workgroup delete action happens correctly
+func TestShard_DeleteNexusAlgorithmWorkgroup(t *testing.T) {
+	f := newFixture(t)
+	workgroup := newWorkgroupOnShard()
+
+	_, ctx := ktesting.NewTestContext(t)
+
+	f = f.configure(
+		&ApiFixture{
+			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{},
+			workgroupListResults: []*nexusv1.NexusAlgorithmWorkgroup{workgroup},
+			secretListResults:    []*corev1.Secret{},
+			configMapListResults: []*corev1.ConfigMap{},
+			existingCoreObjects:  []runtime.Object{},
+			existingNexusObjects: []runtime.Object{workgroup},
+		},
+	)
+
+	shard, testInformers := f.newShard()
+	testInformers.k8sInformers.Start(ctx.Done())
+	testInformers.nexusInformers.Start(ctx.Done())
+
+	f.nexusActions = append(f.nexusActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "nexusalgorithmworkgroups"}, workgroup.Namespace, workgroup.Name))
+	_ = shard.DeleteWorkgroup(workgroup)
+
+	f.checkActions(f.nexusActions, f.nexusClient.Actions())
+	t.Log("Shard client deleted an existing Workgroup resource")
 }

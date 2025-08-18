@@ -52,6 +52,7 @@ func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
 		c.kubernetesClientSet,
 		c.nexusClientSet,
 		nexusInformer.Science().V1().NexusAlgorithmTemplates(),
+		nexusInformer.Science().V1().NexusAlgorithmWorkgroups(),
 		kubeInformer.Core().V1().Secrets(),
 		kubeInformer.Core().V1().ConfigMaps())
 }

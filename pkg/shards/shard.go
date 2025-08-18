@@ -47,6 +47,10 @@ type Shard struct {
 	// TemplateLister is a NexusAlgorithmTemplate lister in this Shard
 	TemplateLister nexuslisters.NexusAlgorithmTemplateLister
 	TemplateSynced cache.InformerSynced
+
+	// WorkgroupLister is a NexusAlgorithmWorkgroup list in this Shard
+	WorkgroupLister nexuslisters.NexusAlgorithmWorkgroupLister
+	WorkgroupSynced cache.InformerSynced
 }
 
 // NewShard creates a new Shard instance. File name in *kubeConfigPath* will be used as the Shard's name
@@ -58,6 +62,7 @@ func NewShard(
 	nexusClient clientset.Interface,
 
 	templateInformer nexusinformers.NexusAlgorithmTemplateInformer,
+	workgroupInformer nexusinformers.NexusAlgorithmWorkgroupInformer,
 	secretInformer coreinformers.SecretInformer,
 	configmapInformer coreinformers.ConfigMapInformer,
 ) *Shard {
@@ -75,6 +80,9 @@ func NewShard(
 
 		TemplateLister: templateInformer.Lister(),
 		TemplateSynced: templateInformer.Informer().HasSynced,
+
+		WorkgroupLister: workgroupInformer.Lister(),
+		WorkgroupSynced: workgroupInformer.Informer().HasSynced,
 	}
 }
 
@@ -85,7 +93,8 @@ func (shard *Shard) GetReferenceLabels() map[string]string {
 	}
 }
 
-func (shard *Shard) CreateTemplate(templateName string, templateNamespace string, mlaSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
+// CreateTemplate creates a new template resource using the provided spec
+func (shard *Shard) CreateTemplate(templateName string, templateNamespace string, templateSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
 	newTemplate := &v1.NexusAlgorithmTemplate{
 		TypeMeta: metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
@@ -93,13 +102,13 @@ func (shard *Shard) CreateTemplate(templateName string, templateNamespace string
 			Namespace: templateNamespace,
 			Labels:    shard.GetReferenceLabels(),
 		},
-		Spec: *mlaSpec.DeepCopy(),
+		Spec: *templateSpec.DeepCopy(),
 	}
 
 	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(templateNamespace).Create(context.TODO(), newTemplate, metav1.CreateOptions{FieldManager: fieldManager})
 }
 
-// UpdateTemplate updates the MLA in this shard in case it drifts from the one in the controller cluster
+// UpdateTemplate updates the Template in this shard in case it drifts from the one in the controller cluster
 func (shard *Shard) UpdateTemplate(template *v1.NexusAlgorithmTemplate, templateSpec v1.NexusAlgorithmSpec, fieldManager string) (*v1.NexusAlgorithmTemplate, error) {
 	newTemplate := template.DeepCopy()
 	newTemplate.Spec = *templateSpec.DeepCopy()
@@ -107,9 +116,37 @@ func (shard *Shard) UpdateTemplate(template *v1.NexusAlgorithmTemplate, template
 	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(newTemplate.Namespace).Update(context.TODO(), newTemplate, metav1.UpdateOptions{FieldManager: fieldManager})
 }
 
-// DeleteTemplate removes the MLA from this shard
+// DeleteTemplate removes the Template from this shard
 func (shard *Shard) DeleteTemplate(template *v1.NexusAlgorithmTemplate) error {
 	return shard.nexusClientSet.ScienceV1().NexusAlgorithmTemplates(template.Namespace).Delete(context.TODO(), template.Name, metav1.DeleteOptions{})
+}
+
+// CreateWorkgroup creates a new workgroup resource using the provided spec
+func (shard *Shard) CreateWorkgroup(workgroupName string, workgroupNamespace string, workgroupSpec v1.NexusAlgorithmWorkgroupSpec, fieldManager string) (*v1.NexusAlgorithmWorkgroup, error) {
+	newWorkgroup := &v1.NexusAlgorithmWorkgroup{
+		TypeMeta: metav1.TypeMeta{APIVersion: v1.SchemeGroupVersion.String()},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      workgroupName,
+			Namespace: workgroupNamespace,
+			Labels:    shard.GetReferenceLabels(),
+		},
+		Spec: *workgroupSpec.DeepCopy(),
+	}
+
+	return shard.nexusClientSet.ScienceV1().NexusAlgorithmWorkgroups(workgroupNamespace).Create(context.TODO(), newWorkgroup, metav1.CreateOptions{FieldManager: fieldManager})
+}
+
+// UpdateWorkgroup updates the workgroup in this shard in case it drifts from the one in the controller cluster
+func (shard *Shard) UpdateWorkgroup(workgroup *v1.NexusAlgorithmWorkgroup, workgroupSpec v1.NexusAlgorithmWorkgroupSpec, fieldManager string) (*v1.NexusAlgorithmWorkgroup, error) {
+	newWorkgroup := workgroup.DeepCopy()
+	newWorkgroup.Spec = *workgroupSpec.DeepCopy()
+
+	return shard.nexusClientSet.ScienceV1().NexusAlgorithmWorkgroups(newWorkgroup.Namespace).Update(context.TODO(), newWorkgroup, metav1.UpdateOptions{FieldManager: fieldManager})
+}
+
+// DeleteWorkgroup removes the Workgroup from this shard
+func (shard *Shard) DeleteWorkgroup(workgroup *v1.NexusAlgorithmWorkgroup) error {
+	return shard.nexusClientSet.ScienceV1().NexusAlgorithmWorkgroups(workgroup.Namespace).Delete(context.TODO(), workgroup.Name, metav1.DeleteOptions{})
 }
 
 // CreateSecret creates a new Secret for a NexusAlgorithmTemplate resource. It also sets
@@ -210,8 +247,8 @@ func (shard *Shard) UpdateConfigMap(configMap *corev1.ConfigMap, newData map[str
 }
 
 // DereferenceConfigMap removes provided algorithm as the owner of the secret, and optionally removes the secret if it has no owners
-func (shard *Shard) DereferenceConfigMap(configMap *corev1.ConfigMap, mla *v1.NexusAlgorithmTemplate, fieldManager string) error {
-	remainingOwners, err := util.RemoveOwner[corev1.ConfigMap](context.TODO(), configMap, mla.UID, shard.kubernetesClientSet, fieldManager)
+func (shard *Shard) DereferenceConfigMap(configMap *corev1.ConfigMap, template *v1.NexusAlgorithmTemplate, fieldManager string) error {
+	remainingOwners, err := util.RemoveOwner[corev1.ConfigMap](context.TODO(), configMap, template.UID, shard.kubernetesClientSet, fieldManager)
 	if err != nil {
 		return err
 	}
