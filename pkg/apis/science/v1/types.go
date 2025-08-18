@@ -161,7 +161,7 @@ func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithm
 	return cloned
 }
 
-// NewResourceReadyCondition creates a new condition indicating an overall Mla synchronisation success or failure
+// NewResourceReadyCondition creates a new condition indicating an overall Template synchronisation success or failure
 func NewResourceReadyCondition(transitionTime metav1.Time, status metav1.ConditionStatus, message string) *metav1.Condition {
 	return &metav1.Condition{
 		LastTransitionTime: transitionTime,
@@ -205,7 +205,7 @@ type NexusAlgorithmWorkgroupList struct {
 	Items []NexusAlgorithmWorkgroup `json:"items"`
 }
 
-// GetSecretNames retrieves a list of unique secret names for this MLA
+// GetSecretNames retrieves a list of unique secret names for this Template
 func (template *NexusAlgorithmTemplate) GetSecretNames() []string {
 	subset := map[string]bool{}
 	for _, ref := range template.Spec.RuntimeEnvironment.MappedEnvironmentVariables {
@@ -223,7 +223,7 @@ func (template *NexusAlgorithmTemplate) GetSecretNames() []string {
 	return slices.Collect(maps.Keys(subset))
 }
 
-// GetConfigMapNames retrieves a list of unique config names for this MLA
+// GetConfigMapNames retrieves a list of unique config names for this Template
 func (template *NexusAlgorithmTemplate) GetConfigMapNames() []string {
 	subset := map[string]bool{}
 	for _, ref := range template.Spec.RuntimeEnvironment.MappedEnvironmentVariables {

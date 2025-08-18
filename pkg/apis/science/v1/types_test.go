@@ -58,7 +58,7 @@ func newFakeTemplate(withConfigs bool) *NexusAlgorithmTemplate {
 		}
 	}
 
-	mla := &NexusAlgorithmTemplate{
+	template := &NexusAlgorithmTemplate{
 		TypeMeta: metav1.TypeMeta{APIVersion: SchemeGroupVersion.String()},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-algorithms",
@@ -100,7 +100,7 @@ func newFakeTemplate(withConfigs bool) *NexusAlgorithmTemplate {
 		},
 	}
 
-	mla.Status = NexusAlgorithmStatus{
+	template.Status = NexusAlgorithmStatus{
 		SyncedSecrets:        []string{"test-secret"},
 		SyncedConfigurations: []string{"test-config"},
 		SyncedToClusters:     []string{"test-cluster"},
@@ -109,7 +109,7 @@ func newFakeTemplate(withConfigs bool) *NexusAlgorithmTemplate {
 		},
 	}
 
-	return mla
+	return template
 }
 
 func TestNexusAlgorithmTemplate_GetSecretNames(t *testing.T) {
@@ -163,12 +163,12 @@ func TestNexusAlgorithmTemplate_GetConfigMapNames_Empty(t *testing.T) {
 }
 
 func TestNexusAlgorithmTemplate_GetConfigMapDiff(t *testing.T) {
-	mla1 := newFakeTemplate(true)
-	mla2 := mla1.DeepCopy()
+	template1 := newFakeTemplate(true)
+	template2 := template1.DeepCopy()
 	// remove test-secret and test-cfg3 references
 	// however, test-secret is also referenced in EnvFrom, so we should only have test-cfg3 reported as diff
-	mla2.Spec.RuntimeEnvironment.EnvironmentVariables = []corev1.EnvVar{}
-	diffs := mla1.GetConfigmapDiff(mla2)
+	template2.Spec.RuntimeEnvironment.EnvironmentVariables = []corev1.EnvVar{}
+	diffs := template1.GetConfigmapDiff(template2)
 
 	if !reflect.DeepEqual([]string{"test-cfg3"}, diffs) {
 		t.Errorf("Incorrect difference %s returned", diff.ObjectGoPrintSideBySide(diffs, diffs))
@@ -177,13 +177,13 @@ func TestNexusAlgorithmTemplate_GetConfigMapDiff(t *testing.T) {
 }
 
 func TestNexusAlgorithmTemplate_GetSecretDiff(t *testing.T) {
-	mla1 := newFakeTemplate(true)
-	mla2 := mla1.DeepCopy()
+	template1 := newFakeTemplate(true)
+	template2 := template1.DeepCopy()
 	// remove test-secret and test-cfg3 references
 	// however, test-secret is also referenced in EnvFrom, so we should only have test-cfg3 reported as diff
-	mla2.Spec.RuntimeEnvironment.EnvironmentVariables = []corev1.EnvVar{}
-	mla2.Spec.RuntimeEnvironment.MappedEnvironmentVariables = []corev1.EnvFromSource{}
-	diffs := mla1.GetSecretDiff(mla2)
+	template2.Spec.RuntimeEnvironment.EnvironmentVariables = []corev1.EnvVar{}
+	template2.Spec.RuntimeEnvironment.MappedEnvironmentVariables = []corev1.EnvFromSource{}
+	diffs := template1.GetSecretDiff(template2)
 
 	if !reflect.DeepEqual([]string{"test-secret"}, diffs) {
 		t.Errorf("Incorrect difference %s returned", diff.ObjectGoPrintSideBySide(diffs, diffs))
