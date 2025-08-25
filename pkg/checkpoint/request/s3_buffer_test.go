@@ -254,7 +254,4 @@ func TestDefaultBuffer_Add(t *testing.T) {
 		t.Errorf("parent request id should be test-parent-uid, but is %s", checkpoint.Parent.RequestId)
 		t.FailNow()
 	}
-
-	// let it gracefully finish
-	time.Sleep(1 * time.Second)
 }
