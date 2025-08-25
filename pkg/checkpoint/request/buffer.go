@@ -16,7 +16,7 @@ type Buffer interface {
 	GetTagged(tag string) (iter.Seq2[*models.CheckpointedRequest, error], error)
 	Update(checkpoint *models.CheckpointedRequest) error
 	GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error)
-	Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec) error
+	Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) error
 	Start(submitter pipeline.StageActor[*BufferOutput, types.UID])
 }
 
