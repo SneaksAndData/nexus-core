@@ -10,6 +10,9 @@ type AlgorithmRequestRef struct {
 }
 
 func (r *AlgorithmRequestRef) DeepCopy() *AlgorithmRequestRef {
+	if r == nil {
+		return nil
+	}
 	return &AlgorithmRequestRef{
 		RequestId:     r.RequestId,
 		AlgorithmName: r.AlgorithmName,

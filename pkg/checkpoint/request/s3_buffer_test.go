@@ -11,6 +11,7 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/aws/smithy-go/ptr"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog/v2/ktesting"
 	"testing"
 	"time"
@@ -161,8 +162,11 @@ func TestDefaultBuffer_Add(t *testing.T) {
 		CustomConfiguration: nil,
 		RequestApiVersion:   "",
 		Tag:                 "",
-		ParentRequest:       nil,
-		PayloadValidFor:     "24h",
+		ParentRequest: &models.AlgorithmRequestRef{
+			RequestId:     "test-parent",
+			AlgorithmName: "test-algorithm-v2",
+		},
+		PayloadValidFor: "24h",
 	}, &v1.NexusAlgorithmSpec{
 		Container: &v1.NexusAlgorithmContainer{
 			Image:              "test-image",
@@ -210,6 +214,11 @@ func TestDefaultBuffer_Add(t *testing.T) {
 		Cluster:      "test-shard",
 		Tolerations:  nil,
 		Affinity:     nil,
+	}, &metav1.OwnerReference{
+		APIVersion: v1.SchemeGroupVersion.String(),
+		Kind:       "NexusAlgorithmTemplate",
+		Name:       "test-parent",
+		UID:        "test-parent-uid",
 	})
 
 	if err != nil {
@@ -233,6 +242,14 @@ func TestDefaultBuffer_Add(t *testing.T) {
 
 	if checkpoint.LifecycleStage != models.LifecycleStageBuffered {
 		t.Errorf("lifecycle stage should be Buffered, but is %s", checkpoint.LifecycleStage)
+	}
+
+	if checkpoint.Parent == nil {
+		t.Errorf("parent should not be nil")
+	}
+
+	if checkpoint.Parent.RequestId != "test-parent" {
+		t.Errorf("parent request id should be test-parent-uid, but is %s", checkpoint.Parent.RequestId)
 	}
 
 	// stop the buffer
