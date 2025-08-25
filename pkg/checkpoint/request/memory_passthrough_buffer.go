@@ -8,6 +8,7 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/pipeline"
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
 	"iter"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 	"time"
@@ -93,8 +94,8 @@ func (buffer *MemoryPassthroughBuffer) GetBufferedEntry(checkpoint *models.Check
 	return nil, nil
 }
 
-func (buffer *MemoryPassthroughBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec) error {
-	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup)
+func (buffer *MemoryPassthroughBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) error {
+	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup, parent)
 	if err != nil {
 		return err
 	}
@@ -108,7 +109,7 @@ func (buffer *MemoryPassthroughBuffer) bufferRequest(input *BufferInput) (*Buffe
 	bufferedCheckpoint.LifecycleStage = models.LifecycleStageBuffered
 	bufferedCheckpoint.PayloadUri = "memory"
 	bufferedCheckpoint.PayloadValidFor = "24h"
-	entry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup)
+	entry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedParent)
 
 	buffer.Checkpoints = append(buffer.Checkpoints, input.Checkpoint)
 	buffer.BufferedEntries = append(buffer.BufferedEntries, entry)

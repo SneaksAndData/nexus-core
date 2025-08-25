@@ -5,6 +5,7 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/SneaksAndData/nexus-core/pkg/pipeline"
 	"iter"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"time"
 )
@@ -32,6 +33,7 @@ type BufferConfig struct {
 type BufferInput struct {
 	Checkpoint        *models.CheckpointedRequest
 	ResolvedWorkgroup *v1.NexusAlgorithmWorkgroupSpec
+	ResolvedParent    *metav1.OwnerReference
 	SerializedPayload *[]byte
 	Config            *v1.NexusAlgorithmSpec
 }
@@ -48,7 +50,7 @@ func (input *BufferInput) Tags() map[string]string {
 	}
 }
 
-func NewBufferInput(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec) (*BufferInput, error) {
+func NewBufferInput(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) (*BufferInput, error) {
 	checkpoint, serializedPayload, err := models.FromAlgorithmRequest(requestId, algorithmName, request, config)
 
 	if err != nil {
@@ -58,6 +60,7 @@ func NewBufferInput(requestId string, algorithmName string, request *models.Algo
 	return &BufferInput{
 		Checkpoint:        checkpoint,
 		ResolvedWorkgroup: workgroup,
+		ResolvedParent:    parent,
 		SerializedPayload: &serializedPayload,
 		Config:            config,
 	}, nil
