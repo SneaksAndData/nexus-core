@@ -16,7 +16,7 @@ type Buffer interface {
 	GetTagged(tag string) (iter.Seq2[*models.CheckpointedRequest, error], error)
 	Update(checkpoint *models.CheckpointedRequest) error
 	GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error)
-	Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) error
+	Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference, isDryRun bool) error
 	Start(submitter pipeline.StageActor[*BufferOutput, types.UID])
 }
 
@@ -36,6 +36,7 @@ type BufferInput struct {
 	ResolvedParent    *metav1.OwnerReference
 	SerializedPayload *[]byte
 	Config            *v1.NexusAlgorithmSpec
+	IsDryRun          bool
 }
 
 type BufferOutput struct {
@@ -43,6 +44,7 @@ type BufferOutput struct {
 	Entry           *models.SubmissionBufferEntry
 	Workgroup       *v1.NexusAlgorithmWorkgroupSpec
 	ParentReference *metav1.OwnerReference
+	IsDryRun        bool
 }
 
 func (input *BufferInput) Tags() map[string]string {
@@ -51,7 +53,7 @@ func (input *BufferInput) Tags() map[string]string {
 	}
 }
 
-func NewBufferInput(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) (*BufferInput, error) {
+func NewBufferInput(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference, isDryRun bool) (*BufferInput, error) {
 	checkpoint, serializedPayload, err := models.FromAlgorithmRequest(requestId, algorithmName, request, config)
 
 	if err != nil {
@@ -64,5 +66,6 @@ func NewBufferInput(requestId string, algorithmName string, request *models.Algo
 		ResolvedParent:    parent,
 		SerializedPayload: &serializedPayload,
 		Config:            config,
+		IsDryRun:          isDryRun,
 	}, nil
 }

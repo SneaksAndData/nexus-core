@@ -92,8 +92,8 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 	buffer.actor.Start(buffer.ctx, nil)
 }
 
-func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) error {
-	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup, parent)
+func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference, isDryRun bool) error {
+	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup, parent, isDryRun)
 	if err != nil {
 		return err
 	}
@@ -166,5 +166,6 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 		Entry:           bufferedEntry,
 		Workgroup:       input.ResolvedWorkgroup,
 		ParentReference: input.ResolvedParent,
+		IsDryRun:        input.IsDryRun,
 	}, nil
 }
