@@ -115,9 +115,10 @@ func (buffer *MemoryPassthroughBuffer) bufferRequest(input *BufferInput) (*Buffe
 	buffer.BufferedEntries = append(buffer.BufferedEntries, entry)
 
 	return &BufferOutput{
-		Checkpoint: bufferedCheckpoint,
-		Entry:      entry,
-		Workgroup:  input.ResolvedWorkgroup,
+		Checkpoint:      bufferedCheckpoint,
+		Entry:           entry,
+		Workgroup:       input.ResolvedWorkgroup,
+		ParentReference: input.ResolvedParent,
 	}, nil
 }
 
