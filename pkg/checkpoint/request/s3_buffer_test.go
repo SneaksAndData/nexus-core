@@ -219,7 +219,7 @@ func TestDefaultBuffer_Add(t *testing.T) {
 		Kind:       "NexusAlgorithmTemplate",
 		Name:       "test-parent",
 		UID:        "test-parent-uid",
-	})
+	}, false)
 
 	if err != nil {
 		t.Errorf("error when buffering checkpoint: %v", err)
