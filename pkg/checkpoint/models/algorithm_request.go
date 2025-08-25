@@ -9,6 +9,13 @@ type AlgorithmRequestRef struct {
 	AlgorithmName string `json:"algorithmName" binding:"required"`
 }
 
+func (r *AlgorithmRequestRef) DeepCopy() *AlgorithmRequestRef {
+	return &AlgorithmRequestRef{
+		RequestId:     r.RequestId,
+		AlgorithmName: r.AlgorithmName,
+	}
+}
+
 type AlgorithmRequest struct {
 	AlgorithmParameters map[string]interface{} `json:"algorithmParameters" binding:"required"`
 	CustomConfiguration *v1.NexusAlgorithmSpec `json:"customConfiguration,omitempty"`

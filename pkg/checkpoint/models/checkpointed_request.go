@@ -52,7 +52,7 @@ type CheckpointedRequest struct {
 	Tag                     string                 `json:"tag,omitempty"`
 	ApiVersion              string                 `json:"api_version"`
 	JobUid                  string                 `json:"job_uid,omitempty"`
-	ParentJob               *ParentJobReference    `json:"parent_job,omitempty"`
+	Parent                  *AlgorithmRequestRef   `json:"parent,omitempty"`
 	PayloadValidFor         string                 `json:"payload_valid_for,omitempty"`
 }
 
@@ -74,7 +74,7 @@ type CheckpointedRequestCqlModel struct {
 	Tag                     string
 	ApiVersion              string
 	JobUid                  string
-	ParentJob               string
+	Parent                  string
 	PayloadValidFor         string
 }
 
@@ -96,7 +96,7 @@ var checkpointColumns = []string{
 	"tag",
 	"api_version",
 	"job_uid",
-	"parent_job",
+	"parent",
 	"payload_valid_for",
 }
 
@@ -132,6 +132,7 @@ var CheckpointedRequestTableIndexByTag = table.New(table.Metadata{
 })
 
 func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error) {
+	parent := []byte("{}")
 	serializedOverrides := []byte("{}")
 	serializedConfig, err := json.Marshal(c.AppliedConfiguration)
 
@@ -141,6 +142,13 @@ func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error)
 
 	if c.ConfigurationOverrides != nil {
 		serializedOverrides, _ = json.Marshal(c.ConfigurationOverrides)
+	}
+
+	if c.Parent != nil {
+		parent, err = json.Marshal(c.Parent)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &CheckpointedRequestCqlModel{
@@ -161,7 +169,7 @@ func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error)
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               "", // TODO: fixme
+		Parent:                  string(parent),
 		PayloadValidFor:         c.PayloadValidFor,
 	}, nil
 }
@@ -178,7 +186,7 @@ func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
 func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, error) {
 	appliedConfig := &v1.NexusAlgorithmSpec{}
 	var overrides *v1.NexusAlgorithmSpec
-	var parentJob *ParentJobReference
+	var parent *AlgorithmRequestRef
 
 	var unmarshalErr error
 
@@ -190,9 +198,9 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, erro
 		unmarshalErr = errors.Join(json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig), json.Unmarshal([]byte(c.ConfigurationOverrides), overrides))
 	}
 
-	if c.ParentJob != "" && c.ParentJob != "{}" {
-		parentJob = &ParentJobReference{}
-		unmarshalErr = errors.Join(unmarshalErr, json.Unmarshal([]byte(c.ParentJob), parentJob))
+	if c.Parent != "" && c.Parent != "{}" {
+		parent = &AlgorithmRequestRef{}
+		unmarshalErr = errors.Join(unmarshalErr, json.Unmarshal([]byte(c.Parent), parent))
 	}
 
 	if unmarshalErr != nil {
@@ -217,7 +225,7 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, erro
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               parentJob,
+		Parent:                  parent,
 		PayloadValidFor:         c.PayloadValidFor,
 	}, nil
 }
@@ -249,7 +257,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		ConfigurationOverrides: request.CustomConfiguration,
 		Tag:                    request.Tag,
 		JobUid:                 "",
-		ParentJob:              &ParentJobReference{}, // TODO: add support for parent job
+		Parent:                 request.ParentRequest,
 		ApiVersion:             request.RequestApiVersion,
 		AppliedConfiguration:   config.Merge(request.CustomConfiguration),
 		PayloadValidFor:        request.PayloadValidFor,
@@ -275,7 +283,7 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		ParentJob:               c.ParentJob,
+		Parent:                  c.Parent.DeepCopy(),
 		PayloadValidFor:         c.PayloadValidFor,
 	}
 }
@@ -297,7 +305,11 @@ func defaultFailurePolicy() *batchv1.PodFailurePolicy {
 	}
 }
 
-func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec) batchv1.Job {
+func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) batchv1.Job {
+	owners := []metav1.OwnerReference{}
+	if parent != nil {
+		owners = append(owners, *parent)
+	}
 	jobResourceList := corev1.ResourceList{
 		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
 		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
@@ -375,7 +387,8 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 				JobLabelFrameworkVersionKey: appVersion,
 				NexusComponentLabel:         JobLabelAlgorithmRun,
 			},
-			Annotations: c.AppliedConfiguration.RuntimeEnvironment.Annotations,
+			Annotations:     c.AppliedConfiguration.RuntimeEnvironment.Annotations,
+			OwnerReferences: owners,
 		},
 		Spec: batchv1.JobSpec{
 			PodFailurePolicy: jobPodFailurePolicy,

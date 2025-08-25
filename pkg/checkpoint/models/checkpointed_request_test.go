@@ -60,7 +60,7 @@ func getFakeRequest() *CheckpointedRequest {
 		Tag:                    "abc",
 		ApiVersion:             "1.2",
 		JobUid:                 "1231",
-		ParentJob:              nil,
+		Parent:                 nil,
 		PayloadValidFor:        "86400s",
 	}
 }
@@ -99,7 +99,7 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 		Tag:                     fakeRequest.Tag,
 		ApiVersion:              fakeRequest.ApiVersion,
 		JobUid:                  fakeRequest.JobUid,
-		ParentJob:               "",
+		Parent:                  "{}",
 		PayloadValidFor:         "86400s",
 	}
 
@@ -135,6 +135,11 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 		Cluster:      "shard-0",
 		Tolerations:  nil,
 		Affinity:     nil,
+	}, &metav1.OwnerReference{
+		APIVersion: v1.SchemeGroupVersion.String(),
+		Kind:       "NexusAlgorithmTemplate",
+		Name:       "test-parent",
+		UID:        "test-uid",
 	})
 
 	expectedJob := &batchv1.Job{
@@ -148,6 +153,14 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 				JobTemplateNameKey:          fakeRequest.Algorithm,
 				JobLabelFrameworkVersionKey: "v0.0.0",
 				NexusComponentLabel:         JobLabelAlgorithmRun,
+			},
+			OwnerReferences: []metav1.OwnerReference{
+				{
+					APIVersion: v1.SchemeGroupVersion.String(),
+					Kind:       "NexusAlgorithmTemplate",
+					Name:       "test-parent",
+					UID:        "test-uid",
+				},
 			},
 		},
 		Spec: batchv1.JobSpec{

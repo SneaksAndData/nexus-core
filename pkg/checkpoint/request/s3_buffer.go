@@ -12,6 +12,7 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 	s3credentials "github.com/aws/aws-sdk-go-v2/credentials"
 	"iter"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
 )
@@ -91,8 +92,8 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 	buffer.actor.Start(buffer.ctx, nil)
 }
 
-func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec) error {
-	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup)
+func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) error {
+	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup, parent)
 	if err != nil {
 		return err
 	}
@@ -134,7 +135,6 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 		return nil, err
 	}
 
-	// TODO: add parent handling
 	if err := buffer.blobStore.SaveTextAsBlob(buffer.ctx, string(*input.SerializedPayload), payloadPath); err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	bufferedCheckpoint.PayloadUri = payloadUri
 	bufferedCheckpoint.PayloadValidFor = payloadValidity.String()
 	bufferedCheckpoint.LifecycleStage = models.LifecycleStageBuffered
-	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup)
+	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedParent)
 
 	if err := buffer.metadataStore.UpsertMetadata(bufferedEntry); err != nil {
 		return nil, err

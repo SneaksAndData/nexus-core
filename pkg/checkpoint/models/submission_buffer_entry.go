@@ -7,6 +7,7 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/buildmeta"
 	"github.com/scylladb/gocqlx/v3/table"
 	batchv1 "k8s.io/api/batch/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var SubmissionBufferTable = table.New(table.Metadata{
@@ -41,8 +42,8 @@ func (sbe *SubmissionBufferEntry) SubmissionTemplate() (*batchv1.Job, error) {
 	return result, nil
 }
 
-func FromCheckpoint(checkpoint *CheckpointedRequest, resolvedWorkgroup *v1.NexusAlgorithmWorkgroupSpec) *SubmissionBufferEntry {
-	jobTemplate, _ := json.Marshal(checkpoint.ToV1Job(fmt.Sprintf("%s-%s", buildmeta.AppVersion, buildmeta.BuildNumber), resolvedWorkgroup))
+func FromCheckpoint(checkpoint *CheckpointedRequest, resolvedWorkgroup *v1.NexusAlgorithmWorkgroupSpec, resolvedParent *metav1.OwnerReference) *SubmissionBufferEntry {
+	jobTemplate, _ := json.Marshal(checkpoint.ToV1Job(fmt.Sprintf("%s-%s", buildmeta.AppVersion, buildmeta.BuildNumber), resolvedWorkgroup, resolvedParent))
 
 	return &SubmissionBufferEntry{
 		Algorithm: checkpoint.Algorithm,
