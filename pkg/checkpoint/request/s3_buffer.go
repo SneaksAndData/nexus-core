@@ -162,8 +162,9 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	telemetry.Increment(buffer.metrics, "checkpoint_requests", input.Tags())
 
 	return &BufferOutput{
-		Checkpoint: bufferedCheckpoint,
-		Entry:      bufferedEntry,
-		Workgroup:  input.ResolvedWorkgroup,
+		Checkpoint:      bufferedCheckpoint,
+		Entry:           bufferedEntry,
+		Workgroup:       input.ResolvedWorkgroup,
+		ParentReference: input.ResolvedParent,
 	}, nil
 }

@@ -39,9 +39,10 @@ type BufferInput struct {
 }
 
 type BufferOutput struct {
-	Checkpoint *models.CheckpointedRequest
-	Entry      *models.SubmissionBufferEntry
-	Workgroup  *v1.NexusAlgorithmWorkgroupSpec
+	Checkpoint      *models.CheckpointedRequest
+	Entry           *models.SubmissionBufferEntry
+	Workgroup       *v1.NexusAlgorithmWorkgroupSpec
+	ParentReference *metav1.OwnerReference
 }
 
 func (input *BufferInput) Tags() map[string]string {
