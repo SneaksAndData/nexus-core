@@ -219,7 +219,7 @@ func TestDefaultBuffer_Add(t *testing.T) {
 		Kind:       "NexusAlgorithmTemplate",
 		Name:       "test-parent",
 		UID:        "test-parent-uid",
-	})
+	}, false)
 
 	if err != nil {
 		t.Errorf("error when buffering checkpoint: %v", err)
@@ -242,19 +242,16 @@ func TestDefaultBuffer_Add(t *testing.T) {
 
 	if checkpoint.LifecycleStage != models.LifecycleStageBuffered {
 		t.Errorf("lifecycle stage should be Buffered, but is %s", checkpoint.LifecycleStage)
+		t.FailNow()
 	}
 
 	if checkpoint.Parent == nil {
 		t.Errorf("parent should not be nil")
+		t.FailNow()
 	}
 
 	if checkpoint.Parent.RequestId != "test-parent" {
 		t.Errorf("parent request id should be test-parent-uid, but is %s", checkpoint.Parent.RequestId)
+		t.FailNow()
 	}
-
-	// stop the buffer
-	f.buffer.ctx.Done()
-
-	// let it gracefully finish
-	time.Sleep(1 * time.Second)
 }

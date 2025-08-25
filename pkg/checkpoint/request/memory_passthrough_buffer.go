@@ -94,8 +94,8 @@ func (buffer *MemoryPassthroughBuffer) GetBufferedEntry(checkpoint *models.Check
 	return nil, nil
 }
 
-func (buffer *MemoryPassthroughBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) error {
-	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup, parent)
+func (buffer *MemoryPassthroughBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference, isDryRun bool) error {
+	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup, parent, isDryRun)
 	if err != nil {
 		return err
 	}
@@ -119,6 +119,7 @@ func (buffer *MemoryPassthroughBuffer) bufferRequest(input *BufferInput) (*Buffe
 		Entry:           entry,
 		Workgroup:       input.ResolvedWorkgroup,
 		ParentReference: input.ResolvedParent,
+		IsDryRun:        input.IsDryRun,
 	}, nil
 }
 
