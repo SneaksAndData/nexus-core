@@ -43,7 +43,7 @@ func LoadClients(shardConfigPath string, namespace string, logger klog.Logger) (
 				return nil, err
 			}
 
-			shardClients = append(shardClients, NewShardClient(kubeClient, nexusClient, strings.Split(file.Name(), ".")[0], namespace))
+			shardClients = append(shardClients, NewShardClient(kubeClient, nexusClient, strings.Split(file.Name(), ".")[0], namespace, logger))
 		}
 	}
 
@@ -60,7 +60,11 @@ func LoadShards(ctx context.Context, owner string, shardConfigPath string, names
 	}
 
 	for _, shardClient := range shardClients {
+
+		logger.V(0).Info("initializing shard", "shard", shardClient.Name, "owner", owner)
 		connectedShards = append(connectedShards, shardClient.ToShard(owner, ctx))
+
+		logger.V(0).Info("shard successfully initialized", "shard", shardClient.Name, "owner", owner)
 	}
 
 	return connectedShards, nil

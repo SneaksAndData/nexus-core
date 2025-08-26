@@ -1,10 +1,12 @@
 package shards
 
 import (
+	"context"
 	nexusv1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned/fake"
 	informers "github.com/SneaksAndData/nexus-core/pkg/generated/informers/externalversions"
 	"github.com/aws/smithy-go/ptr"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,6 +29,8 @@ var (
 type fixture struct {
 	t *testing.T
 
+	testContext context.Context
+
 	nexusClient *fake.Clientset
 	kubeClient  *k8sfake.Clientset
 
@@ -34,6 +38,7 @@ type fixture struct {
 	workgroupLister []*nexusv1.NexusAlgorithmWorkgroup
 	secretLister    []*corev1.Secret
 	configLister    []*corev1.ConfigMap
+	jobLister       []*batchv1.Job
 
 	// actions to expect on the Kubernetes API
 	kubeActions  []core.Action
@@ -47,11 +52,13 @@ type fixture struct {
 func newFixture(t *testing.T) *fixture {
 	f := &fixture{}
 	f.t = t
+	_, f.testContext = ktesting.NewTestContext(t)
 
 	f.templateLister = []*nexusv1.NexusAlgorithmTemplate{}
 	f.workgroupLister = []*nexusv1.NexusAlgorithmWorkgroup{}
 	f.secretLister = []*corev1.Secret{}
 	f.configLister = []*corev1.ConfigMap{}
+	f.jobLister = []*batchv1.Job{}
 
 	return f
 }
@@ -66,8 +73,9 @@ type ApiFixture struct {
 	workgroupListResults []*nexusv1.NexusAlgorithmWorkgroup
 	secretListResults    []*corev1.Secret
 	configMapListResults []*corev1.ConfigMap
+	jobListResults       []*batchv1.Job
 
-	existingCoreObjects  []runtime.Object
+	existingKubeObjects  []runtime.Object
 	existingNexusObjects []runtime.Object
 }
 
@@ -187,8 +195,9 @@ func (f *fixture) configure(apiFixture *ApiFixture) *fixture {
 	f.workgroupLister = append(f.workgroupLister, apiFixture.workgroupListResults...)
 	f.secretLister = append(f.secretLister, apiFixture.secretListResults...)
 	f.configLister = append(f.configLister, apiFixture.configMapListResults...)
+	f.jobLister = append(f.jobLister, apiFixture.jobListResults...)
 	f.nexusObjects = append(f.nexusObjects, apiFixture.existingNexusObjects...)
-	f.kubeObjects = append(f.kubeObjects, apiFixture.existingCoreObjects...)
+	f.kubeObjects = append(f.kubeObjects, apiFixture.existingKubeObjects...)
 
 	return f
 }
@@ -236,6 +245,10 @@ func (f *fixture) newShard() (*Shard, *FakeInformers) {
 
 	for _, d := range f.configLister {
 		_ = kubeInf.Core().V1().ConfigMaps().Informer().GetIndexer().Add(d)
+	}
+
+	for _, d := range f.jobLister {
+		_ = kubeInf.Batch().V1().Jobs().Informer().GetIndexer().Add(d)
 	}
 
 	return newShard, &FakeInformers{
@@ -329,21 +342,20 @@ func newWorkgroupOnShard() *nexusv1.NexusAlgorithmWorkgroup {
 func TestShard_CreateNexusAlgorithmTemplate(t *testing.T) {
 	f := newFixture(t)
 	template := newTemplateOnShard()
-	_, ctx := ktesting.NewTestContext(t)
 
 	f = f.configure(
 		&ApiFixture{
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{},
 		},
 	)
 
 	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
+	testInformers.k8sInformers.Start(f.testContext.Done())
+	testInformers.nexusInformers.Start(f.testContext.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "nexusalgorithmtemplates"}, template.Namespace, template))
 	_, _ = shard.CreateTemplate(template.Name, template.Namespace, template.Spec, "test")
@@ -359,21 +371,19 @@ func TestShard_UpdateNexusAlgorithmTemplate(t *testing.T) {
 	updatedTemplate := template.DeepCopy()
 	updatedTemplate.Spec.ComputeResources.CpuLimit = "2000m"
 
-	_, ctx := ktesting.NewTestContext(t)
-
 	f = f.configure(
 		&ApiFixture{
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{template},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
 	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
+	testInformers.k8sInformers.Start(f.testContext.Done())
+	testInformers.nexusInformers.Start(f.testContext.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "nexusalgorithmtemplates"}, template.Namespace, updatedTemplate))
 	_, _ = shard.UpdateTemplate(template, updatedTemplate.Spec, "test")
@@ -387,21 +397,19 @@ func TestShard_DeleteNexusAlgorithmTemplate(t *testing.T) {
 	f := newFixture(t)
 	template := newTemplateOnShard()
 
-	_, ctx := ktesting.NewTestContext(t)
-
 	f = f.configure(
 		&ApiFixture{
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{template},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
 	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
+	testInformers.k8sInformers.Start(f.testContext.Done())
+	testInformers.nexusInformers.Start(f.testContext.Done())
 
 	f.nexusActions = append(f.nexusActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "nexusalgorithmtemplates"}, template.Namespace, template.Name))
 	_ = shard.DeleteTemplate(template)
@@ -425,8 +433,6 @@ func TestShard_CreateSecret(t *testing.T) {
 		StringData: map[string]string{},
 	}
 
-	_, ctx := ktesting.NewTestContext(t)
-
 	expectedSecret := secret.DeepCopy()
 	expectedSecret.Labels = fakeReferenceLabels()
 	expectedSecret.OwnerReferences = []metav1.OwnerReference{
@@ -443,14 +449,14 @@ func TestShard_CreateSecret(t *testing.T) {
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{template},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
 	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
+	testInformers.k8sInformers.Start(f.testContext.Done())
+	testInformers.nexusInformers.Start(f.testContext.Done())
 
 	f.kubeActions = append(f.kubeActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, template.Namespace, expectedSecret))
 	_, _ = shard.CreateSecret(template, secret, "test")
@@ -473,8 +479,6 @@ func TestShard_CreateConfigMap(t *testing.T) {
 		},
 	}
 
-	_, ctx := ktesting.NewTestContext(t)
-
 	expectedConfigMap := configMap.DeepCopy()
 	expectedConfigMap.Labels = fakeReferenceLabels()
 	expectedConfigMap.OwnerReferences = []metav1.OwnerReference{
@@ -491,14 +495,14 @@ func TestShard_CreateConfigMap(t *testing.T) {
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{template},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
 	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
+	testInformers.k8sInformers.Start(f.testContext.Done())
+	testInformers.nexusInformers.Start(f.testContext.Done())
 
 	f.kubeActions = append(f.kubeActions, core.NewCreateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, template.Namespace, expectedConfigMap))
 	_, _ = shard.CreateConfigMap(template, expectedConfigMap, "test")
@@ -511,8 +515,6 @@ func TestShard_CreateConfigMap(t *testing.T) {
 func TestShard_UpdateConfigMap(t *testing.T) {
 	f := newFixture(t)
 	template := newTemplateOnShard()
-
-	_, ctx := ktesting.NewTestContext(t)
 
 	configMap := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -543,14 +545,14 @@ func TestShard_UpdateConfigMap(t *testing.T) {
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{template},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{configMap},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
 	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
+	testInformers.k8sInformers.Start(f.testContext.Done())
+	testInformers.nexusInformers.Start(f.testContext.Done())
 
 	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "configmaps", Version: "v1"}, template.Namespace, expectedConfigMap))
 	_, _ = shard.UpdateConfigMap(configMap, expectedConfigMap.Data, nil, "test")
@@ -563,8 +565,6 @@ func TestShard_UpdateConfigMap(t *testing.T) {
 func TestShard_UpdateSecret(t *testing.T) {
 	f := newFixture(t)
 	template := newTemplateOnShard()
-
-	_, ctx := ktesting.NewTestContext(t)
 
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -596,14 +596,14 @@ func TestShard_UpdateSecret(t *testing.T) {
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{template},
 			secretListResults:    []*corev1.Secret{secret},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{secret},
+			existingKubeObjects:  []runtime.Object{secret},
 			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
 	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
+	testInformers.k8sInformers.Start(f.testContext.Done())
+	testInformers.nexusInformers.Start(f.testContext.Done())
 
 	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, template.Namespace, expectedSecret))
 	_, _ = shard.UpdateSecret(secret, expectedSecret.Data, nil, "test")
@@ -617,7 +617,6 @@ func TestShard_DereferenceSecret(t *testing.T) {
 	f := newFixture(t)
 	template := newTemplateOnShard()
 
-	_, ctx := ktesting.NewTestContext(t)
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-secret",
@@ -646,14 +645,14 @@ func TestShard_DereferenceSecret(t *testing.T) {
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{template},
 			secretListResults:    []*corev1.Secret{secret},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{secret},
+			existingKubeObjects:  []runtime.Object{secret},
 			existingNexusObjects: []runtime.Object{template},
 		},
 	)
 
 	shard, testInformers := f.newShard()
-	testInformers.k8sInformers.Start(ctx.Done())
-	testInformers.nexusInformers.Start(ctx.Done())
+	testInformers.k8sInformers.Start(f.testContext.Done())
+	testInformers.nexusInformers.Start(f.testContext.Done())
 
 	f.kubeActions = append(f.kubeActions, core.NewUpdateAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, template.Namespace, dereferencedSecret))
 	f.kubeActions = append(f.kubeActions, core.NewDeleteAction(schema.GroupVersionResource{Resource: "secrets", Version: "v1"}, template.Namespace, "test-secret"))
@@ -696,7 +695,7 @@ func TestShard_DereferenceConfigMap(t *testing.T) {
 			templateListResults:  []*nexusv1.NexusAlgorithmTemplate{template},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{configMap},
-			existingCoreObjects:  []runtime.Object{configMap},
+			existingKubeObjects:  []runtime.Object{configMap},
 			existingNexusObjects: []runtime.Object{template},
 		},
 	)
@@ -725,7 +724,7 @@ func TestShard_CreateNexusAlgorithmWorkgroup(t *testing.T) {
 			workgroupListResults: []*nexusv1.NexusAlgorithmWorkgroup{},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{},
 		},
 	)
@@ -761,7 +760,7 @@ func TestShard_UpdateNexusAlgorithmWorkgroup(t *testing.T) {
 			workgroupListResults: []*nexusv1.NexusAlgorithmWorkgroup{workgroup},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{workgroup},
 		},
 	)
@@ -790,7 +789,7 @@ func TestShard_DeleteNexusAlgorithmWorkgroup(t *testing.T) {
 			workgroupListResults: []*nexusv1.NexusAlgorithmWorkgroup{workgroup},
 			secretListResults:    []*corev1.Secret{},
 			configMapListResults: []*corev1.ConfigMap{},
-			existingCoreObjects:  []runtime.Object{},
+			existingKubeObjects:  []runtime.Object{},
 			existingNexusObjects: []runtime.Object{workgroup},
 		},
 	)
