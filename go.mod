@@ -11,6 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.81.0
 	github.com/aws/smithy-go v1.22.4
 	github.com/gocql/gocql v1.7.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/samber/slog-datadog/v2 v2.8.2
 	github.com/samber/slog-multi v1.4.0
 	github.com/scylladb/gocqlx/v3 v3.0.2
@@ -20,6 +21,7 @@ require (
 	k8s.io/apimachinery v0.33.2
 	k8s.io/client-go v0.33.2
 	k8s.io/klog/v2 v2.130.1
+	sigs.k8s.io/structured-merge-diff/v4 v4.7.0
 )
 
 require (
@@ -90,7 +92,6 @@ require (
 	k8s.io/utils v0.0.0-20250604170112-4c0f3b243397 // indirect
 	sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.7.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
