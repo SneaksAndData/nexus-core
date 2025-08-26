@@ -51,9 +51,6 @@ type Shard struct {
 	// WorkgroupLister is a NexusAlgorithmWorkgroup list in this Shard
 	WorkgroupLister nexuslisters.NexusAlgorithmWorkgroupLister
 	WorkgroupSynced cache.InformerSynced
-
-	// JobInformer is a cache of all jobs created in this shard
-	JobInformer cache.SharedIndexInformer
 }
 
 // NewShard creates a new Shard instance. File name in *kubeConfigPath* will be used as the Shard's name
@@ -68,7 +65,6 @@ func NewShard(
 	workgroupInformer nexusinformers.NexusAlgorithmWorkgroupInformer,
 	secretInformer coreinformers.SecretInformer,
 	configmapInformer coreinformers.ConfigMapInformer,
-	jobInformer cache.SharedIndexInformer,
 ) *Shard {
 	return &Shard{
 		OwnerName:           ownerName,
@@ -87,8 +83,6 @@ func NewShard(
 
 		WorkgroupLister: workgroupInformer.Lister(),
 		WorkgroupSynced: workgroupInformer.Informer().HasSynced,
-
-		JobInformer: jobInformer,
 	}
 }
 

@@ -224,8 +224,7 @@ func (f *fixture) newShard() (*Shard, *FakeInformers) {
 		nexusInf.Science().V1().NexusAlgorithmTemplates(),
 		nexusInf.Science().V1().NexusAlgorithmWorkgroups(),
 		kubeInf.Core().V1().Secrets(),
-		kubeInf.Core().V1().ConfigMaps(),
-		kubeInf.Batch().V1().Jobs().Informer())
+		kubeInf.Core().V1().ConfigMaps())
 
 	newShard.TemplateSynced = alwaysReady
 	newShard.WorkgroupSynced = alwaysReady

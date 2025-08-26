@@ -89,6 +89,5 @@ func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
 		nexusInformerFactory.Science().V1().NexusAlgorithmTemplates(),
 		nexusInformerFactory.Science().V1().NexusAlgorithmWorkgroups(),
 		kubeInformerFactory.Core().V1().Secrets(),
-		kubeInformerFactory.Core().V1().ConfigMaps(),
-		kubeInformerFactory.Batch().V1().Jobs().Informer())
+		kubeInformerFactory.Core().V1().ConfigMaps())
 }
