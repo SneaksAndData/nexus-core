@@ -123,6 +123,10 @@ func TestShardClient_FindJob(t *testing.T) {
 	// expecting cache hit for job 'test'
 	jobTest2, err := client.FindJob("test", metav1.NamespaceDefault)
 
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	if !reflect.DeepEqual(jobTest, jobTest2) {
 		t.Errorf("different jobs returned from API and cache: %s", diff.ObjectGoPrintSideBySide(jobTest, jobTest2))
 		t.FailNow()
