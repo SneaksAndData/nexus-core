@@ -18,11 +18,15 @@ package shards
 
 import (
 	"context"
+	"fmt"
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	clientset "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned"
 	nexusinformers "github.com/SneaksAndData/nexus-core/pkg/generated/informers/externalversions/science/v1"
 	nexuslisters "github.com/SneaksAndData/nexus-core/pkg/generated/listers/science/v1"
+	"github.com/SneaksAndData/nexus-core/pkg/resolvers"
 	"github.com/SneaksAndData/nexus-core/pkg/util"
+	"github.com/aws/smithy-go/ptr"
+	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -51,6 +55,9 @@ type Shard struct {
 	// WorkgroupLister is a NexusAlgorithmWorkgroup list in this Shard
 	WorkgroupLister nexuslisters.NexusAlgorithmWorkgroupLister
 	WorkgroupSynced cache.InformerSynced
+
+	// JobInformer is a cache of all jobs created in this shard
+	JobInformer cache.SharedIndexInformer
 }
 
 // NewShard creates a new Shard instance. File name in *kubeConfigPath* will be used as the Shard's name
@@ -65,6 +72,7 @@ func NewShard(
 	workgroupInformer nexusinformers.NexusAlgorithmWorkgroupInformer,
 	secretInformer coreinformers.SecretInformer,
 	configmapInformer coreinformers.ConfigMapInformer,
+	jobInformer cache.SharedIndexInformer,
 ) *Shard {
 	return &Shard{
 		OwnerName:           ownerName,
@@ -83,6 +91,8 @@ func NewShard(
 
 		WorkgroupLister: workgroupInformer.Lister(),
 		WorkgroupSynced: workgroupInformer.Informer().HasSynced,
+
+		JobInformer: jobInformer,
 	}
 }
 
@@ -255,6 +265,34 @@ func (shard *Shard) DereferenceConfigMap(configMap *corev1.ConfigMap, template *
 	// delete the secret if there are no remaining owners
 	if remainingOwners == 0 {
 		return shard.kubernetesClientSet.CoreV1().ConfigMaps(configMap.Namespace).Delete(context.TODO(), configMap.Name, metav1.DeleteOptions{})
+	}
+
+	return nil
+}
+
+// DeleteJob removes a job from this shard
+func (shard *Shard) DeleteJob(jobName string, jobNamespace string, policy metav1.DeletionPropagation) error {
+	return shard.kubernetesClientSet.BatchV1().Jobs(jobNamespace).Delete(context.TODO(), jobName, metav1.DeleteOptions{
+		GracePeriodSeconds: ptr.Int64(0),
+		PropagationPolicy:  &policy,
+	})
+}
+
+// FindJob looks up a job's metadata in informer cache
+func (shard *Shard) FindJob(jobName string, jobNamespace string) (*batchv1.Job, error) {
+	result, err := resolvers.GetCachedObject[batchv1.Job](jobName, jobNamespace, shard.JobInformer)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+// WaitForCachesToSync awaits informer cache to be synced on this shard
+func (shard *Shard) WaitForCachesToSync(ctx context.Context) error {
+	if ok := cache.WaitForCacheSync(ctx.Done(), shard.SecretsSynced, shard.ConfigMapsSynced, shard.TemplateSynced, shard.WorkgroupSynced, shard.JobInformer.HasSynced); !ok { // coverage-ignore
+		return fmt.Errorf("failed to wait for shard informer caches to sync")
 	}
 
 	return nil

@@ -60,7 +60,19 @@ func LoadShards(ctx context.Context, owner string, shardConfigPath string, names
 	}
 
 	for _, shardClient := range shardClients {
-		connectedShards = append(connectedShards, shardClient.ToShard(owner, ctx))
+
+		logger.V(0).Info("initializing shard", "shard", shardClient.Name, "owner", owner)
+
+		shard := shardClient.ToShard(owner, ctx)
+		err := shard.WaitForCachesToSync(ctx)
+
+		if err != nil {
+			return nil, err
+		}
+
+		connectedShards = append(connectedShards, shard)
+
+		logger.V(0).Info("shard successfully initialized", "shard", shard.Name, "owner", owner)
 	}
 
 	return connectedShards, nil

@@ -40,19 +40,20 @@ func (c *ShardClient) SendJob(namespace string, job *batchv1.Job) (*batchv1.Job,
 }
 
 func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
-	kubeInformer := c.getKubeInformerFactory(c.Name)
-	nexusInformer := c.getNexusInformerFactory(c.Name)
+	kubeInformerFactory := c.getKubeInformerFactory(c.Name)
+	nexusInformerFactory := c.getNexusInformerFactory(c.Name)
 
-	defer kubeInformer.Start(ctx.Done())
-	defer nexusInformer.Start(ctx.Done())
+	defer kubeInformerFactory.Start(ctx.Done())
+	defer nexusInformerFactory.Start(ctx.Done())
 
 	return NewShard(
 		owner,
 		c.Name,
 		c.kubernetesClientSet,
 		c.nexusClientSet,
-		nexusInformer.Science().V1().NexusAlgorithmTemplates(),
-		nexusInformer.Science().V1().NexusAlgorithmWorkgroups(),
-		kubeInformer.Core().V1().Secrets(),
-		kubeInformer.Core().V1().ConfigMaps())
+		nexusInformerFactory.Science().V1().NexusAlgorithmTemplates(),
+		nexusInformerFactory.Science().V1().NexusAlgorithmWorkgroups(),
+		kubeInformerFactory.Core().V1().Secrets(),
+		kubeInformerFactory.Core().V1().ConfigMaps(),
+		kubeInformerFactory.Batch().V1().Jobs().Informer())
 }
