@@ -22,7 +22,7 @@ type ShardClient struct {
 	parentJobCache      *lru.Cache[string, batchv1.Job]
 }
 
-func NewShardClient(kubernetesClientSet kubernetes.Interface, nexusClientsetSet clientset.Interface, name string, namespace string, logger klog.Logger) *ShardClient {
+func NewShardClient(kubernetesClientSet kubernetes.Interface, nexusClientSet clientset.Interface, name string, namespace string, logger klog.Logger) *ShardClient {
 	lruCache, err := lru.New[string, batchv1.Job](1000)
 
 	if err != nil {
@@ -34,7 +34,7 @@ func NewShardClient(kubernetesClientSet kubernetes.Interface, nexusClientsetSet 
 		Name:                name,
 		Namespace:           namespace,
 		kubernetesClientSet: kubernetesClientSet,
-		nexusClientSet:      nexusClientsetSet,
+		nexusClientSet:      nexusClientSet,
 		parentJobCache:      lruCache,
 	}
 }
