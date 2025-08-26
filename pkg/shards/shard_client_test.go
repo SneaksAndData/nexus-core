@@ -25,8 +25,8 @@ type clientFixture struct {
 	nexusClient nexuscore.Interface
 }
 
-func newClientFixture(t *testing.T, existingObjects []runtime.Object) *fixture {
-	f := &fixture{}
+func newClientFixture(t *testing.T, existingObjects []runtime.Object) *clientFixture {
+	f := &clientFixture{}
 	f.t = t
 	_, f.testContext = ktesting.NewTestContext(t)
 
@@ -35,7 +35,7 @@ func newClientFixture(t *testing.T, existingObjects []runtime.Object) *fixture {
 	return f
 }
 
-func (f *fixture) newShardClient(name string, namespace string) *ShardClient {
+func (f *clientFixture) newShardClient(name string, namespace string) *ShardClient {
 	return NewShardClient(f.kubeClient, f.nexusClient, name, namespace, klog.FromContext(f.testContext))
 }
 
