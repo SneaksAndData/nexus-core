@@ -8,8 +8,10 @@ import (
 	"github.com/hashicorp/golang-lru/v2"
 	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	kubeinformers "k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2"
 	"time"
 )
@@ -78,17 +80,64 @@ func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
 	kubeInformerFactory := c.getKubeInformerFactory(c.Name)
 	nexusInformerFactory := c.getNexusInformerFactory(c.Name)
 
-	defer kubeInformerFactory.Start(ctx.Done())
-	defer nexusInformerFactory.Start(ctx.Done())
+	templateInformer := nexusInformerFactory.Science().V1().NexusAlgorithmTemplates()
+	workgroupInformer := nexusInformerFactory.Science().V1().NexusAlgorithmWorkgroups()
+	secretInformer := kubeInformerFactory.Core().V1().Secrets()
+	configmapInformer := kubeInformerFactory.Core().V1().ConfigMaps()
+
+	handlerFunc := func(obj interface{}) {
+		logger := klog.FromContext(ctx)
+		objectRef, err := cache.ObjectToName(obj)
+		if err != nil { // coverage-ignore
+			utilruntime.HandleError(err)
+			return
+		}
+
+		logger.V(3).Info("resource loaded", "resource", objectRef.Name)
+	}
+
+	_, err := secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: handlerFunc,
+	})
+
+	if err != nil {
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
+	_, err = configmapInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: handlerFunc,
+	})
+
+	if err != nil {
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
+	_, err = templateInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: handlerFunc,
+	})
+
+	if err != nil {
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
+	_, err = workgroupInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: handlerFunc,
+	})
+
+	if err != nil {
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
+	kubeInformerFactory.Start(ctx.Done())
+	nexusInformerFactory.Start(ctx.Done())
 
 	return NewShard(
 		owner,
 		c.Name,
 		c.kubernetesClientSet,
 		c.nexusClientSet,
-		nexusInformerFactory.Science().V1().NexusAlgorithmTemplates(),
-		nexusInformerFactory.Science().V1().NexusAlgorithmWorkgroups(),
-		kubeInformerFactory.Core().V1().Secrets(),
-		kubeInformerFactory.Core().V1().ConfigMaps(),
-		ctx)
+		templateInformer,
+		workgroupInformer,
+		secretInformer,
+		configmapInformer)
 }
