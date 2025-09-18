@@ -25,10 +25,12 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
 )
 
 type Shard struct {
@@ -65,7 +67,52 @@ func NewShard(
 	workgroupInformer nexusinformers.NexusAlgorithmWorkgroupInformer,
 	secretInformer coreinformers.SecretInformer,
 	configmapInformer coreinformers.ConfigMapInformer,
+	ctx context.Context,
 ) *Shard {
+
+	handlerFunc := func(obj interface{}) {
+		logger := klog.FromContext(ctx)
+		objectRef, err := cache.ObjectToName(obj)
+		if err != nil { // coverage-ignore
+			utilruntime.HandleError(err)
+			return
+		}
+
+		logger.V(3).Info("resource loaded", "resource", objectRef.Name)
+	}
+
+	_, err := secretInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: handlerFunc,
+	})
+
+	if err != nil {
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
+	_, err = configmapInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: handlerFunc,
+	})
+
+	if err != nil {
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
+	_, err = templateInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: handlerFunc,
+	})
+
+	if err != nil {
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
+	_, err = workgroupInformer.Informer().AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: handlerFunc,
+	})
+
+	if err != nil {
+		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
+	}
+
 	return &Shard{
 		OwnerName:           ownerName,
 		Name:                name,
