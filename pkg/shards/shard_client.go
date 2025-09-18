@@ -128,10 +128,7 @@ func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
-	kubeInformerFactory.Start(ctx.Done())
-	nexusInformerFactory.Start(ctx.Done())
-
-	return NewShard(
+	shard := NewShard(
 		owner,
 		c.Name,
 		c.kubernetesClientSet,
@@ -140,4 +137,9 @@ func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
 		workgroupInformer,
 		secretInformer,
 		configmapInformer)
+
+	kubeInformerFactory.Start(ctx.Done())
+	nexusInformerFactory.Start(ctx.Done())
+
+	return shard
 }
