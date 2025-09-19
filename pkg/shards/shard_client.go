@@ -75,8 +75,8 @@ func (c *ShardClient) FindJob(jobName string, namespace string) (*batchv1.Job, e
 }
 
 func (c *ShardClient) ToShard(owner string, ctx context.Context) *Shard {
-	kubeInformerFactory := c.getKubeInformerFactory(c.Name)
-	nexusInformerFactory := c.getNexusInformerFactory(c.Name)
+	kubeInformerFactory := c.getKubeInformerFactory(c.Namespace)
+	nexusInformerFactory := c.getNexusInformerFactory(c.Namespace)
 
 	defer kubeInformerFactory.Start(ctx.Done())
 	defer nexusInformerFactory.Start(ctx.Done())
