@@ -231,7 +231,7 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 									corev1.ResourceMemory: resource.MustParse("2000Mi"),
 								},
 								Requests: corev1.ResourceList{
-									corev1.ResourceCPU:    resource.MustParse("1000m"),
+									corev1.ResourceCPU:    resource.MustParse("100m"),
 									corev1.ResourceMemory: resource.MustParse("2000Mi"),
 								},
 							},
