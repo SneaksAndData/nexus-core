@@ -310,13 +310,18 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 	if parent != nil {
 		owners = append(owners, *parent)
 	}
-	jobResourceList := corev1.ResourceList{
+	jobResourceLimits := corev1.ResourceList{
 		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
 		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
 	}
 
+	jobResourceRequests := jobResourceLimits.DeepCopy()
+	cpuLimit := jobResourceRequests[corev1.ResourceCPU]
+	jobResourceRequests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%.0fm", float64(cpuLimit.MilliValue())*0.1))
+
 	for customResourceKey, customResourceValue := range c.AppliedConfiguration.ComputeResources.CustomResources {
-		jobResourceList[corev1.ResourceName(customResourceKey)] = resource.MustParse(customResourceValue)
+		jobResourceLimits[corev1.ResourceName(customResourceKey)] = resource.MustParse(customResourceValue)
+		jobResourceRequests[corev1.ResourceName(customResourceKey)] = resource.MustParse(customResourceValue)
 	}
 
 	jobArgs := []string{}
@@ -409,8 +414,8 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 							Image:           fmt.Sprintf("%s/%s:%s", c.AppliedConfiguration.Container.Registry, c.AppliedConfiguration.Container.Image, c.AppliedConfiguration.Container.VersionTag),
 							ImagePullPolicy: corev1.PullIfNotPresent,
 							Resources: corev1.ResourceRequirements{
-								Requests: jobResourceList,
-								Limits:   jobResourceList,
+								Requests: jobResourceRequests,
+								Limits:   jobResourceLimits,
 							},
 							Command: strings.Split(c.AppliedConfiguration.Command, " "),
 							Args:    jobArgs,
