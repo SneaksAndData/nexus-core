@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"k8s.io/klog/v2"
 	"regexp"
@@ -15,9 +16,10 @@ import (
 const s3UrlRegex = "s3a://([^/]+)/?(.*)"
 
 type S3PayloadStore struct {
-	client *s3.Client
-	signer *s3.PresignClient
-	logger klog.Logger
+	client   *s3.Client
+	signer   *s3.PresignClient
+	logger   klog.Logger
+	uploader *manager.Uploader
 }
 
 type S3Path struct {
@@ -49,9 +51,10 @@ func NewS3PayloadStore(ctx context.Context, logger klog.Logger, credentialsProvi
 		o.Region = s3region
 	})
 	return &S3PayloadStore{
-		client: client,
-		signer: s3.NewPresignClient(client),
-		logger: logger,
+		client:   client,
+		signer:   s3.NewPresignClient(client),
+		uploader: manager.NewUploader(client), // using defaults - add support for tuning if needed at some point
+		logger:   logger,
 	}
 }
 
@@ -63,7 +66,7 @@ func parsePath(blobPath string) *S3Path {
 
 func (store *S3PayloadStore) SaveTextAsBlob(ctx context.Context, text string, blobPath string) error {
 	s3Path := parsePath(blobPath)
-	result, err := store.client.PutObject(ctx, &s3.PutObjectInput{
+	result, err := store.uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: s3Path.Bucket,
 		Key:    s3Path.Key,
 		Body:   strings.NewReader(text),

@@ -60,7 +60,7 @@ func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](actorName str
 
 func (a *DefaultPipelineStageActor[TIn, TOut]) processNextElement(ctx context.Context, logger klog.Logger, metrics *statsd.Client) bool {
 	element, shutdown := a.queue.Get()
-	logger.V(0).Info("starting processing element", "element", element, "stage", a.stageName)
+	logger.V(4).Info("starting processing element", "element", element, "stage", a.stageName)
 	elementProcessStart := time.Now()
 
 	if shutdown {
@@ -77,7 +77,7 @@ func (a *DefaultPipelineStageActor[TIn, TOut]) processNextElement(ctx context.Co
 	defer telemetry.Gauge(metrics, fmt.Sprintf("%s_queue_size", a.stageName), float64(a.queue.Len()), a.stageTags, 1)
 
 	result, err := a.processor(element)
-	logger.V(0).Info("finished processing element", "element", element, "stage", a.stageName)
+	logger.V(4).Info("finished processing element", "element", element, "stage", a.stageName)
 	if err == nil {
 		// If no error occurs then we send the result to the receiver, if one is attached
 		if a.receiver != nil {
@@ -87,8 +87,9 @@ func (a *DefaultPipelineStageActor[TIn, TOut]) processNextElement(ctx context.Co
 	}
 	// there was a failure so be sure to report it.  This method allows for
 	// pluggable error handling which can be used for things like cluster-monitoring.
-	utilruntime.HandleErrorWithContext(ctx, err, "error processing element", "element", element, "stage", a.stageName)
-	logger.V(0).Error(err, "error when processing element", "element", element, "stage", a.stageName)
+	utilruntime.HandleErrorWithContext(ctx, err, "error processing next element", "stage", a.stageName)
+	logger.V(0).Error(err, "error when processing", "stage", a.stageName)
+	logger.V(4).Error(err, "received an element that cannot be processed", "element", element, "stage", a.stageName)
 
 	// forget this submission to prevent clogging the queue
 	a.queue.Forget(element)
