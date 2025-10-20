@@ -53,7 +53,17 @@ func (buffer *MemoryPassthroughBuffer) Get(requestId string, algorithmName strin
 func (buffer *MemoryPassthroughBuffer) GetBuffered(host string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	return func(yield func(*models.CheckpointedRequest, error) bool) {
 		for _, checkpoint := range buffer.Checkpoints {
-			if checkpoint.ReceivedByHost == host {
+			if checkpoint.ReceivedByHost == host && checkpoint.LifecycleStage == models.LifecycleStageBuffered {
+				yield(checkpoint, nil)
+			}
+		}
+	}, nil
+}
+
+func (buffer *MemoryPassthroughBuffer) GetNew(host string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
+	return func(yield func(*models.CheckpointedRequest, error) bool) {
+		for _, checkpoint := range buffer.Checkpoints {
+			if checkpoint.ReceivedByHost == host && checkpoint.LifecycleStage == models.LifecycleStageNew {
 				yield(checkpoint, nil)
 			}
 		}

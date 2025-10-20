@@ -13,6 +13,7 @@ import (
 type Buffer interface {
 	Get(requestId string, algorithmName string) (*models.CheckpointedRequest, error)
 	GetBuffered(host string) (iter.Seq2[*models.CheckpointedRequest, error], error)
+	GetNew(host string) (iter.Seq2[*models.CheckpointedRequest, error], error)
 	GetTagged(tag string) (iter.Seq2[*models.CheckpointedRequest, error], error)
 	Update(checkpoint *models.CheckpointedRequest) error
 	GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error)
