@@ -9,7 +9,7 @@ import (
 type CheckpointStore interface {
 	UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error
 	ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error)
-	ReadBufferedCheckpointsByHost(host string) (iter.Seq2[*models.CheckpointedRequest, error], error)
+	ReadCheckpointsByHost(host string, lifecycleStage models.LifecycleStage) (iter.Seq2[*models.CheckpointedRequest, error], error)
 	ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error)
 }
 
@@ -50,10 +50,10 @@ func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.Check
 	return result.FromCqlModel()
 }
 
-func (cqls *CqlStore) ReadBufferedCheckpointsByHost(host string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
+func (cqls *CqlStore) ReadCheckpointsByHost(host string, lifecycleStage models.LifecycleStage) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	predicate := &models.CheckpointedRequestCqlModel{
 		ReceivedByHost: host,
-		LifecycleStage: models.LifecycleStageBuffered,
+		LifecycleStage: string(lifecycleStage),
 	}
 	queryResult := []*models.CheckpointedRequestCqlModel{}
 

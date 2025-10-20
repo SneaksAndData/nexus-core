@@ -107,7 +107,11 @@ func (buffer *DefaultBuffer) Get(requestId string, algorithmName string) (*model
 }
 
 func (buffer *DefaultBuffer) GetBuffered(host string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
-	return buffer.checkpointStore.ReadBufferedCheckpointsByHost(host)
+	return buffer.checkpointStore.ReadCheckpointsByHost(host, models.LifecycleStageBuffered)
+}
+
+func (buffer *DefaultBuffer) GetNew(host string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
+	return buffer.checkpointStore.ReadCheckpointsByHost(host, models.LifecycleStageNew)
 }
 
 func (buffer *DefaultBuffer) GetTagged(tag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
