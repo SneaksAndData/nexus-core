@@ -32,6 +32,7 @@ const (
 	JobLabelFrameworkVersionKey = "science.sneaksanddata.com/nexus-version"
 	NexusComponentLabel         = "science.sneaksanddata.com/nexus-component"
 	JobLabelAlgorithmRun        = "algorithm-run"
+	SerializedPayloadKey        = "serialized"
 )
 
 type CheckpointedRequest struct {
@@ -232,10 +233,18 @@ func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, erro
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
 	hostname, _ := os.Hostname()
-	serializedPayload, err := json.Marshal(request.AlgorithmParameters)
+	var serializedPayload []byte
+	var err error
 
-	if err != nil {
-		return nil, nil, err
+	// skip marshalling if the caller has serialized the payload and wants scheduler to proceed to checkpointing as soon as possible
+	if serializedValue, serializedKeyExists := request.AlgorithmParameters[SerializedPayloadKey]; serializedKeyExists {
+		serializedPayload = []byte(serializedValue.(string))
+	} else {
+		serializedPayload, err = json.Marshal(request.AlgorithmParameters)
+
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	// check time.Duration
