@@ -307,9 +307,23 @@ func defaultFailurePolicy() *batchv1.PodFailurePolicy {
 
 func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) batchv1.Job {
 	owners := []metav1.OwnerReference{}
+	parentInfo := []corev1.EnvVar{}
 	if parent != nil {
 		owners = append(owners, *parent)
 	}
+	if c.Parent != nil {
+		parentInfo = []corev1.EnvVar{
+			{
+				Name:  "NEXUS__PARENT_REQUEST_ID",
+				Value: c.Parent.RequestId,
+			},
+			{
+				Name:  "NEXUS__PARENT_ALGORITHM_NAME",
+				Value: c.Parent.AlgorithmName,
+			},
+		}
+	}
+
 	jobResourceLimits := corev1.ResourceList{
 		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
 		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
@@ -380,6 +394,17 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 		}
 	}
 
+	jobEnv := append(c.AppliedConfiguration.RuntimeEnvironment.EnvironmentVariables, []corev1.EnvVar{
+		{
+			Name:  "NEXUS__ALGORITHM_NAME",
+			Value: c.Algorithm,
+		},
+		{
+			Name:  "NEXUS__SHARD_NAME",
+			Value: workgroup.Cluster,
+		},
+	}...)
+
 	return batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
@@ -417,18 +442,9 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 								Requests: jobResourceRequests,
 								Limits:   jobResourceLimits,
 							},
-							Command: strings.Split(c.AppliedConfiguration.Command, " "),
-							Args:    jobArgs,
-							Env: append(c.AppliedConfiguration.RuntimeEnvironment.EnvironmentVariables, []corev1.EnvVar{
-								{
-									Name:  "NEXUS__ALGORITHM_NAME",
-									Value: c.Algorithm,
-								},
-								{
-									Name:  "NEXUS__SHARD_NAME",
-									Value: workgroup.Cluster,
-								},
-							}...),
+							Command:      strings.Split(c.AppliedConfiguration.Command, " "),
+							Args:         jobArgs,
+							Env:          append(jobEnv, parentInfo...),
 							EnvFrom:      c.AppliedConfiguration.RuntimeEnvironment.MappedEnvironmentVariables,
 							VolumeMounts: jobVolumeMounts,
 						},

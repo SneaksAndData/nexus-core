@@ -13,7 +13,13 @@ import (
 	"time"
 )
 
-func getFakeRequest() *CheckpointedRequest {
+func getFakeRequest(hasParent bool) *CheckpointedRequest {
+	var parentRef *AlgorithmRequestRef
+
+	if hasParent {
+		parentRef = &AlgorithmRequestRef{RequestId: "test-parent", AlgorithmName: "test-parent-algorithm"}
+	}
+
 	return &CheckpointedRequest{
 		Algorithm:               "test",
 		Id:                      "test-id",
@@ -60,13 +66,13 @@ func getFakeRequest() *CheckpointedRequest {
 		Tag:                    "abc",
 		ApiVersion:             "1.2",
 		JobUid:                 "1231",
-		Parent:                 nil,
+		Parent:                 parentRef,
 		PayloadValidFor:        "86400s",
 	}
 }
 
 func TestCheckpointedRequest_DeepCopy(t *testing.T) {
-	fakeRequest := getFakeRequest()
+	fakeRequest := getFakeRequest(false)
 	deepCopy := fakeRequest.DeepCopy()
 
 	if !reflect.DeepEqual(fakeRequest, deepCopy) || (fakeRequest == deepCopy) {
@@ -76,7 +82,7 @@ func TestCheckpointedRequest_DeepCopy(t *testing.T) {
 }
 
 func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
-	fakeRequest := getFakeRequest()
+	fakeRequest := getFakeRequest(false)
 	cqlModel, err := fakeRequest.ToCqlModel()
 	if err != nil {
 		t.Errorf("Error when creating CQL model: %s", err)
@@ -110,7 +116,7 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 }
 
 func TestCheckpointedRequest_FromCqlModel(t *testing.T) {
-	fakeRequest := getFakeRequest()
+	fakeRequest := getFakeRequest(false)
 	cqlModel, err := fakeRequest.ToCqlModel()
 	if err != nil {
 		t.Errorf("Error when creating CQL model: %s", err)
@@ -128,7 +134,7 @@ func TestCheckpointedRequest_FromCqlModel(t *testing.T) {
 }
 
 func TestCheckpointedRequest_ToV1Job(t *testing.T) {
-	fakeRequest := getFakeRequest()
+	fakeRequest := getFakeRequest(true)
 	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
 		Description:  "default",
 		Capabilities: nil,
@@ -224,6 +230,14 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 									Name:  "NEXUS__SHARD_NAME",
 									Value: "shard-0",
 								},
+								{
+									Name:  "NEXUS__PARENT_REQUEST_ID",
+									Value: "test-parent",
+								},
+								{
+									Name:  "NEXUS__PARENT_ALGORITHM_NAME",
+									Value: "test-parent-algorithm",
+								},
 							},
 							Resources: corev1.ResourceRequirements{
 								Limits: corev1.ResourceList{
@@ -298,7 +312,7 @@ func TestFromAlgorithmRequest(t *testing.T) {
 }
 
 func TestCheckpointedRequest_IsFinished(t *testing.T) {
-	request := getFakeRequest()
+	request := getFakeRequest(false)
 
 	for _, stage := range []string{LifecycleStageFailed, LifecycleStageCompleted, LifecycleStageDeadlineExceeded, LifecycleStageSchedulingFailed, LifecycleStageCancelled} {
 		request.LifecycleStage = stage
