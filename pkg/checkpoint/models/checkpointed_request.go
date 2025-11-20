@@ -307,9 +307,23 @@ func defaultFailurePolicy() *batchv1.PodFailurePolicy {
 
 func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) batchv1.Job {
 	owners := []metav1.OwnerReference{}
+	parentInfo := []corev1.EnvVar{}
 	if parent != nil {
 		owners = append(owners, *parent)
 	}
+	if c.Parent != nil {
+		parentInfo = []corev1.EnvVar{
+			{
+				Name:  "NEXUS__PARENT_REQUEST_ID",
+				Value: c.Parent.RequestId,
+			},
+			{
+				Name:  "NEXUS__PARENT_ALGORITHM_NAME",
+				Value: c.Parent.AlgorithmName,
+			},
+		}
+	}
+
 	jobResourceLimits := corev1.ResourceList{
 		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
 		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
@@ -377,21 +391,6 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 				},
 				OnPodConditions: make([]batchv1.PodFailurePolicyOnPodConditionsPattern, 0),
 			})
-		}
-	}
-
-	parentInfo := []corev1.EnvVar{}
-
-	if c.Parent != nil {
-		parentInfo = []corev1.EnvVar{
-			{
-				Name:  "NEXUS__PARENT_REQUEST_ID",
-				Value: c.Parent.RequestId,
-			},
-			{
-				Name:  "NEXUS__PARENT_ALGORITHM_NAME",
-				Value: c.Parent.AlgorithmName,
-			},
 		}
 	}
 
