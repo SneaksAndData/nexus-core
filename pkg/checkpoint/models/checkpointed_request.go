@@ -380,6 +380,32 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 		}
 	}
 
+	parentInfo := []corev1.EnvVar{}
+
+	if c.Parent != nil {
+		parentInfo = []corev1.EnvVar{
+			{
+				Name:  "NEXUS__PARENT_REQUEST_ID",
+				Value: c.Parent.RequestId,
+			},
+			{
+				Name:  "NEXUS__PARENT_ALGORITHM_NAME",
+				Value: c.Parent.AlgorithmName,
+			},
+		}
+	}
+
+	jobEnv := append(c.AppliedConfiguration.RuntimeEnvironment.EnvironmentVariables, []corev1.EnvVar{
+		{
+			Name:  "NEXUS__ALGORITHM_NAME",
+			Value: c.Algorithm,
+		},
+		{
+			Name:  "NEXUS__SHARD_NAME",
+			Value: workgroup.Cluster,
+		},
+	}...)
+
 	return batchv1.Job{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Job",
@@ -417,18 +443,9 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 								Requests: jobResourceRequests,
 								Limits:   jobResourceLimits,
 							},
-							Command: strings.Split(c.AppliedConfiguration.Command, " "),
-							Args:    jobArgs,
-							Env: append(c.AppliedConfiguration.RuntimeEnvironment.EnvironmentVariables, []corev1.EnvVar{
-								{
-									Name:  "NEXUS__ALGORITHM_NAME",
-									Value: c.Algorithm,
-								},
-								{
-									Name:  "NEXUS__SHARD_NAME",
-									Value: workgroup.Cluster,
-								},
-							}...),
+							Command:      strings.Split(c.AppliedConfiguration.Command, " "),
+							Args:         jobArgs,
+							Env:          append(jobEnv, parentInfo...),
 							EnvFrom:      c.AppliedConfiguration.RuntimeEnvironment.MappedEnvironmentVariables,
 							VolumeMounts: jobVolumeMounts,
 						},

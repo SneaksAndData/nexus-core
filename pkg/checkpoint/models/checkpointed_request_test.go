@@ -60,7 +60,7 @@ func getFakeRequest() *CheckpointedRequest {
 		Tag:                    "abc",
 		ApiVersion:             "1.2",
 		JobUid:                 "1231",
-		Parent:                 nil,
+		Parent:                 &AlgorithmRequestRef{RequestId: "test-parent", AlgorithmName: "test-parent-algorithm"},
 		PayloadValidFor:        "86400s",
 	}
 }
@@ -223,6 +223,14 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 								{
 									Name:  "NEXUS__SHARD_NAME",
 									Value: "shard-0",
+								},
+								{
+									Name:  "NEXUS__PARENT_REQUEST_ID",
+									Value: "test-parent",
+								},
+								{
+									Name:  "NEXUS__PARENT_ALGORITHM_NAME",
+									Value: "test-parent-algorithm",
 								},
 							},
 							Resources: corev1.ResourceRequirements{
