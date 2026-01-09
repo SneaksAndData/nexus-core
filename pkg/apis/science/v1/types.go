@@ -93,9 +93,11 @@ type NexusAlgorithmContainer struct {
 
 // NexusAlgorithmRuntimeEnvironment defines environment configuration for each run
 type NexusAlgorithmRuntimeEnvironment struct {
-	EnvironmentVariables       []corev1.EnvVar        `json:"environmentVariables,omitempty"`
-	MappedEnvironmentVariables []corev1.EnvFromSource `json:"mappedEnvironmentVariables,omitempty"`
-	Annotations                map[string]string      `json:"annotations,omitempty"`
+	EnvironmentVariables       []corev1.EnvVar               `json:"environmentVariables,omitempty"`
+	MappedEnvironmentVariables []corev1.EnvFromSource        `json:"mappedEnvironmentVariables,omitempty"`
+	ConfigurationFileMounts    map[string]corev1.VolumeMount `json:"configurationFileMounts,omitempty"`
+	SecretFileMounts           map[string]corev1.VolumeMount `json:"secretFileMounts,omitempty"`
+	Annotations                map[string]string             `json:"annotations,omitempty"`
 
 	DeadlineSeconds *int32 `json:"deadlineSeconds,omitempty"`
 	MaximumRetries  *int32 `json:"maximumRetries,omitempty"`
