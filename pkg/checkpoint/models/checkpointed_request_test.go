@@ -295,6 +295,15 @@ func TestCheckpointedRequest_ToV1Job_WithEmptyFatalExitCodes(t *testing.T) {
 	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected DisruptionTarget rule to have OnPodConditions")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
+	}
 }
 
 func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
@@ -324,6 +333,15 @@ func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
 	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected DisruptionTarget rule to have OnPodConditions")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
+	}
 }
 
 func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
@@ -352,6 +370,15 @@ func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
 	// The only rule should be the DisruptionTarget rule
 	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected DisruptionTarget rule to have OnPodConditions")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
 	}
 }
 
