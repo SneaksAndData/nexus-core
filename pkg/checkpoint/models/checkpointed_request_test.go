@@ -292,7 +292,7 @@ func TestCheckpointedRequest_ToV1Job_WithEmptyFatalExitCodes(t *testing.T) {
 		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
 	}
 	// The only rule should be the DisruptionTarget rule
-	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 }
@@ -321,7 +321,7 @@ func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
 		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
 	}
 	// The only rule should be the DisruptionTarget rule
-	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 }
@@ -350,7 +350,7 @@ func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
 		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
 	}
 	// The only rule should be the DisruptionTarget rule
-	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 }
@@ -379,7 +379,7 @@ func TestCheckpointedRequest_ToV1Job_WithNonEmptyFatalExitCodes(t *testing.T) {
 		t.Errorf("Expected 2 PodFailurePolicy rules (DisruptionTarget + FatalExitCodes), got %d", len(job.Spec.PodFailurePolicy.Rules))
 	}
 	// First rule should be DisruptionTarget
-	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 	// Second rule should be FatalExitCodes
@@ -418,7 +418,7 @@ func TestCheckpointedRequest_ToV1Job_WithNonEmptyTransientExitCodes(t *testing.T
 		t.Errorf("Expected 2 PodFailurePolicy rules (DisruptionTarget + TransientExitCodes), got %d", len(job.Spec.PodFailurePolicy.Rules))
 	}
 	// First rule should be DisruptionTarget
-	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 	// Second rule should be TransientExitCodes
@@ -457,7 +457,7 @@ func TestCheckpointedRequest_ToV1Job_WithBothNonEmptyExitCodes(t *testing.T) {
 		t.Errorf("Expected 3 PodFailurePolicy rules (DisruptionTarget + FatalExitCodes + TransientExitCodes), got %d", len(job.Spec.PodFailurePolicy.Rules))
 	}
 	// First rule should be DisruptionTarget
-	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 	// Second rule should be FatalExitCodes
