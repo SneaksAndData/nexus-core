@@ -296,7 +296,7 @@ func TestCheckpointedRequest_ToV1Job_WithEmptyFatalExitCodes(t *testing.T) {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
-		t.Error("Expected DisruptionTarget rule to have OnPodConditions")
+		t.Error("Expected first rule to have OnPodConditions defined")
 	}
 	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
 		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
@@ -334,7 +334,7 @@ func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
-		t.Error("Expected DisruptionTarget rule to have OnPodConditions")
+		t.Error("Expected first rule to have OnPodConditions defined")
 	}
 	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
 		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
@@ -372,7 +372,7 @@ func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
 		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
 	}
 	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
-		t.Error("Expected DisruptionTarget rule to have OnPodConditions")
+		t.Error("Expected first rule to have OnPodConditions defined")
 	}
 	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
 		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
