@@ -371,7 +371,7 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 	}
 
 	if c.AppliedConfiguration.ErrorHandlingBehaviour != nil { // coverage-ignore
-		if c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes != nil {
+		if c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes != nil && len(c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes) > 0 {
 			jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{
 				Action: batchv1.PodFailurePolicyActionFailJob,
 				OnExitCodes: &batchv1.PodFailurePolicyOnExitCodesRequirement{
@@ -382,7 +382,7 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 			})
 		}
 
-		if c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes != nil {
+		if c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes != nil && len(c.AppliedConfiguration.ErrorHandlingBehaviour.TransientExitCodes) > 0 {
 			jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{
 				Action: batchv1.PodFailurePolicyActionIgnore,
 				OnExitCodes: &batchv1.PodFailurePolicyOnExitCodesRequirement{

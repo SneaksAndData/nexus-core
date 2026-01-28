@@ -268,6 +268,208 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 	}
 }
 
+func TestCheckpointedRequest_ToV1Job_WithEmptyFatalExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with empty FatalExitCodes
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     []int32{},
+		TransientExitCodes: nil,
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with empty TransientExitCodes
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     nil,
+		TransientExitCodes: []int32{},
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with both empty
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     []int32{},
+		TransientExitCodes: []int32{},
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithNonEmptyFatalExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with non-empty FatalExitCodes
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     []int32{1, 2, 3},
+		TransientExitCodes: nil,
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy has the DisruptionTarget rule + FatalExitCodes rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 2 {
+		t.Errorf("Expected 2 PodFailurePolicy rules (DisruptionTarget + FatalExitCodes), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// First rule should be DisruptionTarget
+	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	// Second rule should be FatalExitCodes
+	if job.Spec.PodFailurePolicy.Rules[1].Action != batchv1.PodFailurePolicyActionFailJob {
+		t.Errorf("Expected second rule to be FailJob action, got %s", job.Spec.PodFailurePolicy.Rules[1].Action)
+	}
+	if job.Spec.PodFailurePolicy.Rules[1].OnExitCodes == nil {
+		t.Error("Expected second rule to have OnExitCodes")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[1].OnExitCodes.Values) != 3 {
+		t.Errorf("Expected 3 exit codes, got %d", len(job.Spec.PodFailurePolicy.Rules[1].OnExitCodes.Values))
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithNonEmptyTransientExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with non-empty TransientExitCodes
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     nil,
+		TransientExitCodes: []int32{10, 20},
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy has the DisruptionTarget rule + TransientExitCodes rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 2 {
+		t.Errorf("Expected 2 PodFailurePolicy rules (DisruptionTarget + TransientExitCodes), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// First rule should be DisruptionTarget
+	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	// Second rule should be TransientExitCodes
+	if job.Spec.PodFailurePolicy.Rules[1].Action != batchv1.PodFailurePolicyActionIgnore {
+		t.Errorf("Expected second rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[1].Action)
+	}
+	if job.Spec.PodFailurePolicy.Rules[1].OnExitCodes == nil {
+		t.Error("Expected second rule to have OnExitCodes")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[1].OnExitCodes.Values) != 2 {
+		t.Errorf("Expected 2 exit codes, got %d", len(job.Spec.PodFailurePolicy.Rules[1].OnExitCodes.Values))
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithBothNonEmptyExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with both non-empty
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     []int32{1},
+		TransientExitCodes: []int32{10},
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy has all three rules
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 3 {
+		t.Errorf("Expected 3 PodFailurePolicy rules (DisruptionTarget + FatalExitCodes + TransientExitCodes), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// First rule should be DisruptionTarget
+	if job.Spec.PodFailurePolicy.Rules[0].Action != "Ignore" {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	// Second rule should be FatalExitCodes
+	if job.Spec.PodFailurePolicy.Rules[1].Action != batchv1.PodFailurePolicyActionFailJob {
+		t.Errorf("Expected second rule to be FailJob action, got %s", job.Spec.PodFailurePolicy.Rules[1].Action)
+	}
+	// Third rule should be TransientExitCodes
+	if job.Spec.PodFailurePolicy.Rules[2].Action != batchv1.PodFailurePolicyActionIgnore {
+		t.Errorf("Expected third rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[2].Action)
+	}
+}
+
 func TestFromAlgorithmRequest(t *testing.T) {
 	checkpoint, payload, err := FromAlgorithmRequest("test-id", "test", &AlgorithmRequest{
 		AlgorithmParameters: map[string]interface{}{
