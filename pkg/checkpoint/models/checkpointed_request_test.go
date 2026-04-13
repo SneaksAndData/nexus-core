@@ -268,6 +268,120 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 	}
 }
 
+func TestCheckpointedRequest_ToV1Job_WithEmptyFatalExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with empty FatalExitCodes
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     []int32{},
+		TransientExitCodes: nil,
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected first rule to have OnPodConditions defined")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with empty TransientExitCodes
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     nil,
+		TransientExitCodes: []int32{},
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected first rule to have OnPodConditions defined")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with both empty
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     []int32{},
+		TransientExitCodes: []int32{},
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected first rule to have OnPodConditions defined")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
+	}
+}
+
 func TestFromAlgorithmRequest(t *testing.T) {
 	checkpoint, payload, err := FromAlgorithmRequest("test-id", "test", &AlgorithmRequest{
 		AlgorithmParameters: map[string]interface{}{
