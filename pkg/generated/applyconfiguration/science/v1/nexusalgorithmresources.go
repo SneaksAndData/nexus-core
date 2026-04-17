@@ -27,7 +27,7 @@ import (
 type NexusAlgorithmResourcesApplyConfiguration struct {
 	CpuLimit             *string              `json:"cpuLimit,omitempty"`
 	MemoryLimit          *string              `json:"memoryLimit,omitempty"`
-	DefaultResourceQuota *float64             `json:"defaultResourceQuota,omitempty"`
+	DefaultResourceQuota *string              `json:"defaultResourceQuota,omitempty"`
 	Requests             *corev1.ResourceList `json:"requests,omitempty"`
 	Limits               *corev1.ResourceList `json:"limits,omitempty"`
 	CustomResources      map[string]string    `json:"customResources,omitempty"`
@@ -58,7 +58,7 @@ func (b *NexusAlgorithmResourcesApplyConfiguration) WithMemoryLimit(value string
 // WithDefaultResourceQuota sets the DefaultResourceQuota field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
 // If called multiple times, the DefaultResourceQuota field is set to the value of the last call.
-func (b *NexusAlgorithmResourcesApplyConfiguration) WithDefaultResourceQuota(value float64) *NexusAlgorithmResourcesApplyConfiguration {
+func (b *NexusAlgorithmResourcesApplyConfiguration) WithDefaultResourceQuota(value string) *NexusAlgorithmResourcesApplyConfiguration {
 	b.DefaultResourceQuota = &value
 	return b
 }

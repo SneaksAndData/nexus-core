@@ -410,7 +410,7 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 		jobResourceRequests = jobResourceLimits.DeepCopy()
 
 		cpuLimit := jobResourceRequests[corev1.ResourceCPU]
-		jobResourceRequests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%.0fm", float64(cpuLimit.MilliValue())*c.AppliedConfiguration.ComputeResources.DefaultResourceQuota))
+		jobResourceRequests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%.0fm", float64(cpuLimit.MilliValue())*c.AppliedConfiguration.ComputeResources.GetDefaultQuota()))
 	}
 
 	for customResourceKey, customResourceValue := range c.AppliedConfiguration.ComputeResources.CustomResources {
