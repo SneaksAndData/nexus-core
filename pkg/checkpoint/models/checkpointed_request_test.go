@@ -98,14 +98,14 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 		ReceivedByHost:          fakeRequest.ReceivedByHost,
 		ReceivedAt:              fakeRequest.ReceivedAt,
 		SentAt:                  fakeRequest.SentAt,
-		AppliedConfiguration:    "{\"container\":{\"image\":\"test.io\",\"registry\":\"algorithms/test\",\"versionTag\":\"v1.0.0\",\"serviceAccountName\":\"test-sa\"},\"computeResources\":{\"cpuLimit\":\"1000m\",\"memoryLimit\":\"2000Mi\"},\"workgroupRef\":{\"name\":\"test-workgroup\",\"group\":\"nexus-workgroup.io\",\"kind\":\"KarpenterWorkgroupV1\"},\"command\":\"python\",\"args\":[\"job.py\",\"--sas-uri=%s\",\"--request-id=%s\",\"--arg1=true\"],\"runtimeEnvironment\":{\"deadlineSeconds\":120,\"maximumRetries\":3},\"datadogIntegrationSettings\":{\"mountDatadogSocket\":true}}",
-		ConfigurationOverrides:  "{}",
+		AppliedConfiguration:    "b64__eyJjb250YWluZXIiOnsiaW1hZ2UiOiJ0ZXN0LmlvIiwicmVnaXN0cnkiOiJhbGdvcml0aG1zL3Rlc3QiLCJ2ZXJzaW9uVGFnIjoidjEuMC4wIiwic2VydmljZUFjY291bnROYW1lIjoidGVzdC1zYSJ9LCJjb21wdXRlUmVzb3VyY2VzIjp7ImNwdUxpbWl0IjoiMTAwMG0iLCJtZW1vcnlMaW1pdCI6IjIwMDBNaSJ9LCJ3b3JrZ3JvdXBSZWYiOnsibmFtZSI6InRlc3Qtd29ya2dyb3VwIiwiZ3JvdXAiOiJuZXh1cy13b3JrZ3JvdXAuaW8iLCJraW5kIjoiS2FycGVudGVyV29ya2dyb3VwVjEifSwiY29tbWFuZCI6InB5dGhvbiIsImFyZ3MiOlsiam9iLnB5IiwiLS1zYXMtdXJpPSVzIiwiLS1yZXF1ZXN0LWlkPSVzIiwiLS1hcmcxPXRydWUiXSwicnVudGltZUVudmlyb25tZW50Ijp7ImRlYWRsaW5lU2Vjb25kcyI6MTIwLCJtYXhpbXVtUmV0cmllcyI6M30sImRhdGFkb2dJbnRlZ3JhdGlvblNldHRpbmdzIjp7Im1vdW50RGF0YWRvZ1NvY2tldCI6dHJ1ZX19",
+		ConfigurationOverrides:  "b64__e30=",
 		ContentHash:             fakeRequest.ContentHash,
 		LastModified:            fakeRequest.LastModified,
 		Tag:                     fakeRequest.Tag,
 		ApiVersion:              fakeRequest.ApiVersion,
 		JobUid:                  fakeRequest.JobUid,
-		Parent:                  "{}",
+		Parent:                  "b64__e30=",
 		PayloadValidFor:         "86400s",
 	}
 
@@ -131,6 +131,42 @@ func TestCheckpointedRequest_FromCqlModel(t *testing.T) {
 		t.Errorf("Failed to deserialize a checkpoint from its cql model %s: values do not match", diff.ObjectGoPrintSideBySide(fakeRequest, fakeRequestFromModel))
 	}
 	t.Log("CheckpointedRequest.FromCqlModel() returns correct result")
+}
+
+func TestCheckpointedRequest_FromLegacyCqlModel(t *testing.T) {
+	expectedRequest := getFakeRequest(false)
+	legacyModel := &CheckpointedRequestCqlModel{
+		Algorithm:               expectedRequest.Algorithm,
+		Id:                      expectedRequest.Id,
+		LifecycleStage:          "RUNNING",
+		PayloadUri:              expectedRequest.PayloadUri,
+		ResultUri:               expectedRequest.ResultUri,
+		AlgorithmFailureCause:   expectedRequest.AlgorithmFailureCause,
+		AlgorithmFailureDetails: expectedRequest.AlgorithmFailureDetails,
+		ReceivedByHost:          expectedRequest.ReceivedByHost,
+		ReceivedAt:              expectedRequest.ReceivedAt,
+		SentAt:                  expectedRequest.SentAt,
+		AppliedConfiguration:    "{\"container\":{\"image\":\"test.io\",\"registry\":\"algorithms/test\",\"versionTag\":\"v1.0.0\",\"serviceAccountName\":\"test-sa\"},\"computeResources\":{\"cpuLimit\":\"1000m\",\"memoryLimit\":\"2000Mi\"},\"workgroupRef\":{\"name\":\"test-workgroup\",\"group\":\"nexus-workgroup.io\",\"kind\":\"KarpenterWorkgroupV1\"},\"command\":\"python\",\"args\":[\"job.py\",\"--sas-uri=%s\",\"--request-id=%s\",\"--arg1=true\"],\"runtimeEnvironment\":{\"deadlineSeconds\":120,\"maximumRetries\":3},\"datadogIntegrationSettings\":{\"mountDatadogSocket\":true}}",
+		ConfigurationOverrides:  "{}",
+		ContentHash:             expectedRequest.ContentHash,
+		LastModified:            expectedRequest.LastModified,
+		Tag:                     expectedRequest.Tag,
+		ApiVersion:              expectedRequest.ApiVersion,
+		JobUid:                  expectedRequest.JobUid,
+		Parent:                  "{}",
+		PayloadValidFor:         "86400s",
+	}
+
+	legacyRequest, err := legacyModel.FromCqlModel()
+
+	if err != nil {
+		t.Fatalf("Error when converting a legacy model back to a checkpoint: %s", err)
+	}
+
+	if !reflect.DeepEqual(legacyRequest, expectedRequest) {
+		t.Fatalf("Failed to convert request to a cql model %s: values do not match", diff.ObjectGoPrintSideBySide(legacyRequest, expectedRequest))
+	}
+	t.Log("CheckpointedRequest.ToCqlModel() returns correct result")
 }
 
 func TestCheckpointedRequest_ToV1Job(t *testing.T) {
@@ -265,6 +301,120 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 
 	if !reflect.DeepEqual(*expectedJob, job) {
 		t.Errorf("Generated job does not match expected job, diff: %s", diff.ObjectGoPrintSideBySide(*expectedJob, job))
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithEmptyFatalExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with empty FatalExitCodes
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     []int32{},
+		TransientExitCodes: nil,
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected first rule to have OnPodConditions defined")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with empty TransientExitCodes
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     nil,
+		TransientExitCodes: []int32{},
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected first rule to have OnPodConditions defined")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
+	}
+}
+
+func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
+	fakeRequest := getFakeRequest(false)
+	// Set ErrorHandlingBehaviour with both empty
+	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
+		FatalExitCodes:     []int32{},
+		TransientExitCodes: []int32{},
+	}
+
+	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
+		Description:  "default",
+		Capabilities: nil,
+		Cluster:      "shard-0",
+		Tolerations:  nil,
+		Affinity:     nil,
+	}, nil)
+
+	// Verify that PodFailurePolicy only has the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy == nil {
+		t.Error("PodFailurePolicy should not be nil")
+	}
+	if len(job.Spec.PodFailurePolicy.Rules) != 1 {
+		t.Errorf("Expected 1 PodFailurePolicy rule (DisruptionTarget only), got %d", len(job.Spec.PodFailurePolicy.Rules))
+	}
+	// The only rule should be the DisruptionTarget rule
+	if job.Spec.PodFailurePolicy.Rules[0].Action != batchv1.PodFailurePolicyActionIgnore {
+		t.Errorf("Expected first rule to be Ignore action, got %s", job.Spec.PodFailurePolicy.Rules[0].Action)
+	}
+	if len(job.Spec.PodFailurePolicy.Rules[0].OnPodConditions) == 0 {
+		t.Error("Expected first rule to have OnPodConditions defined")
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type != "DisruptionTarget" {
+		t.Errorf("Expected OnPodConditions Type to be DisruptionTarget, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Type)
+	}
+	if job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status != "True" {
+		t.Errorf("Expected OnPodConditions Status to be True, got %s", job.Spec.PodFailurePolicy.Rules[0].OnPodConditions[0].Status)
 	}
 }
 
