@@ -98,14 +98,14 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 		ReceivedByHost:          fakeRequest.ReceivedByHost,
 		ReceivedAt:              fakeRequest.ReceivedAt,
 		SentAt:                  fakeRequest.SentAt,
-		AppliedConfiguration:    "{\"container\":{\"image\":\"test.io\",\"registry\":\"algorithms/test\",\"versionTag\":\"v1.0.0\",\"serviceAccountName\":\"test-sa\"},\"computeResources\":{\"cpuLimit\":\"1000m\",\"memoryLimit\":\"2000Mi\"},\"workgroupRef\":{\"name\":\"test-workgroup\",\"group\":\"nexus-workgroup.io\",\"kind\":\"KarpenterWorkgroupV1\"},\"command\":\"python\",\"args\":[\"job.py\",\"--sas-uri=%s\",\"--request-id=%s\",\"--arg1=true\"],\"runtimeEnvironment\":{\"deadlineSeconds\":120,\"maximumRetries\":3},\"datadogIntegrationSettings\":{\"mountDatadogSocket\":true}}",
-		ConfigurationOverrides:  "{}",
+		AppliedConfiguration:    "b64__eyJjb250YWluZXIiOnsiaW1hZ2UiOiJ0ZXN0LmlvIiwicmVnaXN0cnkiOiJhbGdvcml0aG1zL3Rlc3QiLCJ2ZXJzaW9uVGFnIjoidjEuMC4wIiwic2VydmljZUFjY291bnROYW1lIjoidGVzdC1zYSJ9LCJjb21wdXRlUmVzb3VyY2VzIjp7ImNwdUxpbWl0IjoiMTAwMG0iLCJtZW1vcnlMaW1pdCI6IjIwMDBNaSJ9LCJ3b3JrZ3JvdXBSZWYiOnsibmFtZSI6InRlc3Qtd29ya2dyb3VwIiwiZ3JvdXAiOiJuZXh1cy13b3JrZ3JvdXAuaW8iLCJraW5kIjoiS2FycGVudGVyV29ya2dyb3VwVjEifSwiY29tbWFuZCI6InB5dGhvbiIsImFyZ3MiOlsiam9iLnB5IiwiLS1zYXMtdXJpPSVzIiwiLS1yZXF1ZXN0LWlkPSVzIiwiLS1hcmcxPXRydWUiXSwicnVudGltZUVudmlyb25tZW50Ijp7ImRlYWRsaW5lU2Vjb25kcyI6MTIwLCJtYXhpbXVtUmV0cmllcyI6M30sImRhdGFkb2dJbnRlZ3JhdGlvblNldHRpbmdzIjp7Im1vdW50RGF0YWRvZ1NvY2tldCI6dHJ1ZX19",
+		ConfigurationOverrides:  "b64__e30=",
 		ContentHash:             fakeRequest.ContentHash,
 		LastModified:            fakeRequest.LastModified,
 		Tag:                     fakeRequest.Tag,
 		ApiVersion:              fakeRequest.ApiVersion,
 		JobUid:                  fakeRequest.JobUid,
-		Parent:                  "{}",
+		Parent:                  "b64__e30=",
 		PayloadValidFor:         "86400s",
 	}
 
@@ -131,6 +131,42 @@ func TestCheckpointedRequest_FromCqlModel(t *testing.T) {
 		t.Errorf("Failed to deserialize a checkpoint from its cql model %s: values do not match", diff.ObjectGoPrintSideBySide(fakeRequest, fakeRequestFromModel))
 	}
 	t.Log("CheckpointedRequest.FromCqlModel() returns correct result")
+}
+
+func TestCheckpointedRequest_FromLegacyCqlModel(t *testing.T) {
+	expectedRequest := getFakeRequest(false)
+	legacyModel := &CheckpointedRequestCqlModel{
+		Algorithm:               expectedRequest.Algorithm,
+		Id:                      expectedRequest.Id,
+		LifecycleStage:          "RUNNING",
+		PayloadUri:              expectedRequest.PayloadUri,
+		ResultUri:               expectedRequest.ResultUri,
+		AlgorithmFailureCause:   expectedRequest.AlgorithmFailureCause,
+		AlgorithmFailureDetails: expectedRequest.AlgorithmFailureDetails,
+		ReceivedByHost:          expectedRequest.ReceivedByHost,
+		ReceivedAt:              expectedRequest.ReceivedAt,
+		SentAt:                  expectedRequest.SentAt,
+		AppliedConfiguration:    "{\"container\":{\"image\":\"test.io\",\"registry\":\"algorithms/test\",\"versionTag\":\"v1.0.0\",\"serviceAccountName\":\"test-sa\"},\"computeResources\":{\"cpuLimit\":\"1000m\",\"memoryLimit\":\"2000Mi\"},\"workgroupRef\":{\"name\":\"test-workgroup\",\"group\":\"nexus-workgroup.io\",\"kind\":\"KarpenterWorkgroupV1\"},\"command\":\"python\",\"args\":[\"job.py\",\"--sas-uri=%s\",\"--request-id=%s\",\"--arg1=true\"],\"runtimeEnvironment\":{\"deadlineSeconds\":120,\"maximumRetries\":3},\"datadogIntegrationSettings\":{\"mountDatadogSocket\":true}}",
+		ConfigurationOverrides:  "{}",
+		ContentHash:             expectedRequest.ContentHash,
+		LastModified:            expectedRequest.LastModified,
+		Tag:                     expectedRequest.Tag,
+		ApiVersion:              expectedRequest.ApiVersion,
+		JobUid:                  expectedRequest.JobUid,
+		Parent:                  "{}",
+		PayloadValidFor:         "86400s",
+	}
+
+	legacyRequest, err := legacyModel.FromCqlModel()
+
+	if err != nil {
+		t.Fatalf("Error when converting a legacy model back to a checkpoint: %s", err)
+	}
+
+	if !reflect.DeepEqual(legacyRequest, expectedRequest) {
+		t.Fatalf("Failed to convert request to a cql model %s: values do not match", diff.ObjectGoPrintSideBySide(legacyRequest, expectedRequest))
+	}
+	t.Log("CheckpointedRequest.ToCqlModel() returns correct result")
 }
 
 func TestCheckpointedRequest_ToV1Job(t *testing.T) {

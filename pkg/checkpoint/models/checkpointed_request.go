@@ -1,8 +1,8 @@
 package models
 
 import (
+	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/aws/smithy-go/ptr"
@@ -32,6 +32,7 @@ const (
 	JobLabelFrameworkVersionKey = "science.sneaksanddata.com/nexus-version"
 	NexusComponentLabel         = "science.sneaksanddata.com/nexus-component"
 	JobLabelAlgorithmRun        = "algorithm-run"
+	EncodePrefix                = "b64__"
 )
 
 type CheckpointedRequest struct {
@@ -162,14 +163,14 @@ func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error)
 		ReceivedByHost:          c.ReceivedByHost,
 		ReceivedAt:              c.ReceivedAt,
 		SentAt:                  c.SentAt,
-		AppliedConfiguration:    string(serializedConfig),
-		ConfigurationOverrides:  string(serializedOverrides),
+		AppliedConfiguration:    fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(serializedConfig)),
+		ConfigurationOverrides:  fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(serializedOverrides)),
 		ContentHash:             c.ContentHash,
 		LastModified:            c.LastModified,
 		Tag:                     c.Tag,
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
-		Parent:                  string(parent),
+		Parent:                  fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(parent)),
 		PayloadValidFor:         c.PayloadValidFor,
 	}, nil
 }
@@ -183,25 +184,90 @@ func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
 	return &result
 }
 
+func (c *CheckpointedRequestCqlModel) readSerializedSpec(serializedSpec string) (*v1.NexusAlgorithmSpec, error) {
+	spec := &v1.NexusAlgorithmSpec{}
+	var serializedValue []byte
+	var err error
+
+	if serializedSpec == "{}" || serializedSpec == "" {
+		return nil, nil
+	}
+
+	// backwards-compatible code: only use b64 decode if it was used to write the value
+	if strings.HasPrefix(serializedSpec, EncodePrefix) {
+		serializedValue, err = base64.StdEncoding.DecodeString(strings.TrimPrefix(serializedSpec, EncodePrefix))
+		if err != nil {
+			return nil, err
+		}
+
+		if string(serializedValue) == "{}" || string(serializedValue) == "" {
+			return nil, nil
+		}
+	} else {
+		serializedValue = []byte(serializedSpec)
+	}
+
+	err = json.Unmarshal(serializedValue, spec)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return spec, nil
+}
+
+func (c *CheckpointedRequestCqlModel) getParent() (*AlgorithmRequestRef, error) {
+	parent := &AlgorithmRequestRef{}
+	var serializedValue []byte
+	var err error
+
+	if c.Parent == "" || c.Parent == "{}" {
+		return nil, nil
+	}
+
+	// backwards-compatible code: only use b64 decode if it was used to write the value
+	if strings.HasPrefix(c.Parent, EncodePrefix) {
+		serializedValue, err = base64.StdEncoding.DecodeString(strings.TrimPrefix(c.Parent, EncodePrefix))
+		if err != nil {
+			return nil, err
+		}
+
+		if string(serializedValue) == "{}" || string(serializedValue) == "" {
+			return nil, nil
+		}
+	} else {
+		serializedValue = []byte(c.Parent)
+	}
+	err = json.Unmarshal(serializedValue, parent)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return parent, nil
+}
+
 func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, error) {
-	appliedConfig := &v1.NexusAlgorithmSpec{}
+	var appliedConfig *v1.NexusAlgorithmSpec
 	var overrides *v1.NexusAlgorithmSpec
 	var parent *AlgorithmRequestRef
 
 	var unmarshalErr error
 
 	// ignore override unmarshal if set to empty object
-	if c.ConfigurationOverrides == "{}" || c.ConfigurationOverrides == "" {
-		unmarshalErr = json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig)
-	} else { // coverage-ignore
-		overrides = &v1.NexusAlgorithmSpec{}
-		unmarshalErr = errors.Join(json.Unmarshal([]byte(c.AppliedConfiguration), appliedConfig), json.Unmarshal([]byte(c.ConfigurationOverrides), overrides))
+	overrides, unmarshalErr = c.readSerializedSpec(c.ConfigurationOverrides)
+
+	if unmarshalErr != nil {
+		return nil, unmarshalErr
 	}
 
-	if c.Parent != "" && c.Parent != "{}" {
-		parent = &AlgorithmRequestRef{}
-		unmarshalErr = errors.Join(unmarshalErr, json.Unmarshal([]byte(c.Parent), parent))
+	appliedConfig, unmarshalErr = c.readSerializedSpec(c.AppliedConfiguration)
+
+	if unmarshalErr != nil {
+		return nil, unmarshalErr
 	}
+
+	parent, unmarshalErr = c.getParent()
 
 	if unmarshalErr != nil {
 		return nil, unmarshalErr
