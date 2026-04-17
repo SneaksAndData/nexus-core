@@ -20,3 +20,5 @@ Nexus SDKs for other languages like [Python](https://github.com/SneaksAndData/ne
 ## Development Notes
 
 Since Nexus Core provides backbone functionality to other Nexus applications, issues found in those will most likely require a patch in Core. If you wish to use Nexus and help develop the Core, please open an issue and tag project maintainers.
+
+Remember to run `./hack/update-codegen.sh` if you are making changes to `types.go`.

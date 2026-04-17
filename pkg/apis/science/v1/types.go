@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"maps"
 	"slices"
+	"strconv"
 )
 
 type NexusWorkgroupCapability = string
@@ -78,9 +79,26 @@ type NexusAlgorithmWorkgroupSpec struct {
 
 // NexusAlgorithmResources defines maximum compute resources that should be provisioned for the algorithm
 type NexusAlgorithmResources struct {
-	CpuLimit        string            `json:"cpuLimit"`
-	MemoryLimit     string            `json:"memoryLimit"`
-	CustomResources map[string]string `json:"customResources,omitempty"`
+	// Deprecated: Use Limits instead
+	CpuLimit string `json:"cpuLimit"`
+	// Deprecated: Use Limits instead
+	MemoryLimit string `json:"memoryLimit"`
+
+	DefaultResourceQuota string               `json:"defaultResourceQuota"`
+	Requests             *corev1.ResourceList `json:"requests,omitempty"`
+	Limits               *corev1.ResourceList `json:"limits"`
+	CustomResources      map[string]string    `json:"customResources,omitempty"`
+}
+
+func (nar *NexusAlgorithmResources) GetDefaultQuota() float64 {
+	result, err := strconv.ParseFloat(nar.DefaultResourceQuota, 64)
+
+	// avoid failing and return safe value instead
+	if err != nil {
+		return 0.1
+	}
+
+	return result
 }
 
 // NexusAlgorithmContainer provides container specification for each run
