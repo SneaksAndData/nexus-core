@@ -18,12 +18,19 @@ limitations under the License.
 
 package v1
 
+import (
+	corev1 "k8s.io/api/core/v1"
+)
+
 // NexusAlgorithmResourcesApplyConfiguration represents a declarative configuration of the NexusAlgorithmResources type for use
 // with apply.
 type NexusAlgorithmResourcesApplyConfiguration struct {
-	CpuLimit        *string           `json:"cpuLimit,omitempty"`
-	MemoryLimit     *string           `json:"memoryLimit,omitempty"`
-	CustomResources map[string]string `json:"customResources,omitempty"`
+	CpuLimit             *string              `json:"cpuLimit,omitempty"`
+	MemoryLimit          *string              `json:"memoryLimit,omitempty"`
+	DefaultResourceQuota *float64             `json:"defaultResourceQuota,omitempty"`
+	Requests             *corev1.ResourceList `json:"requests,omitempty"`
+	Limits               *corev1.ResourceList `json:"limits,omitempty"`
+	CustomResources      map[string]string    `json:"customResources,omitempty"`
 }
 
 // NexusAlgorithmResourcesApplyConfiguration constructs a declarative configuration of the NexusAlgorithmResources type for use with
@@ -45,6 +52,30 @@ func (b *NexusAlgorithmResourcesApplyConfiguration) WithCpuLimit(value string) *
 // If called multiple times, the MemoryLimit field is set to the value of the last call.
 func (b *NexusAlgorithmResourcesApplyConfiguration) WithMemoryLimit(value string) *NexusAlgorithmResourcesApplyConfiguration {
 	b.MemoryLimit = &value
+	return b
+}
+
+// WithDefaultResourceQuota sets the DefaultResourceQuota field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the DefaultResourceQuota field is set to the value of the last call.
+func (b *NexusAlgorithmResourcesApplyConfiguration) WithDefaultResourceQuota(value float64) *NexusAlgorithmResourcesApplyConfiguration {
+	b.DefaultResourceQuota = &value
+	return b
+}
+
+// WithRequests sets the Requests field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Requests field is set to the value of the last call.
+func (b *NexusAlgorithmResourcesApplyConfiguration) WithRequests(value corev1.ResourceList) *NexusAlgorithmResourcesApplyConfiguration {
+	b.Requests = &value
+	return b
+}
+
+// WithLimits sets the Limits field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Limits field is set to the value of the last call.
+func (b *NexusAlgorithmResourcesApplyConfiguration) WithLimits(value corev1.ResourceList) *NexusAlgorithmResourcesApplyConfiguration {
+	b.Limits = &value
 	return b
 }
 
