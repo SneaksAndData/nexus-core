@@ -436,6 +436,32 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 		})
 	}
 
+	for fileSource, fileMount := range c.AppliedConfiguration.RuntimeEnvironment.ConfigurationFileMounts {
+		jobVolumeMounts = append(jobVolumeMounts, fileMount)
+		jobVolumes = append(jobVolumes, corev1.Volume{
+			Name: fileMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: fileSource,
+					},
+				},
+			},
+		})
+	}
+
+	for fileSource, fileMount := range c.AppliedConfiguration.RuntimeEnvironment.SecretFileMounts {
+		jobVolumeMounts = append(jobVolumeMounts, fileMount)
+		jobVolumes = append(jobVolumes, corev1.Volume{
+			Name: fileMount.Name,
+			VolumeSource: corev1.VolumeSource{
+				Secret: &corev1.SecretVolumeSource{
+					SecretName: fileSource,
+				},
+			},
+		})
+	}
+
 	if c.AppliedConfiguration.ErrorHandlingBehaviour != nil { // coverage-ignore
 		if len(c.AppliedConfiguration.ErrorHandlingBehaviour.FatalExitCodes) > 0 {
 			jobPodFailurePolicy.Rules = append(jobPodFailurePolicy.Rules, batchv1.PodFailurePolicyRule{

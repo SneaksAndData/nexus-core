@@ -83,6 +83,20 @@ func (in *NexusAlgorithmRuntimeEnvironment) DeepCopyInto(out *NexusAlgorithmRunt
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
+	if in.ConfigurationFileMounts != nil {
+		in, out := &in.ConfigurationFileMounts, &out.ConfigurationFileMounts
+		*out = make(map[string]corev1.VolumeMount, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
+		}
+	}
+	if in.SecretFileMounts != nil {
+		in, out := &in.SecretFileMounts, &out.SecretFileMounts
+		*out = make(map[string]corev1.VolumeMount, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
+		}
+	}
 	if in.Annotations != nil {
 		in, out := &in.Annotations, &out.Annotations
 		*out = make(map[string]string, len(*in))
