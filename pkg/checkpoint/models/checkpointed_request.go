@@ -372,6 +372,9 @@ func defaultFailurePolicy() *batchv1.PodFailurePolicy {
 }
 
 func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) batchv1.Job {
+	var jobResourceLimits corev1.ResourceList
+	var jobResourceRequests corev1.ResourceList
+
 	owners := []metav1.OwnerReference{}
 	parentInfo := []corev1.EnvVar{}
 	if parent != nil {
@@ -390,14 +393,25 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 		}
 	}
 
-	jobResourceLimits := corev1.ResourceList{
-		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
-		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
+	// allow clients to migrate
+	if c.AppliedConfiguration.ComputeResources.Limits != nil {
+		jobResourceLimits = *c.AppliedConfiguration.ComputeResources.Limits
+	} else {
+		jobResourceLimits = corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
+			corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
+		}
 	}
 
-	jobResourceRequests := jobResourceLimits.DeepCopy()
-	cpuLimit := jobResourceRequests[corev1.ResourceCPU]
-	jobResourceRequests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%.0fm", float64(cpuLimit.MilliValue())*0.1))
+	// allow clients to migrate
+	if c.AppliedConfiguration.ComputeResources.Requests != nil {
+		jobResourceRequests = *c.AppliedConfiguration.ComputeResources.Requests
+	} else {
+		jobResourceRequests = jobResourceLimits.DeepCopy()
+
+		cpuLimit := jobResourceRequests[corev1.ResourceCPU]
+		jobResourceRequests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%.0fm", float64(cpuLimit.MilliValue())*c.AppliedConfiguration.ComputeResources.DefaultResourceQuota))
+	}
 
 	for customResourceKey, customResourceValue := range c.AppliedConfiguration.ComputeResources.CustomResources {
 		jobResourceLimits[corev1.ResourceName(customResourceKey)] = resource.MustParse(customResourceValue)

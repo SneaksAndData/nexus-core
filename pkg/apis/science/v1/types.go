@@ -78,9 +78,15 @@ type NexusAlgorithmWorkgroupSpec struct {
 
 // NexusAlgorithmResources defines maximum compute resources that should be provisioned for the algorithm
 type NexusAlgorithmResources struct {
-	CpuLimit        string            `json:"cpuLimit"`
-	MemoryLimit     string            `json:"memoryLimit"`
-	CustomResources map[string]string `json:"customResources,omitempty"`
+	// Deprecated: Use Limits instead
+	CpuLimit string `json:"cpuLimit"`
+	// Deprecated: Use Limits instead
+	MemoryLimit string `json:"memoryLimit"`
+
+	DefaultResourceQuota float64              `json:"defaultResourceQuota"`
+	Requests             *corev1.ResourceList `json:"requests,omitempty"`
+	Limits               *corev1.ResourceList `json:"limits"`
+	CustomResources      map[string]string    `json:"customResources,omitempty"`
 }
 
 // NexusAlgorithmContainer provides container specification for each run
