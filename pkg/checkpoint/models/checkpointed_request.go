@@ -248,7 +248,7 @@ func (c *CheckpointedRequestCqlModel) getParent() (*AlgorithmRequestRef, error) 
 }
 
 func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, error) {
-	appliedConfig := &v1.NexusAlgorithmSpec{}
+	var appliedConfig *v1.NexusAlgorithmSpec
 	var overrides *v1.NexusAlgorithmSpec
 	var parent *AlgorithmRequestRef
 
