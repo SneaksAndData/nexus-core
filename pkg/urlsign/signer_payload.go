@@ -8,50 +8,60 @@ import (
 )
 
 const (
-	ExpiryQueryParamName   = "exp"
-	TenantQueryParamName   = "tid"
-	ChecksumQueryParamName = "chk"
+	ValidFromQueryParamName = "from"
+	ValidToQueryParamName   = "to"
+	TenantQueryParamName    = "tid"
+	ChecksumQueryParamName  = "chk"
 )
 
 type signerPayload struct {
-	expiry   int64
-	path     string
-	tenantId string
-	checksum string
+	validFrom int64
+	validTo   int64
+	path      string
+	tenantId  string
+	checksum  string
 }
 
 func newSignerPayload(unsigned url.URL, tenantId string, expiresIn time.Duration, checksum string) *signerPayload {
+	startTime := time.Now()
 	return &signerPayload{
-		expiry:   time.Now().Add(expiresIn).UTC().Unix(),
-		path:     unsigned.Path,
-		tenantId: tenantId,
-		checksum: checksum,
+		validFrom: startTime.UTC().Unix(),
+		validTo:   startTime.Add(expiresIn).UTC().Unix(),
+		path:      unsigned.Path,
+		tenantId:  tenantId,
+		checksum:  checksum,
 	}
 }
 
 func newSignerPayloadFromSigned(signed url.URL) (*signerPayload, error) {
-	expiry, err := strconv.ParseInt(signed.Query().Get(ExpiryQueryParamName), 10, 64)
+	validFrom, err := strconv.ParseInt(signed.Query().Get(ValidFromQueryParamName), 10, 64)
 
 	if err != nil {
 		return nil, err
 	}
 
+	validTo, err := strconv.ParseInt(signed.Query().Get(ValidToQueryParamName), 10, 64)
+
 	return &signerPayload{
-		expiry:   expiry,
-		path:     signed.Path,
-		tenantId: signed.Query().Get(TenantQueryParamName),
-		checksum: signed.Query().Get(ChecksumQueryParamName),
+		validFrom: validFrom,
+		validTo:   validTo,
+		path:      signed.Path,
+		tenantId:  signed.Query().Get(TenantQueryParamName),
+		checksum:  signed.Query().Get(ChecksumQueryParamName),
 	}, nil
 }
 
 func (p *signerPayload) GetPartsToSign() [][]byte {
-	expiryBytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(expiryBytes, uint64(p.expiry))
+	fromBytes := make([]byte, 8)
+	toBytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(fromBytes, uint64(p.validFrom))
+	binary.LittleEndian.PutUint64(toBytes, uint64(p.validTo))
 
 	return [][]byte{
 		[]byte(p.path),
 		[]byte(p.tenantId),
 		[]byte(p.checksum),
-		expiryBytes,
+		fromBytes,
+		toBytes,
 	}
 }

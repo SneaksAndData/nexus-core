@@ -114,7 +114,7 @@ func TestVerifyEmptySignature(t *testing.T) {
 		t.Fatalf("successfully signed an invalid url")
 	}
 
-	if !strings.Contains(err.Error(), "invalid signature") {
+	if !strings.Contains(err.Error(), "no signature found in the url") {
 		t.Fatalf("incorrect error: %s", err)
 	}
 }

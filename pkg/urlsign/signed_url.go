@@ -40,7 +40,8 @@ func NewSignedFromSignature(unsigned url.URL, payload *signerPayload, sig []byte
 	sigBase64 := base64.RawURLEncoding.EncodeToString(sig)
 	urlQuery := unsigned.Query()
 	urlQuery.Add(SignatureQueryParamName, sigBase64)
-	urlQuery.Add(ExpiryQueryParamName, strconv.FormatInt(payload.expiry, 10))
+	urlQuery.Add(ValidFromQueryParamName, strconv.FormatInt(payload.validFrom, 10))
+	urlQuery.Add(ValidToQueryParamName, strconv.FormatInt(payload.validTo, 10))
 	urlQuery.Add(TenantQueryParamName, payload.tenantId)
 	urlQuery.Add(ChecksumQueryParamName, payload.checksum)
 

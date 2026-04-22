@@ -38,6 +38,11 @@ func Verify(signed url.URL, secret []byte) error {
 	}
 
 	providedSignature, err := base64.RawURLEncoding.DecodeString(signed.Query().Get(SignatureQueryParamName))
+
+	if len(providedSignature) == 0 {
+		return fmt.Errorf("no signature found in the url")
+	}
+
 	if err != nil {
 		return fmt.Errorf("could not decode signature '%s': %s", providedSignature, err)
 	}
@@ -55,11 +60,11 @@ func Verify(signed url.URL, secret []byte) error {
 	computedSignature := signer.Sum(nil)
 
 	if subtle.ConstantTimeCompare(providedSignature, computedSignature) != 1 {
-		return fmt.Errorf("invalid signature: %s", providedSignature)
+		return fmt.Errorf("invalid signature: %s", signed.Query().Get(SignatureQueryParamName))
 	}
 
 	// check expiry if signature matches
-	if time.Now().UTC().After(time.Unix(payload.expiry, 0)) {
+	if time.Now().UTC().After(time.Unix(payload.validTo, 0)) {
 		return fmt.Errorf("url is no longer valid")
 	}
 
