@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/url"
+	"strconv"
 )
 
 const (
@@ -35,10 +36,13 @@ func NewSignedFromUrl(signed url.URL) (*SignedUrl, error) {
 	}, nil
 }
 
-func NewSignedFromSignature(unsigned url.URL, sig []byte) (*SignedUrl, error) {
+func NewSignedFromSignature(unsigned url.URL, payload *signerPayload, sig []byte) (*SignedUrl, error) {
 	sigBase64 := base64.RawURLEncoding.EncodeToString(sig)
 	urlQuery := unsigned.Query()
 	urlQuery.Add(SignatureQueryParamName, sigBase64)
+	urlQuery.Add(ExpiryQueryParamName, strconv.FormatInt(payload.expiry, 10))
+	urlQuery.Add(TenantQueryParamName, payload.tenantId)
+	urlQuery.Add(ChecksumQueryParamName, payload.checksum)
 
 	unsigned.RawQuery = urlQuery.Encode()
 

@@ -12,7 +12,7 @@ import (
 
 // Sign uses a provided secret to generate a cryptographic signature for the provided unsigned URL, valid for expiresIn, given checksum of the content and tenantId
 func Sign(unsigned url.URL, tenantId string, expiresIn time.Duration, checksum string, secret []byte) (*SignedUrl, error) {
-	if unsigned.Path == "" {
+	if unsigned.Path == "" || unsigned.Path == "/" {
 		return nil, fmt.Errorf("cannot generate a signature for an empty path")
 	}
 	signer, err := blake2b.New256(secret)
@@ -27,7 +27,7 @@ func Sign(unsigned url.URL, tenantId string, expiresIn time.Duration, checksum s
 		signer.Write(part)
 	}
 
-	return NewSignedFromSignature(unsigned, signer.Sum(nil))
+	return NewSignedFromSignature(unsigned, payload, signer.Sum(nil))
 }
 
 func Verify(signed url.URL, secret []byte) error {
