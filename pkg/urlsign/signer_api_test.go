@@ -123,11 +123,11 @@ func TestVerifyExpiry(t *testing.T) {
 	secret := []byte("secret")
 	parsed, _ := url.Parse("https://s3.svc.local/bucket/prefix1/prefix2/file.json")
 
-	signed, err := Sign(*parsed, "test", time.Second, "test", secret)
+	signed, _ := Sign(*parsed, "test", time.Second, "test", secret)
 
 	time.Sleep(time.Second * 2)
 
-	err = Verify(*signed.Url, secret)
+	err := Verify(*signed.Url, secret)
 
 	if err == nil {
 		t.Fatalf("successfully signed an expired signature")
