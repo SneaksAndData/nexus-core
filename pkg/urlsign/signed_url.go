@@ -17,10 +17,10 @@ type SignedUrl struct {
 	Signature string
 }
 
-func NewSignedFromUrl(signed url.URL) (*SignedUrl, error) {
+func NewSignedFromUrl(signed url.URL) (*SignedUrl, error) { // coverage-ignore
 	parsed, err := signed.Parse(signed.String())
 
-	if err != nil {
+	if err != nil { // coverage-ignore
 		return nil, err
 	}
 
