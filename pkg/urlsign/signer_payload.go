@@ -42,6 +42,10 @@ func newSignerPayloadFromSigned(signed url.URL) (*signerPayload, error) {
 
 	validTo, err := strconv.ParseInt(signed.Query().Get(ValidToQueryParamName), 10, 64)
 
+	if err != nil {
+		return nil, err
+	}
+
 	return &signerPayload{
 		validFrom: validFrom,
 		validTo:   validTo,
