@@ -3,6 +3,8 @@ package request
 import (
 	"context"
 	"fmt"
+	"iter"
+
 	"github.com/DataDog/datadog-go/v5/statsd"
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
@@ -11,7 +13,6 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 	s3credentials "github.com/aws/aws-sdk-go-v2/credentials"
-	"iter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -28,7 +29,7 @@ type S3BufferConfig struct {
 type DefaultBuffer struct {
 	checkpointStore CheckpointStore
 	metadataStore   MetadataStore
-	blobStore       payload.BlobStore
+	blobStore       payload.RequestPayloadStore
 	config          *S3BufferConfig
 	logger          *klog.Logger
 	metrics         *statsd.Client
@@ -139,13 +140,13 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 		return nil, err
 	}
 
-	if err := buffer.blobStore.SaveTextAsBlob(buffer.ctx, string(*input.SerializedPayload), payloadPath); err != nil {
+	if err := buffer.blobStore.Persist(buffer.ctx, string(*input.SerializedPayload), payloadPath); err != nil {
 		return nil, err
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
 	payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
-	payloadUri, err := buffer.blobStore.GetBlobUri(buffer.ctx, payloadPath, payloadValidity)
+	payloadUri, err := buffer.blobStore.GenerateUrl(buffer.ctx, payloadPath, payloadValidity)
 	if err != nil {
 		return nil, err
 	}
