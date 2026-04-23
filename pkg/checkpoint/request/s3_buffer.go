@@ -2,7 +2,6 @@ package request
 
 import (
 	"context"
-	"fmt"
 	"iter"
 
 	"github.com/DataDog/datadog-go/v5/statsd"
@@ -19,11 +18,16 @@ import (
 )
 
 type S3BufferConfig struct {
-	BufferConfig    *BufferConfig `mapstructure:"buffer-config,omitempty"`
-	AccessKeyID     string        `mapstructure:"access-key-id,omitempty"`
-	SecretAccessKey string        `mapstructure:"secret-access-key,omitempty"`
-	Region          string        `mapstructure:"region,omitempty"`
-	Endpoint        string        `mapstructure:"endpoint,omitempty"`
+	BufferConfig       *BufferConfig `mapstructure:"buffer-config,omitempty"`
+	AccessKeyID        string        `mapstructure:"access-key-id,omitempty"`
+	SecretAccessKey    string        `mapstructure:"secret-access-key,omitempty"`
+	Region             string        `mapstructure:"region,omitempty"`
+	Endpoint           string        `mapstructure:"endpoint,omitempty"`
+	PayloadStoragePath string        `mapstructure:"payload-storage-path,omitempty"`
+}
+
+func (c *S3BufferConfig) GetStaticCredentialsProvider() s3credentials.StaticCredentialsProvider {
+	return s3credentials.NewStaticCredentialsProvider(c.AccessKeyID, c.SecretAccessKey, "")
 }
 
 type DefaultBuffer struct {
@@ -47,14 +51,19 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
 		metadataStore:   cqlStore,
-		blobStore:       payload.NewS3PayloadStore(ctx, logger, s3credentials.NewStaticCredentialsProvider(config.AccessKeyID, config.SecretAccessKey, ""), config.Endpoint, config.Region),
-		config:          config,
-		logger:          &logger,
-		metrics:         ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
-		ctx:             ctx,
-		actor:           nil,
-		name:            "default_astradb_s3",
-		tags:            metricTags,
+		blobStore: payload.NewS3PayloadStore(
+			ctx, logger,
+			config.GetStaticCredentialsProvider(),
+			config.Endpoint,
+			config.Region,
+			config.PayloadStoragePath),
+		config:  config,
+		logger:  &logger,
+		metrics: ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
+		ctx:     ctx,
+		actor:   nil,
+		name:    "default_astradb_s3",
+		tags:    metricTags,
 	}
 }
 
@@ -66,7 +75,7 @@ func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
 		metadataStore:   cqlStore,
-		blobStore:       payload.NewS3PayloadStore(ctx, logger, s3credentials.NewStaticCredentialsProvider(config.AccessKeyID, config.SecretAccessKey, ""), config.Endpoint, config.Region),
+		blobStore:       payload.NewS3PayloadStore(ctx, logger, config.GetStaticCredentialsProvider(), config.Endpoint, config.Region, config.PayloadStoragePath),
 		config:          config,
 		logger:          &logger,
 		metrics:         telemetry.GetClient(ctx),
@@ -131,22 +140,17 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	telemetry.Increment(buffer.metrics, "incoming_requests", input.Tags())
 	buffer.logger.V(0).Info("persisting payload", "request", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
 
-	payloadPath := fmt.Sprintf("%s/%s/%s",
-		buffer.config.BufferConfig.PayloadStoragePath,
-		fmt.Sprintf("algorithm=%s", input.Checkpoint.Algorithm),
-		input.Checkpoint.Id)
-
 	if err := buffer.checkpointStore.UpsertCheckpoint(input.Checkpoint); err != nil {
 		return nil, err
 	}
 
-	if err := buffer.blobStore.Persist(buffer.ctx, string(*input.SerializedPayload), payloadPath); err != nil {
+	if err := buffer.blobStore.Persist(buffer.ctx, string(*input.SerializedPayload), input.Checkpoint.Id, input.Checkpoint.Algorithm); err != nil {
 		return nil, err
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
 	payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
-	payloadUri, err := buffer.blobStore.GenerateUrl(buffer.ctx, payloadPath, payloadValidity)
+	payloadUri, err := buffer.blobStore.GenerateUrl(buffer.ctx, input.Checkpoint.Id, input.Checkpoint.Algorithm, payloadValidity)
 	if err != nil {
 		return nil, err
 	}
