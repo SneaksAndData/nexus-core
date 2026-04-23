@@ -2,24 +2,27 @@ package payload
 
 import (
 	"context"
+	"fmt"
+	"regexp"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"k8s.io/klog/v2"
-	"regexp"
-	"strings"
-	"time"
 )
 
 const s3UrlRegex = "s3a://([^/]+)/?(.*)"
 
-type S3PayloadStore struct {
-	client   *s3.Client
-	signer   *s3.PresignClient
-	logger   klog.Logger
-	uploader *manager.Uploader
+type S3RequestPayloadStore struct {
+	client               *s3.Client
+	signer               *s3.PresignClient
+	logger               klog.Logger
+	uploader             *manager.Uploader
+	payloadStoragePrefix string
 }
 
 type S3Path struct {
@@ -35,7 +38,7 @@ func NewS3Path(bucket string, key string) *S3Path {
 }
 
 // NewS3PayloadStore initializes S3 client for the S3 payload store. Providing empty values for credentialsProvider, s3endpoint and s3region will result in using default SDK credential flow.
-func NewS3PayloadStore(ctx context.Context, logger klog.Logger, credentialsProvider aws.CredentialsProvider, s3endpoint string, s3region string) *S3PayloadStore {
+func NewS3PayloadStore(ctx context.Context, logger klog.Logger, credentialsProvider aws.CredentialsProvider, s3endpoint string, s3region string, payloadStoragePath string) *S3RequestPayloadStore {
 	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		logger.V(0).Error(err, "error when reading S3 configuration")
@@ -50,11 +53,12 @@ func NewS3PayloadStore(ctx context.Context, logger klog.Logger, credentialsProvi
 		o.BaseEndpoint = &s3endpoint
 		o.Region = s3region
 	})
-	return &S3PayloadStore{
-		client:   client,
-		signer:   s3.NewPresignClient(client),
-		uploader: manager.NewUploader(client), // using defaults - add support for tuning if needed at some point
-		logger:   logger,
+	return &S3RequestPayloadStore{
+		client:               client,
+		signer:               s3.NewPresignClient(client),
+		uploader:             manager.NewUploader(client), // using defaults - add support for tuning if needed at some point
+		logger:               logger,
+		payloadStoragePrefix: payloadStoragePath,
 	}
 }
 
@@ -64,25 +68,36 @@ func parsePath(blobPath string) *S3Path {
 	return NewS3Path(matches[1], matches[2])
 }
 
-func (store *S3PayloadStore) SaveTextAsBlob(ctx context.Context, text string, blobPath string) error {
-	s3Path := parsePath(blobPath)
+func (store *S3RequestPayloadStore) getStoragePath(requestId string, templateName string) string {
+	return fmt.Sprintf("%s/%s/%s",
+		store.payloadStoragePrefix,
+		fmt.Sprintf("algorithm=%s", templateName),
+		requestId)
+}
+
+func (store *S3RequestPayloadStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {
+	payloadPath := store.getStoragePath(requestId, templateName)
+	s3Path := parsePath(payloadPath)
+
 	result, err := store.uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket: s3Path.Bucket,
 		Key:    s3Path.Key,
-		Body:   strings.NewReader(text),
+		Body:   strings.NewReader(payload),
 	})
 
 	if err != nil {
 		store.logger.V(0).Error(err, "error when persisting payload into S3")
 		return err
 	}
-	store.logger.V(4).Info("successfully persisted algorithm payload", "payloadPath", blobPath, "etag", *result.ETag)
+	store.logger.V(4).Info("successfully persisted algorithm payload", "payloadPath", payloadPath, "etag", *result.ETag)
 
 	return nil
 }
 
-func (store *S3PayloadStore) GetBlobUri(ctx context.Context, blobPath string, validFor time.Duration) (string, error) {
-	s3Path := parsePath(blobPath)
+func (store *S3RequestPayloadStore) GenerateUrl(ctx context.Context, requestId string, templateName string, validFor time.Duration) (string, error) {
+	payloadPath := store.getStoragePath(requestId, templateName)
+	s3Path := parsePath(payloadPath)
+
 	result, err := store.signer.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: s3Path.Bucket,
 		Key:    s3Path.Key,

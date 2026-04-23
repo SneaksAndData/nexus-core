@@ -1,13 +1,14 @@
 package request
 
 import (
+	"iter"
+	"time"
+
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/SneaksAndData/nexus-core/pkg/pipeline"
-	"iter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"time"
 )
 
 type Buffer interface {
@@ -22,7 +23,6 @@ type Buffer interface {
 }
 
 type BufferConfig struct {
-	PayloadStoragePath         string        `mapstructure:"payload-storage-path,omitempty"`
 	PayloadValidFor            time.Duration `mapstructure:"payload-valid-for,omitempty"`
 	FailureRateBaseDelay       time.Duration `mapstructure:"failure-rate-base-delay,omitempty"`
 	FailureRateMaxDelay        time.Duration `mapstructure:"failure-rate-max-delay,omitempty"`
