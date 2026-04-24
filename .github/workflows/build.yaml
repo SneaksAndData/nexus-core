@@ -47,25 +47,11 @@ jobs:
           set -e
           hack/verify-codegen.sh
 
-      - name: Create Kind Cluster
-        uses: helm/kind-action@v1
-        with:
-          cluster_name: 'nexus-shard-0'
+      - name: Setup just
+        uses: extractions/setup-just@v3
 
-      - name: Export kubeconfig
-        run: |
-          mkdir -p ./test-resources/kubecfg/shards
-          kind export kubeconfig --name nexus-shard-0 --kubeconfig ./test-resources/kubecfg/shards/kind-nexus-shard-0.kubeconfig
-
-          chmod 777 ./test-resources/kubecfg/shards/kind-nexus-shard-0.kubeconfig
-
-      - name: Launch Compose Stack
-        run: |
-          docker compose up --quiet-pull -d
-
-      - name: Get Compose Logs
-        if: always()
-        run: docker compose logs
+      - name: Setup integration tests
+        run: just all
 
       - name: Test
         env: 
