@@ -1,19 +1,13 @@
-package request
+package cassandra
 
 import (
-	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"iter"
 	"time"
+
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 )
 
-type CheckpointStore interface {
-	UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error
-	ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error)
-	ReadCheckpointsByHost(host string, lifecycleStage models.LifecycleStage) (iter.Seq2[*models.CheckpointedRequest, error], error)
-	ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error)
-}
-
-func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {
+func (cqls *CheckpointCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {
 	cloned := checkpoint.DeepCopy()
 
 	cloned.LastModified = time.Now()
@@ -35,7 +29,7 @@ func (cqls *CqlStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) e
 	}
 }
 
-func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error) {
+func (cqls *CheckpointCassandraStore) ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error) {
 	result := &models.CheckpointedRequestCqlModel{
 		Algorithm: algorithm,
 		Id:        id,
@@ -50,7 +44,7 @@ func (cqls *CqlStore) ReadCheckpoint(algorithm string, id string) (*models.Check
 	return result.FromCqlModel()
 }
 
-func (cqls *CqlStore) ReadCheckpointsByHost(host string, lifecycleStage models.LifecycleStage) (iter.Seq2[*models.CheckpointedRequest, error], error) {
+func (cqls *CheckpointCassandraStore) ReadCheckpointsByHost(host string, lifecycleStage models.LifecycleStage) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	predicate := &models.CheckpointedRequestCqlModel{
 		ReceivedByHost: host,
 		LifecycleStage: string(lifecycleStage),
@@ -72,7 +66,7 @@ func (cqls *CqlStore) ReadCheckpointsByHost(host string, lifecycleStage models.L
 	}, nil
 }
 
-func (cqls *CqlStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
+func (cqls *CheckpointCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	predicate := &models.CheckpointedRequestCqlModel{
 		Tag: requestTag,
 	}
@@ -91,4 +85,29 @@ func (cqls *CqlStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models
 			}
 		}
 	}, nil
+}
+
+func (cqls *CheckpointCassandraStore) UpsertMetadata(entry *models.SubmissionBufferEntry) error {
+	var query = cqls.cqlSession.Query(models.SubmissionBufferTable.Insert()).BindStruct(*entry)
+	if err := query.ExecRelease(); err != nil { // coverage-ignore
+		cqls.logger.V(1).Error(err, "error when inserting buffered checkpoint metadata", "algorithm", entry.Algorithm, "id", entry.Id)
+		return err
+	}
+
+	return nil
+}
+
+func (cqls *CheckpointCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
+	result := &models.SubmissionBufferEntry{
+		Algorithm: checkpoint.Algorithm,
+		Id:        checkpoint.Id,
+	}
+
+	var query = cqls.cqlSession.Query(models.SubmissionBufferTable.Get()).BindStruct(*result)
+	if err := query.GetRelease(result); err != nil { // coverage-ignore
+		cqls.logger.V(1).Error(err, "error when reading a buffered checkpoint metadata", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+		return nil, err
+	}
+
+	return result, nil
 }
