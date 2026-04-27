@@ -47,4 +47,4 @@ go.work.sum
 # env file
 .env
 
-test-resources/kubecfg/
+test-resources/kind/
