@@ -51,7 +51,7 @@ jobs:
         uses: extractions/setup-just@v3
 
       - name: Setup integration tests
-        run: just all
+        run: just up
 
       - name: Test
         env: 

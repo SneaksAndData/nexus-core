@@ -8,7 +8,10 @@ MINIO_IMAGE  := "quay.io/minio/minio"
 SCYLLA_CONFIG := invocation_directory() / "test-resources/scylla-config"
 
 # Default recipe
-all: clean scylla minio prepare-buckets prepare-scylla start-kind-cluster shards-kubeconfig
+fresh: stop up
+
+# Start CI environment
+up: scylla minio prepare-buckets prepare-scylla start-kind-cluster shards-kubeconfig
 
 # Start ScyllaDB with health checks
 scylla:
@@ -68,12 +71,12 @@ shards-kubeconfig:
     mkdir -p ./test-resources/kind && \
     kind export kubeconfig --name nexus-shard-0 --kubeconfig ./test-resources/kind/kind-nexus-shard-0.kubeconfig
 
-# Stop and remove containers and anonymous volumes
-clean:
+# Cleanup CI environment
+stop:
     @echo "🧹 Cleaning up..."
     docker rm -f scylla minio 2>/dev/null || true
     kind delete cluster --name nexus-shard-0
 
-# View logs easily
+# View logs
 logs name="":
     docker logs -f {{if name == "" { "scylla" } else { name }}}
