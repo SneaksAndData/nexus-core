@@ -1,9 +1,10 @@
 package request
 
 import (
-	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"iter"
 	"time"
+
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 )
 
 type CheckpointStore interface {

@@ -22,8 +22,6 @@ create table nexus.checkpoints
     PRIMARY KEY ((algorithm, id))
 );
 
-create index lifecycle_stage ON nexus.checkpoints (lifecycle_stage);
-
 INSERT INTO nexus.checkpoints (algorithm, id, lifecycle_stage, payload_uri, result_uri, algorithm_failure_cause,
                                algorithm_failure_details, received_by_host, received_at, sent_at, applied_configuration,
                                configuration_overrides, content_hash, last_modified, tag, api_version,

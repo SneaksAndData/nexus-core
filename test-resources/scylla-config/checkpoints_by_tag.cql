@@ -3,7 +3,7 @@ create table nexus.checkpoints_by_tag
     tag                       text,
     algorithm                 text,
     id                        text,
-    PRIMARY KEY ((tag), algorithm)
+    PRIMARY KEY ((tag), id)
 );
 
 INSERT INTO nexus.checkpoints_by_tag (algorithm, id, tag)
