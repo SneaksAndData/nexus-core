@@ -4,7 +4,7 @@ create table nexus.checkpoints_by_host
     lifecycle_stage           text,
     algorithm                 text,
     id                        text,
-    PRIMARY KEY ((host), id)
+    PRIMARY KEY ((host, lifecycle_stage), id)
 );
 
 INSERT INTO nexus.checkpoints_by_host (algorithm, id, host, lifecycle_stage)
