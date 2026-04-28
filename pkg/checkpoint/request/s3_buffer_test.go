@@ -12,6 +12,7 @@ import (
 
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
 	"github.com/aws/smithy-go/ptr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,7 +40,7 @@ func newFixture(t *testing.T) *fixture {
 		Region:             "us-east-1",
 		Endpoint:           "http://localhost:9000",
 		PayloadStoragePath: "s3a://nexus",
-	}, &ScyllaCqlStoreConfig{
+	}, &cassandra.ScyllaConfig{
 		Hosts: []string{"127.0.0.1"},
 	}, map[string]string{})
 
