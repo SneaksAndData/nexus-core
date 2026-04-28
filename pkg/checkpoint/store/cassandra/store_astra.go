@@ -1,4 +1,4 @@
-package request
+package cassandra
 
 import (
 	"archive/zip"
@@ -7,18 +7,12 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/gocql/gocql"
-	"github.com/scylladb/gocqlx/v3"
 	"io"
-	"k8s.io/klog/v2"
 	"strconv"
-)
 
-type CqlStore struct {
-	cluster    *gocql.ClusterConfig
-	cqlSession gocqlx.Session
-	logger     klog.Logger
-}
+	"github.com/gocql/gocql"
+	"k8s.io/klog/v2"
+)
 
 type AstraBundleConfig struct {
 	SecureConnectionBundleBase64 string `mapstructure:"secure-connection-bundle-base64"`
@@ -26,22 +20,13 @@ type AstraBundleConfig struct {
 	GatewayPassword              string `mapstructure:"gateway-password"`
 }
 
-// AstraCqlStoreConfig defines configuration for gocql needed to connect to AstraDB
-type AstraCqlStoreConfig struct {
+// CheckpointStoreAstraConfig defines configuration for gocql needed to connect to AstraDB
+type CheckpointStoreAstraConfig struct {
 	GatewayHost string
 	GatewayPort string
 	GatewayUser string
 	GatewayPass string
 	TlsConfig   *tls.Config
-}
-
-// ScyllaCqlStoreConfig defines configuration for gocql needed to connect to ScyllaDB
-type ScyllaCqlStoreConfig struct {
-	Hosts    []string `mapstructure:"hosts"`
-	Port     string   `mapstructure:"port"`
-	User     string   `mapstructure:"user"`
-	Password string   `mapstructure:"password"`
-	LocalDC  string   `mapstructure:"local-dc"`
 }
 
 func getContent(zipFile *zip.File) ([]byte, error) { // coverage-ignore
@@ -57,7 +42,7 @@ func getContent(zipFile *zip.File) ([]byte, error) { // coverage-ignore
 	return io.ReadAll(handle)
 }
 
-func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *AstraCqlStoreConfig { // coverage-ignore
+func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *CheckpointStoreAstraConfig { // coverage-ignore
 	bundleBytes, err := base64.StdEncoding.DecodeString(config.SecureConnectionBundleBase64)
 	if err != nil {
 		logger.V(0).Error(err, "bundle value is not a valid base64-encoded string")
@@ -99,7 +84,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
 	}
 
-	return &AstraCqlStoreConfig{
+	return &CheckpointStoreAstraConfig{
 		GatewayHost: gatewayConfig["host"].(string),
 		GatewayPort: strconv.Itoa(int(gatewayConfig["cql_port"].(float64))),
 		GatewayPass: config.GatewayPassword,
@@ -113,22 +98,8 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Astr
 
 }
 
-// NewCqlStore creates a generic connected CqlStore (Apache Cassandra/Scylla)
-func NewCqlStore(cluster *gocql.ClusterConfig, logger klog.Logger) *CqlStore {
-	session, err := gocqlx.WrapSession(cluster.CreateSession())
-	if err != nil { // coverage-ignore
-		logger.V(0).Error(err, "failed to create CQL session")
-		klog.FlushAndExit(klog.ExitFlushTimeout, 1)
-	}
-	return &CqlStore{
-		cluster:    cluster,
-		cqlSession: session,
-		logger:     logger,
-	}
-}
-
-// NewAstraCqlStore creates a CqlStore connected to DataStax AstraDB serverless instance
-func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore { // coverage-ignore
+// NewAstraStore creates a CqlStore connected to DataStax AstraDB serverless instance
+func NewAstraStore(logger klog.Logger, bundle *AstraBundleConfig) *CheckpointCassandraStore { // coverage-ignore
 	config := NewAstraCqlStoreConfig(logger, bundle)
 	cluster := gocql.NewCluster(config.GatewayHost)
 	cluster.Authenticator = gocql.PasswordAuthenticator{
@@ -141,27 +112,5 @@ func NewAstraCqlStore(logger klog.Logger, bundle *AstraBundleConfig) *CqlStore {
 		EnableHostVerification: false,
 	}
 	cluster.Consistency = gocql.LocalQuorum
-	return NewCqlStore(cluster, logger)
-}
-
-func NewScyllaCqlStore(logger klog.Logger, config *ScyllaCqlStoreConfig) *CqlStore {
-	cluster := gocql.NewCluster(config.Hosts...)
-	fallback := gocql.RoundRobinHostPolicy()
-	if config.LocalDC != "" { // coverage-ignore
-		fallback = gocql.DCAwareRoundRobinPolicy(config.LocalDC)
-	}
-
-	cluster.PoolConfig.HostSelectionPolicy = gocql.TokenAwareHostPolicy(fallback)
-	if config.LocalDC != "" { // coverage-ignore
-		cluster.Consistency = gocql.LocalQuorum
-	}
-
-	if config.Password != "" { // coverage-ignore
-		cluster.Authenticator = gocql.PasswordAuthenticator{
-			Username: config.User,
-			Password: config.Password,
-		}
-	}
-
-	return NewCqlStore(cluster, logger)
+	return NewCassandraStore(cluster, logger)
 }
