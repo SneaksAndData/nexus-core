@@ -4,7 +4,7 @@ cqlsh localhost -e "CREATE KEYSPACE nexus WITH replication = { 'class': 'SimpleS
 
 echo 'Applying checkpoints table'
 
-cqlsh localhost -f /opt/storage/checkpoints.cql
+cqlsh localhost -f /opt/storage/checkpoints_indexed.cql
 
 echo 'Checking table'
 
