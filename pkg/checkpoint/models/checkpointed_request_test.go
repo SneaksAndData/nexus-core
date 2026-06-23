@@ -1,12 +1,12 @@
-package models
+package models_test
 
 import (
 	"reflect"
 	"testing"
-	"time"
 
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
-	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/SneaksAndData/nexus-core/pkg/util_test"
 	"github.com/aws/smithy-go/ptr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -15,66 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/diff"
 )
 
-func getFakeRequest(hasParent bool) *CheckpointedRequest {
-	var parentRef *AlgorithmRequestRef
-
-	if hasParent {
-		parentRef = &AlgorithmRequestRef{RequestId: "test-parent", AlgorithmName: "test-parent-algorithm"}
-	}
-
-	return &CheckpointedRequest{
-		Algorithm:               "test",
-		Id:                      "test-id",
-		LifecycleStage:          LifecycleStageRunning,
-		PayloadUri:              "https://somewhere",
-		ResultUri:               "",
-		AlgorithmFailureCause:   "",
-		AlgorithmFailureDetails: "",
-		ReceivedByHost:          "test-host",
-		ReceivedAt:              time.Now(),
-		SentAt:                  time.Now(),
-		AppliedConfiguration: &v1.NexusAlgorithmSpec{
-			Container: &v1.NexusAlgorithmContainer{
-				Image:              "test.io",
-				Registry:           "algorithms/test",
-				VersionTag:         "v1.0.0",
-				ServiceAccountName: "test-sa",
-			},
-			ComputeResources: &v1.NexusAlgorithmResources{
-				CpuLimit:    "1000m",
-				MemoryLimit: "2000Mi",
-			},
-			WorkgroupRef: &v1.NexusAlgorithmWorkgroupRef{
-				Name:  "test-workgroup",
-				Group: "nexus-workgroup.io",
-				Kind:  "KarpenterWorkgroupV1",
-			},
-			Command: "python",
-			Args:    []string{"job.py", "--sas-uri=%s", "--request-id=%s", "--arg1=true"},
-			RuntimeEnvironment: &v1.NexusAlgorithmRuntimeEnvironment{
-				EnvironmentVariables:       nil,
-				MappedEnvironmentVariables: nil,
-				DeadlineSeconds:            ptr.Int32(120),
-				MaximumRetries:             ptr.Int32(3),
-			},
-			ErrorHandlingBehaviour: nil,
-			DatadogIntegrationSettings: &v1.NexusDatadogIntegrationSettings{
-				MountDatadogSocket: ptr.Bool(true),
-			},
-		},
-		ConfigurationOverrides: nil,
-		ContentHash:            "12313",
-		LastModified:           time.Now(),
-		Tag:                    "abc",
-		ApiVersion:             "1.2",
-		JobUid:                 "1231",
-		Parent:                 parentRef,
-		PayloadValidFor:        "86400s",
-	}
-}
-
 func TestCheckpointedRequest_DeepCopy(t *testing.T) {
-	fakeRequest := getFakeRequest(false)
+	fakeRequest := util_test.GetFakeRequest(false)
 	deepCopy := fakeRequest.DeepCopy()
 
 	if !reflect.DeepEqual(fakeRequest, deepCopy) || (fakeRequest == deepCopy) {
@@ -83,60 +25,8 @@ func TestCheckpointedRequest_DeepCopy(t *testing.T) {
 	t.Log("CheckpointedRequest.DeepCopy() returns correct result")
 }
 
-func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
-	fakeRequest := getFakeRequest(false)
-	cqlModel, err := cassandra.ToCassandraModel(fakeRequest)
-	if err != nil {
-		t.Errorf("Error when creating CQL model: %s", err)
-	}
-	expectedCqlModel := &cassandra.CheckpointCassandraModel{
-		Algorithm:               fakeRequest.Algorithm,
-		Id:                      fakeRequest.Id,
-		LifecycleStage:          "RUNNING",
-		PayloadUri:              fakeRequest.PayloadUri,
-		ResultUri:               fakeRequest.ResultUri,
-		AlgorithmFailureCause:   fakeRequest.AlgorithmFailureCause,
-		AlgorithmFailureDetails: fakeRequest.AlgorithmFailureDetails,
-		ReceivedByHost:          fakeRequest.ReceivedByHost,
-		ReceivedAt:              fakeRequest.ReceivedAt,
-		SentAt:                  fakeRequest.SentAt,
-		AppliedConfiguration:    "b64__eyJjb250YWluZXIiOnsiaW1hZ2UiOiJ0ZXN0LmlvIiwicmVnaXN0cnkiOiJhbGdvcml0aG1zL3Rlc3QiLCJ2ZXJzaW9uVGFnIjoidjEuMC4wIiwic2VydmljZUFjY291bnROYW1lIjoidGVzdC1zYSJ9LCJjb21wdXRlUmVzb3VyY2VzIjp7ImNwdUxpbWl0IjoiMTAwMG0iLCJtZW1vcnlMaW1pdCI6IjIwMDBNaSIsImRlZmF1bHRSZXNvdXJjZVF1b3RhIjoiIiwibGltaXRzIjpudWxsfSwid29ya2dyb3VwUmVmIjp7Im5hbWUiOiJ0ZXN0LXdvcmtncm91cCIsImdyb3VwIjoibmV4dXMtd29ya2dyb3VwLmlvIiwia2luZCI6IkthcnBlbnRlcldvcmtncm91cFYxIn0sImNvbW1hbmQiOiJweXRob24iLCJhcmdzIjpbImpvYi5weSIsIi0tc2FzLXVyaT0lcyIsIi0tcmVxdWVzdC1pZD0lcyIsIi0tYXJnMT10cnVlIl0sInJ1bnRpbWVFbnZpcm9ubWVudCI6eyJkZWFkbGluZVNlY29uZHMiOjEyMCwibWF4aW11bVJldHJpZXMiOjN9LCJkYXRhZG9nSW50ZWdyYXRpb25TZXR0aW5ncyI6eyJtb3VudERhdGFkb2dTb2NrZXQiOnRydWV9fQ==",
-		ConfigurationOverrides:  "b64__e30=",
-		ContentHash:             fakeRequest.ContentHash,
-		LastModified:            fakeRequest.LastModified,
-		Tag:                     fakeRequest.Tag,
-		ApiVersion:              fakeRequest.ApiVersion,
-		JobUid:                  fakeRequest.JobUid,
-		Parent:                  "b64__e30=",
-		PayloadValidFor:         "86400s",
-	}
-
-	if !reflect.DeepEqual(expectedCqlModel, cqlModel) {
-		t.Fatalf("Failed to convert request to a Cassandra model %s: values do not match", diff.ObjectGoPrintSideBySide(expectedCqlModel, cqlModel))
-	}
-	t.Log("cassandra.ToCassandraModel() returns correct result")
-}
-
-func TestCheckpointedRequest_FromCqlModel(t *testing.T) {
-	fakeRequest := getFakeRequest(false)
-	cqlModel, err := cassandra.ToCassandraModel(fakeRequest)
-	if err != nil {
-		t.Fatalf("Error when creating CQL model: %s", err)
-	}
-	fakeRequestFromModel, err := cqlModel.FromCassandraModel()
-
-	if err != nil {
-		t.Fatalf("Error when converting a Cassandra model back to a checkpoint: %s", err)
-	}
-
-	if !reflect.DeepEqual(fakeRequest, fakeRequestFromModel) {
-		t.Fatalf("Failed to deserialize a checkpoint from its cql model %s: values do not match", diff.ObjectGoPrintSideBySide(fakeRequest, fakeRequestFromModel))
-	}
-	t.Log("cassandra.ToCassandraModel(fakeRequest) returns correct result")
-}
-
 func TestCheckpointedRequest_ToV1Job(t *testing.T) {
-	fakeRequest := getFakeRequest(true)
+	fakeRequest := util_test.GetFakeRequest(true)
 	job := fakeRequest.ToV1Job("v0.0.0", &v1.NexusAlgorithmWorkgroupSpec{
 		Description:  "default",
 		Capabilities: nil,
@@ -158,9 +48,9 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-id",
 			Labels: map[string]string{
-				JobTemplateNameKey:          fakeRequest.Algorithm,
-				JobLabelFrameworkVersionKey: "v0.0.0",
-				NexusComponentLabel:         JobLabelAlgorithmRun,
+				models.JobTemplateNameKey:          fakeRequest.Algorithm,
+				models.JobLabelFrameworkVersionKey: "v0.0.0",
+				models.NexusComponentLabel:         models.JobLabelAlgorithmRun,
 			},
 			OwnerReferences: []metav1.OwnerReference{
 				{
@@ -191,9 +81,9 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
-						JobTemplateNameKey:          fakeRequest.Algorithm,
-						JobLabelFrameworkVersionKey: "v0.0.0",
-						NexusComponentLabel:         JobLabelAlgorithmRun,
+						models.JobTemplateNameKey:          fakeRequest.Algorithm,
+						models.JobLabelFrameworkVersionKey: "v0.0.0",
+						models.NexusComponentLabel:         models.JobLabelAlgorithmRun,
 					},
 				},
 				Spec: corev1.PodSpec{
@@ -271,7 +161,7 @@ func TestCheckpointedRequest_ToV1Job(t *testing.T) {
 }
 
 func TestCheckpointedRequest_ToV1Job_WithEmptyFatalExitCodes(t *testing.T) {
-	fakeRequest := getFakeRequest(false)
+	fakeRequest := util_test.GetFakeRequest(false)
 	// Set ErrorHandlingBehaviour with empty FatalExitCodes
 	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
 		FatalExitCodes:     []int32{},
@@ -309,7 +199,7 @@ func TestCheckpointedRequest_ToV1Job_WithEmptyFatalExitCodes(t *testing.T) {
 }
 
 func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
-	fakeRequest := getFakeRequest(false)
+	fakeRequest := util_test.GetFakeRequest(false)
 	// Set ErrorHandlingBehaviour with empty TransientExitCodes
 	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
 		FatalExitCodes:     nil,
@@ -347,7 +237,7 @@ func TestCheckpointedRequest_ToV1Job_WithEmptyTransientExitCodes(t *testing.T) {
 }
 
 func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
-	fakeRequest := getFakeRequest(false)
+	fakeRequest := util_test.GetFakeRequest(false)
 	// Set ErrorHandlingBehaviour with both empty
 	fakeRequest.AppliedConfiguration.ErrorHandlingBehaviour = &v1.NexusErrorHandlingBehaviour{
 		FatalExitCodes:     []int32{},
@@ -385,7 +275,7 @@ func TestCheckpointedRequest_ToV1Job_WithBothEmptyExitCodes(t *testing.T) {
 }
 
 func TestFromAlgorithmRequest(t *testing.T) {
-	checkpoint, payload, err := FromAlgorithmRequest("test-id", "test", &AlgorithmRequest{
+	checkpoint, payload, err := models.FromAlgorithmRequest("test-id", "test", &models.AlgorithmRequest{
 		AlgorithmParameters: map[string]interface{}{
 			"parameterA": "a",
 			"parameterB": "b",
@@ -428,9 +318,9 @@ func TestFromAlgorithmRequest(t *testing.T) {
 }
 
 func TestCheckpointedRequest_IsFinished(t *testing.T) {
-	request := getFakeRequest(false)
+	request := util_test.GetFakeRequest(false)
 
-	for _, stage := range []string{LifecycleStageFailed, LifecycleStageCompleted, LifecycleStageDeadlineExceeded, LifecycleStageSchedulingFailed, LifecycleStageCancelled} {
+	for _, stage := range []string{models.LifecycleStageFailed, models.LifecycleStageCompleted, models.LifecycleStageDeadlineExceeded, models.LifecycleStageSchedulingFailed, models.LifecycleStageCancelled} {
 		request.LifecycleStage = stage
 
 		if !request.IsFinished() {
@@ -438,7 +328,7 @@ func TestCheckpointedRequest_IsFinished(t *testing.T) {
 		}
 	}
 
-	for _, stage := range []string{LifecycleStageRunning, LifecycleStageBuffered, LifecycleStageNew} {
+	for _, stage := range []string{models.LifecycleStageRunning, models.LifecycleStageBuffered, models.LifecycleStageNew} {
 		request.LifecycleStage = stage
 
 		if request.IsFinished() {
