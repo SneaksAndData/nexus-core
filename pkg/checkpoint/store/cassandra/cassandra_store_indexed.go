@@ -5,10 +5,17 @@ import (
 	"time"
 
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
 )
 
 type IndexedCassandraStore struct {
 	cassandraStore *CheckpointCassandraStore
+}
+
+func NewIndexedCassandraStore(store *CheckpointCassandraStore) store.CheckpointStore {
+	return &IndexedCassandraStore{
+		cassandraStore: store,
+	}
 }
 
 func (ics *IndexedCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {

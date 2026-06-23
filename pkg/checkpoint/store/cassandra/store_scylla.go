@@ -1,6 +1,7 @@
 package cassandra
 
 import (
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
 	"github.com/gocql/gocql"
 	"k8s.io/klog/v2"
 )
@@ -14,7 +15,7 @@ type ScyllaConfig struct {
 	LocalDC  string   `mapstructure:"local-dc"`
 }
 
-func NewScyllaStore(logger klog.Logger, config *ScyllaConfig) *CheckpointCassandraStore {
+func NewScyllaStore(logger klog.Logger, config *ScyllaConfig, indexed bool) store.CheckpointStore {
 	cluster := gocql.NewCluster(config.Hosts...)
 	fallback := gocql.RoundRobinHostPolicy()
 	if config.LocalDC != "" { // coverage-ignore
@@ -33,5 +34,10 @@ func NewScyllaStore(logger klog.Logger, config *ScyllaConfig) *CheckpointCassand
 		}
 	}
 
-	return NewCassandraStore(cluster, logger)
+	cassandraStore := NewCassandraStore(cluster, logger)
+
+	if indexed {
+		return NewIndexedCassandraStore(cassandraStore)
+	}
+	return NewBareCassandraStore(cassandraStore)
 }

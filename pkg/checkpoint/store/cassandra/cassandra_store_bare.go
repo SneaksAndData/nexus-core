@@ -5,12 +5,19 @@ import (
 	"time"
 
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
 	"github.com/gocql/gocql"
 	"github.com/scylladb/gocqlx/v3/qb"
 )
 
 type BareCassandraStore struct {
 	cassandraStore *CheckpointCassandraStore
+}
+
+func NewBareCassandraStore(store *CheckpointCassandraStore) store.CheckpointStore {
+	return &BareCassandraStore{
+		cassandraStore: store,
+	}
 }
 
 func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {
