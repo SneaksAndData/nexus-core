@@ -192,18 +192,13 @@ func (c *CheckpointCassandraModel) readSerializedSpec(serializedSpec string) (*v
 		return nil, nil
 	}
 
-	// backwards-compatible code: only use b64 decode if it was used to write the value
-	if strings.HasPrefix(serializedSpec, EncodePrefix) {
-		serializedValue, err = base64.StdEncoding.DecodeString(strings.TrimPrefix(serializedSpec, EncodePrefix))
-		if err != nil {
-			return nil, err
-		}
+	serializedValue, err = base64.StdEncoding.DecodeString(strings.TrimPrefix(serializedSpec, EncodePrefix))
+	if err != nil {
+		return nil, err
+	}
 
-		if string(serializedValue) == "{}" || string(serializedValue) == "" {
-			return nil, nil
-		}
-	} else {
-		serializedValue = []byte(serializedSpec)
+	if string(serializedValue) == "{}" || string(serializedValue) == "" {
+		return nil, nil
 	}
 
 	err = json.Unmarshal(serializedValue, spec)

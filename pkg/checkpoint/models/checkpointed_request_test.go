@@ -1,16 +1,18 @@
 package models
 
 import (
+	"reflect"
+	"testing"
+	"time"
+
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
 	"github.com/aws/smithy-go/ptr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/diff"
-	"reflect"
-	"testing"
-	"time"
 )
 
 func getFakeRequest(hasParent bool) *CheckpointedRequest {
@@ -83,11 +85,11 @@ func TestCheckpointedRequest_DeepCopy(t *testing.T) {
 
 func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 	fakeRequest := getFakeRequest(false)
-	cqlModel, err := fakeRequest.ToCqlModel()
+	cqlModel, err := cassandra.ToCassandraModel(fakeRequest)
 	if err != nil {
 		t.Errorf("Error when creating CQL model: %s", err)
 	}
-	expectedCqlModel := &CheckpointedRequestCqlModel{
+	expectedCqlModel := &cassandra.CheckpointCassandraModel{
 		Algorithm:               fakeRequest.Algorithm,
 		Id:                      fakeRequest.Id,
 		LifecycleStage:          "RUNNING",
@@ -110,63 +112,27 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(expectedCqlModel, cqlModel) {
-		t.Errorf("Failed to convert request to a cql model %s: values do not match", diff.ObjectGoPrintSideBySide(expectedCqlModel, cqlModel))
+		t.Fatalf("Failed to convert request to a Cassandra model %s: values do not match", diff.ObjectGoPrintSideBySide(expectedCqlModel, cqlModel))
 	}
-	t.Log("CheckpointedRequest.ToCqlModel() returns correct result")
+	t.Log("cassandra.ToCassandraModel() returns correct result")
 }
 
 func TestCheckpointedRequest_FromCqlModel(t *testing.T) {
 	fakeRequest := getFakeRequest(false)
-	cqlModel, err := fakeRequest.ToCqlModel()
+	cqlModel, err := cassandra.ToCassandraModel(fakeRequest)
 	if err != nil {
-		t.Errorf("Error when creating CQL model: %s", err)
+		t.Fatalf("Error when creating CQL model: %s", err)
 	}
-	fakeRequestFromModel, err := cqlModel.FromCqlModel()
+	fakeRequestFromModel, err := cqlModel.FromCassandraModel()
 
 	if err != nil {
-		t.Errorf("Error when converting a CQL model back to a checkpoint: %s", err)
+		t.Fatalf("Error when converting a Cassandra model back to a checkpoint: %s", err)
 	}
 
 	if !reflect.DeepEqual(fakeRequest, fakeRequestFromModel) {
-		t.Errorf("Failed to deserialize a checkpoint from its cql model %s: values do not match", diff.ObjectGoPrintSideBySide(fakeRequest, fakeRequestFromModel))
+		t.Fatalf("Failed to deserialize a checkpoint from its cql model %s: values do not match", diff.ObjectGoPrintSideBySide(fakeRequest, fakeRequestFromModel))
 	}
-	t.Log("CheckpointedRequest.FromCqlModel() returns correct result")
-}
-
-func TestCheckpointedRequest_FromLegacyCqlModel(t *testing.T) {
-	expectedRequest := getFakeRequest(false)
-	legacyModel := &CheckpointedRequestCqlModel{
-		Algorithm:               expectedRequest.Algorithm,
-		Id:                      expectedRequest.Id,
-		LifecycleStage:          "RUNNING",
-		PayloadUri:              expectedRequest.PayloadUri,
-		ResultUri:               expectedRequest.ResultUri,
-		AlgorithmFailureCause:   expectedRequest.AlgorithmFailureCause,
-		AlgorithmFailureDetails: expectedRequest.AlgorithmFailureDetails,
-		ReceivedByHost:          expectedRequest.ReceivedByHost,
-		ReceivedAt:              expectedRequest.ReceivedAt,
-		SentAt:                  expectedRequest.SentAt,
-		AppliedConfiguration:    "{\"container\":{\"image\":\"test.io\",\"registry\":\"algorithms/test\",\"versionTag\":\"v1.0.0\",\"serviceAccountName\":\"test-sa\"},\"computeResources\":{\"cpuLimit\":\"1000m\",\"memoryLimit\":\"2000Mi\"},\"workgroupRef\":{\"name\":\"test-workgroup\",\"group\":\"nexus-workgroup.io\",\"kind\":\"KarpenterWorkgroupV1\"},\"command\":\"python\",\"args\":[\"job.py\",\"--sas-uri=%s\",\"--request-id=%s\",\"--arg1=true\"],\"runtimeEnvironment\":{\"deadlineSeconds\":120,\"maximumRetries\":3},\"datadogIntegrationSettings\":{\"mountDatadogSocket\":true}}",
-		ConfigurationOverrides:  "{}",
-		ContentHash:             expectedRequest.ContentHash,
-		LastModified:            expectedRequest.LastModified,
-		Tag:                     expectedRequest.Tag,
-		ApiVersion:              expectedRequest.ApiVersion,
-		JobUid:                  expectedRequest.JobUid,
-		Parent:                  "{}",
-		PayloadValidFor:         "86400s",
-	}
-
-	legacyRequest, err := legacyModel.FromCqlModel()
-
-	if err != nil {
-		t.Fatalf("Error when converting a legacy model back to a checkpoint: %s", err)
-	}
-
-	if !reflect.DeepEqual(legacyRequest, expectedRequest) {
-		t.Fatalf("Failed to convert request to a cql model %s: values do not match", diff.ObjectGoPrintSideBySide(legacyRequest, expectedRequest))
-	}
-	t.Log("CheckpointedRequest.ToCqlModel() returns correct result")
+	t.Log("cassandra.ToCassandraModel(fakeRequest) returns correct result")
 }
 
 func TestCheckpointedRequest_ToV1Job(t *testing.T) {
