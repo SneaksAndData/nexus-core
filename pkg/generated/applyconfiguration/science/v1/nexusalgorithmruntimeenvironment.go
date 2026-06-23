@@ -25,11 +25,13 @@ import (
 // NexusAlgorithmRuntimeEnvironmentApplyConfiguration represents a declarative configuration of the NexusAlgorithmRuntimeEnvironment type for use
 // with apply.
 type NexusAlgorithmRuntimeEnvironmentApplyConfiguration struct {
-	EnvironmentVariables       []corev1.EnvVar        `json:"environmentVariables,omitempty"`
-	MappedEnvironmentVariables []corev1.EnvFromSource `json:"mappedEnvironmentVariables,omitempty"`
-	Annotations                map[string]string      `json:"annotations,omitempty"`
-	DeadlineSeconds            *int32                 `json:"deadlineSeconds,omitempty"`
-	MaximumRetries             *int32                 `json:"maximumRetries,omitempty"`
+	EnvironmentVariables       []corev1.EnvVar               `json:"environmentVariables,omitempty"`
+	MappedEnvironmentVariables []corev1.EnvFromSource        `json:"mappedEnvironmentVariables,omitempty"`
+	ConfigurationFileMounts    map[string]corev1.VolumeMount `json:"configurationFileMounts,omitempty"`
+	SecretFileMounts           map[string]corev1.VolumeMount `json:"secretFileMounts,omitempty"`
+	Annotations                map[string]string             `json:"annotations,omitempty"`
+	DeadlineSeconds            *int32                        `json:"deadlineSeconds,omitempty"`
+	MaximumRetries             *int32                        `json:"maximumRetries,omitempty"`
 }
 
 // NexusAlgorithmRuntimeEnvironmentApplyConfiguration constructs a declarative configuration of the NexusAlgorithmRuntimeEnvironment type for use with
@@ -54,6 +56,34 @@ func (b *NexusAlgorithmRuntimeEnvironmentApplyConfiguration) WithEnvironmentVari
 func (b *NexusAlgorithmRuntimeEnvironmentApplyConfiguration) WithMappedEnvironmentVariables(values ...corev1.EnvFromSource) *NexusAlgorithmRuntimeEnvironmentApplyConfiguration {
 	for i := range values {
 		b.MappedEnvironmentVariables = append(b.MappedEnvironmentVariables, values[i])
+	}
+	return b
+}
+
+// WithConfigurationFileMounts puts the entries into the ConfigurationFileMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the ConfigurationFileMounts field,
+// overwriting an existing map entries in ConfigurationFileMounts field with the same key.
+func (b *NexusAlgorithmRuntimeEnvironmentApplyConfiguration) WithConfigurationFileMounts(entries map[string]corev1.VolumeMount) *NexusAlgorithmRuntimeEnvironmentApplyConfiguration {
+	if b.ConfigurationFileMounts == nil && len(entries) > 0 {
+		b.ConfigurationFileMounts = make(map[string]corev1.VolumeMount, len(entries))
+	}
+	for k, v := range entries {
+		b.ConfigurationFileMounts[k] = v
+	}
+	return b
+}
+
+// WithSecretFileMounts puts the entries into the SecretFileMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the SecretFileMounts field,
+// overwriting an existing map entries in SecretFileMounts field with the same key.
+func (b *NexusAlgorithmRuntimeEnvironmentApplyConfiguration) WithSecretFileMounts(entries map[string]corev1.VolumeMount) *NexusAlgorithmRuntimeEnvironmentApplyConfiguration {
+	if b.SecretFileMounts == nil && len(entries) > 0 {
+		b.SecretFileMounts = make(map[string]corev1.VolumeMount, len(entries))
+	}
+	for k, v := range entries {
+		b.SecretFileMounts[k] = v
 	}
 	return b
 }
