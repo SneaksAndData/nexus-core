@@ -48,7 +48,7 @@ type DefaultBuffer struct {
 func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *cassandra.AstraBundleConfig, metricTags map[string]string) *DefaultBuffer { // coverage-ignore
 	logger := klog.FromContext(ctx)
 
-	cqlStore := cassandra.NewAstraStore(logger, astraConfig)
+	cqlStore := cassandra.NewAstraStore(logger, astraConfig, true)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
 		blobStore: payload.NewS3PayloadStore(
@@ -71,7 +71,7 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig *cassandra.ScyllaConfig, metricTags map[string]string) *DefaultBuffer {
 	logger := klog.FromContext(ctx)
 
-	cqlStore := cassandra.NewScyllaStore(logger, scyllaConfig)
+	cqlStore := cassandra.NewScyllaStore(logger, scyllaConfig, true)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
 		blobStore:       payload.NewS3PayloadStore(ctx, logger, config.GetStaticCredentialsProvider(), config.Endpoint, config.Region, config.PayloadStoragePath),
