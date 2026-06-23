@@ -6,6 +6,7 @@ import (
 
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/gocql/gocql"
+	"github.com/scylladb/gocqlx/v3/qb"
 )
 
 type BareCassandraStore struct {
@@ -14,6 +15,7 @@ type BareCassandraStore struct {
 
 func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error {
 	cloned := checkpoint.DeepCopy()
+	// atomically update all tables
 	updateBatch := bcs.cassandraStore.cqlSession.NewBatch(gocql.LoggedBatch)
 
 	cloned.LastModified = time.Now()
@@ -35,8 +37,8 @@ func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedR
 		// 3
 		var upsertByTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag.Insert()).Strict()
 
-		// 4 - to be added
-		// ...
+		// TODO: implement 4
+		//var upsertPayloadQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestPayloadTable.Insert()).Strict()
 
 		bcs.cassandraStore.logger.V(1).Info("adding main query to batch", "query", upsertQuery.String())
 
@@ -68,26 +70,86 @@ func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedR
 }
 
 func (bcs *BareCassandraStore) ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error) {
-	//TODO implement me
-	panic("implement me")
+	result := &CheckpointCassandraModel{
+		Algorithm: algorithm,
+		Id:        id,
+	}
+
+	var query = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTable.Get()).BindStruct(*result)
+	if err := query.GetRelease(result); err != nil { // coverage-ignore
+		bcs.cassandraStore.logger.V(1).Error(err, "error when reading a checkpoint", "algorithm", algorithm, "id", id)
+		return nil, err
+	}
+
+	return result.FromCassandraModel()
 }
 
 func (bcs *BareCassandraStore) ReadCheckpointsByHost(host string, lifecycleStage models.LifecycleStage) (iter.Seq2[*models.CheckpointedRequest, error], error) {
-	//TODO implement me
-	panic("implement me")
+	byHostResults := []*struct {
+		host           string `db:"host"`
+		lifecycleStage string `db:"lifecycle_stage"`
+		algorithm      string `db:"algorithm"`
+		id             string `db:"id"`
+	}{}
+
+	var byHostQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByHost.Get()).BindMap(qb.M{
+		"host":           host,
+		"lifecycleStage": lifecycleStage,
+	})
+	if err := byHostQuery.SelectRelease(byHostResults); err != nil { // coverage-ignore
+		bcs.cassandraStore.logger.V(1).Error(err, "error when reading a checkpoint by host table", "host", host, "lifecycleStage", lifecycleStage)
+		return nil, err
+	}
+
+	return func(yield func(*models.CheckpointedRequest, error) bool) {
+		for _, byHostResult := range byHostResults {
+			if !yield(bcs.ReadCheckpoint(byHostResult.algorithm, byHostResult.id)) {
+				return
+			}
+		}
+	}, nil
 }
 
 func (bcs *BareCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
-	//TODO implement me
-	panic("implement me")
+	byTagResults := []*models.CheckpointedRequest{}
+	var byTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag.Get()).BindMap(qb.M{
+		"tag": requestTag,
+	})
+	if err := byTagQuery.SelectRelease(byTagResults); err != nil { // coverage-ignore
+		bcs.cassandraStore.logger.V(1).Error(err, "error when reading a checkpoint by tag table", "tag", requestTag)
+		return nil, err
+	}
+
+	return func(yield func(*models.CheckpointedRequest, error) bool) {
+		for _, byTagResult := range byTagResults {
+			if !yield(byTagResult, nil) {
+				return
+			}
+		}
+	}, nil
 }
 
 func (bcs *BareCassandraStore) UpsertMetadata(entry *models.SubmissionBufferEntry) error {
-	//TODO implement me
-	panic("implement me")
+	var query = bcs.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Insert()).BindStruct(*entry)
+	if err := query.ExecRelease(); err != nil { // coverage-ignore
+		bcs.cassandraStore.logger.V(1).Error(err, "error when inserting buffered checkpoint metadata", "algorithm", entry.Algorithm, "id", entry.Id)
+		return err
+	}
+
+	return nil
 }
 
 func (bcs *BareCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
-	//TODO implement me
-	panic("implement me")
+	result := &models.SubmissionBufferEntry{
+		Algorithm: checkpoint.Algorithm,
+		Id:        checkpoint.Id,
+	}
+
+	var query = bcs.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Get()).BindStruct(*result)
+	if err := query.GetRelease(result); err != nil { // coverage-ignore
+		bcs.cassandraStore.logger.V(1).Error(err, "error when reading a buffered checkpoint metadata", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+		return nil, err
+	}
+
+	return result, nil
 }
