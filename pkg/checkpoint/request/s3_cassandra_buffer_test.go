@@ -157,30 +157,38 @@ func TestDefaultBuffer_GetNew(t *testing.T) {
 }
 
 func TestDefaultBuffer_GetTagged(t *testing.T) {
-	f := newFixture(t, newIndexedCassandraConfig())
-
-	checkpoints, err := f.buffer.GetTagged("running_tag")
-
-	if err != nil {
-		t.Fatalf("error when reading checkpoints by tag: %v", err)
+	cases := []struct {
+		name    string
+		fixture *fixture
+	}{
+		{"get tagged with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"get tagged with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
 	}
 
-	result := []*models.CheckpointedRequest{}
+	for _, tc := range cases {
+		checkpoints, err := tc.fixture.buffer.GetTagged("running_tag")
 
-	for checkpoint, err := range checkpoints {
 		if err != nil {
-			t.Fatalf("error when deserializing a checkpoint: %v", err)
+			t.Fatalf("error when reading checkpoints by tag: %v", err)
 		}
 
-		result = append(result, checkpoint)
-	}
+		result := []*models.CheckpointedRequest{}
 
-	if len(result) != 1 {
-		t.Fatalf("expected only one checkpoint, but got %d", len(result))
-	}
+		for checkpoint, err := range checkpoints {
+			if err != nil {
+				t.Fatalf("error when deserializing a checkpoint: %v", err)
+			}
 
-	if result[0].Id != "8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f" {
-		t.Fatalf("Only a checkpoint with id 8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f should be RUNNING with tag running_tag, but found %s", result[0].Id)
+			result = append(result, checkpoint)
+		}
+
+		if len(result) != 1 {
+			t.Fatalf("expected only one checkpoint, but got %d", len(result))
+		}
+
+		if result[0].Id != "8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f" {
+			t.Fatalf("Only a checkpoint with id 8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f should be RUNNING with tag running_tag, but found %s", result[0].Id)
+		}
 	}
 }
 

@@ -118,8 +118,8 @@ func (bcs *BareCassandraStore) ReadCheckpointsByHost(host string, lifecycleStage
 }
 
 func (bcs *BareCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
-	byTagResults := []*models.CheckpointedRequest{}
-	var byTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag.Get()).BindMap(qb.M{
+	byTagResults := &[]*models.CheckpointedRequest{}
+	var byTagQuery = CheckpointedRequestTableByTag.SelectQuery(bcs.cassandraStore.cqlSession).BindMap(qb.M{
 		"tag": requestTag,
 	})
 	if err := byTagQuery.SelectRelease(byTagResults); err != nil { // coverage-ignore
@@ -128,7 +128,7 @@ func (bcs *BareCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq
 	}
 
 	return func(yield func(*models.CheckpointedRequest, error) bool) {
-		for _, byTagResult := range byTagResults {
+		for _, byTagResult := range *byTagResults {
 			if !yield(byTagResult, nil) {
 				return
 			}
