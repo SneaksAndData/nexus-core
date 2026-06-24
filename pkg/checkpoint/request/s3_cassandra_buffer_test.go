@@ -23,7 +23,21 @@ type fixture struct {
 	buffer *DefaultBuffer
 }
 
-func newFixture(t *testing.T) *fixture {
+func newIndexedCassandraConfig() *cassandra.ScyllaConfig {
+	return &cassandra.ScyllaConfig{
+		Hosts:            []string{"127.0.0.1"},
+		IndexesSupported: true,
+	}
+}
+
+func newBareCassandraConfig() *cassandra.ScyllaConfig {
+	return &cassandra.ScyllaConfig{
+		Hosts:            []string{"127.0.0.1"},
+		IndexesSupported: false,
+	}
+}
+
+func newFixture(t *testing.T, config *cassandra.ScyllaConfig) *fixture {
 	_, ctx := ktesting.NewTestContext(t)
 	f := &fixture{}
 	f.buffer = NewScyllaS3Buffer(ctx, &S3BufferConfig{
@@ -40,56 +54,74 @@ func newFixture(t *testing.T) *fixture {
 		Region:             "us-east-1",
 		Endpoint:           "http://localhost:9000",
 		PayloadStoragePath: "s3a://nexus",
-	}, &cassandra.ScyllaConfig{
-		Hosts: []string{"127.0.0.1"},
-	}, map[string]string{})
+	}, config, map[string]string{})
 
 	return f
 }
 
 func TestDefaultBuffer_Get(t *testing.T) {
-	f := newFixture(t)
-
-	checkpoint, err := f.buffer.Get("f47ac10b-58cc-4372-a567-0e02b2c3d479", "test-algorithm")
-
-	if err != nil {
-		t.Fatalf("error when reading a checkpoint: %v", err)
+	cases := []struct {
+		name    string
+		fixture *fixture
+	}{
+		{"get from buffer with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"get from buffer with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
 	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			checkpoint, err := tc.fixture.buffer.Get("f47ac10b-58cc-4372-a567-0e02b2c3d479", "test-algorithm")
 
-	if checkpoint != nil && checkpoint.JobUid != "d94c16c8-2c1e-4f3a-85d1-2d9c3b7f0a24" && checkpoint.LifecycleStage != models.LifecycleStageNew {
-		t.Fatalf("expected LifecycleStage = NEW, but got %s and expected JobUid = d94c16c8-2c1e-4f3a-85d1-2d9c3b7f0a24, but got %s", checkpoint.LifecycleStage, checkpoint.JobUid)
+			if err != nil {
+				t.Fatalf("error when reading a checkpoint: %v", err)
+			}
+
+			if checkpoint != nil && checkpoint.JobUid != "d94c16c8-2c1e-4f3a-85d1-2d9c3b7f0a24" && checkpoint.LifecycleStage != models.LifecycleStageNew {
+				t.Fatalf("expected LifecycleStage = NEW, but got %s and expected JobUid = d94c16c8-2c1e-4f3a-85d1-2d9c3b7f0a24, but got %s", checkpoint.LifecycleStage, checkpoint.JobUid)
+			}
+		})
 	}
 }
 
 func TestDefaultBuffer_GetBuffered(t *testing.T) {
-	f := newFixture(t)
-	checkpoints, err := f.buffer.GetBuffered("host123")
-
-	if err != nil {
-		t.Fatalf("error when reading buffered checkpoints by host: %v", err)
+	cases := []struct {
+		name    string
+		fixture *fixture
+	}{
+		{"get from buffer by host with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"get from buffer by host with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
 	}
 
-	result := []*models.CheckpointedRequest{}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			checkpoints, err := tc.fixture.buffer.GetBuffered("host123")
 
-	for checkpoint, err := range checkpoints {
-		if err != nil {
-			t.Fatalf("error when deserializing a buffered checkpoint: %v", err)
-		}
+			if err != nil {
+				t.Fatalf("error when reading buffered checkpoints by host: %v", err)
+			}
 
-		result = append(result, checkpoint)
-	}
+			result := []*models.CheckpointedRequest{}
 
-	if len(result) != 1 {
-		t.Fatalf("expected only one checkpoint, but got %d", len(result))
-	}
+			for checkpoint, err := range checkpoints {
+				if err != nil {
+					t.Fatalf("error when deserializing a buffered checkpoint: %v", err)
+				}
 
-	if result[0].Id != "2c7b6e8d-cc3c-4b5b-a3f6-5d7b9e2c7f2a" {
-		t.Fatalf("Only a checkpoint with id 2c7b6e8d-cc3c-4b5b-a3f6-5d7b9e2c7f2a should be BUFFERED for host123, but found %s", result[0].Id)
+				result = append(result, checkpoint)
+			}
+
+			if len(result) != 1 {
+				t.Fatalf("expected only one checkpoint, but got %d", len(result))
+			}
+
+			if result[0].Id != "2c7b6e8d-cc3c-4b5b-a3f6-5d7b9e2c7f2a" {
+				t.Fatalf("Only a checkpoint with id 2c7b6e8d-cc3c-4b5b-a3f6-5d7b9e2c7f2a should be BUFFERED for host123, but found %s", result[0].Id)
+			}
+		})
 	}
 }
 
 func TestDefaultBuffer_GetNew(t *testing.T) {
-	f := newFixture(t)
+	f := newFixture(t, newIndexedCassandraConfig())
 	checkpoints, err := f.buffer.GetNew("host123")
 
 	if err != nil {
@@ -116,7 +148,7 @@ func TestDefaultBuffer_GetNew(t *testing.T) {
 }
 
 func TestDefaultBuffer_GetTagged(t *testing.T) {
-	f := newFixture(t)
+	f := newFixture(t, newIndexedCassandraConfig())
 
 	checkpoints, err := f.buffer.GetTagged("running_tag")
 
@@ -144,7 +176,7 @@ func TestDefaultBuffer_GetTagged(t *testing.T) {
 }
 
 func TestDefaultBuffer_GetMetadata(t *testing.T) {
-	f := newFixture(t)
+	f := newFixture(t, newIndexedCassandraConfig())
 
 	metadataEntry, err := f.buffer.GetBufferedEntry(&models.CheckpointedRequest{Id: "123e4567-e89b-12d3-a456-426614174000", Algorithm: "test-algorithm"})
 
@@ -168,7 +200,7 @@ func TestDefaultBuffer_GetMetadata(t *testing.T) {
 }
 
 func TestDefaultBuffer_Add(t *testing.T) {
-	f := newFixture(t)
+	f := newFixture(t, newIndexedCassandraConfig())
 
 	go f.buffer.Start(nil)
 
