@@ -130,29 +130,31 @@ func TestDefaultBuffer_GetNew(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		checkpoints, err := tc.fixture.buffer.GetNew("host123")
+		t.Run(tc.name, func(t *testing.T) {
+			checkpoints, err := tc.fixture.buffer.GetNew("host123")
 
-		if err != nil {
-			t.Fatalf("error when reading NEW checkpoints by host: %v", err)
-		}
-
-		result := []*models.CheckpointedRequest{}
-
-		for checkpoint, err := range checkpoints {
 			if err != nil {
-				t.Fatalf("error when deserializing a NEW checkpoint: %v", err)
+				t.Fatalf("error when reading NEW checkpoints by host: %v", err)
 			}
 
-			result = append(result, checkpoint)
-		}
+			result := []*models.CheckpointedRequest{}
 
-		if len(result) != 1 {
-			t.Fatalf("expected only one checkpoint, but got %d", len(result))
-		}
+			for checkpoint, err := range checkpoints {
+				if err != nil {
+					t.Fatalf("error when deserializing a NEW checkpoint: %v", err)
+				}
 
-		if result[0].Id != "f47ac10b-58cc-4372-a567-0e02b2c3d479" {
-			t.Fatalf("Only a checkpoint with id f47ac10b-58cc-4372-a567-0e02b2c3d479 should be NEW for host123, but found %s", result[0].Id)
-		}
+				result = append(result, checkpoint)
+			}
+
+			if len(result) != 1 {
+				t.Fatalf("expected only one checkpoint, but got %d", len(result))
+			}
+
+			if result[0].Id != "f47ac10b-58cc-4372-a567-0e02b2c3d479" {
+				t.Fatalf("Only a checkpoint with id f47ac10b-58cc-4372-a567-0e02b2c3d479 should be NEW for host123, but found %s", result[0].Id)
+			}
+		})
 	}
 }
 
@@ -166,53 +168,65 @@ func TestDefaultBuffer_GetTagged(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		checkpoints, err := tc.fixture.buffer.GetTagged("running_tag")
+		t.Run(tc.name, func(t *testing.T) {
+			checkpoints, err := tc.fixture.buffer.GetTagged("running_tag")
 
-		if err != nil {
-			t.Fatalf("error when reading checkpoints by tag: %v", err)
-		}
-
-		result := []*models.CheckpointedRequest{}
-
-		for checkpoint, err := range checkpoints {
 			if err != nil {
-				t.Fatalf("error when deserializing a checkpoint: %v", err)
+				t.Fatalf("error when reading checkpoints by tag: %v", err)
 			}
 
-			result = append(result, checkpoint)
-		}
+			result := []*models.CheckpointedRequest{}
 
-		if len(result) != 1 {
-			t.Fatalf("expected only one checkpoint, but got %d", len(result))
-		}
+			for checkpoint, err := range checkpoints {
+				if err != nil {
+					t.Fatalf("error when deserializing a checkpoint: %v", err)
+				}
 
-		if result[0].Id != "8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f" {
-			t.Fatalf("Only a checkpoint with id 8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f should be RUNNING with tag running_tag, but found %s", result[0].Id)
-		}
+				result = append(result, checkpoint)
+			}
+
+			if len(result) != 1 {
+				t.Fatalf("expected only one checkpoint, but got %d", len(result))
+			}
+
+			if result[0].Id != "8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f" {
+				t.Fatalf("Only a checkpoint with id 8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f should be RUNNING with tag running_tag, but found %s", result[0].Id)
+			}
+		})
 	}
 }
 
 func TestDefaultBuffer_GetMetadata(t *testing.T) {
-	f := newFixture(t, newIndexedCassandraConfig())
-
-	metadataEntry, err := f.buffer.GetBufferedEntry(&models.CheckpointedRequest{Id: "123e4567-e89b-12d3-a456-426614174000", Algorithm: "test-algorithm"})
-
-	if err != nil {
-		t.Fatalf("error when reading checkpoint metadata: %v", err)
+	cases := []struct {
+		name    string
+		fixture *fixture
+	}{
+		{"get metadata with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"get metadata with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
 	}
 
-	if metadataEntry == nil {
-		t.Fatalf("checkpoint metadata entry must not be nil")
-	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			metadataEntry, err := tc.fixture.buffer.GetBufferedEntry(&models.CheckpointedRequest{Id: "123e4567-e89b-12d3-a456-426614174000", Algorithm: "test-algorithm"})
 
-	job, err := metadataEntry.SubmissionTemplate()
+			if err != nil {
+				t.Fatalf("error when reading checkpoint metadata: %v", err)
+			}
 
-	if err != nil {
-		t.Fatalf("error when deserializing checkpoint metadata: %v", err)
-	}
+			if metadataEntry == nil {
+				t.Fatalf("checkpoint metadata entry must not be nil")
+			}
 
-	if job == nil {
-		t.Fatalf("checkpoint metadata job must not be nil")
+			job, err := metadataEntry.SubmissionTemplate()
+
+			if err != nil {
+				t.Fatalf("error when deserializing checkpoint metadata: %v", err)
+			}
+
+			if job == nil {
+				t.Fatalf("checkpoint metadata job must not be nil")
+			}
+		})
 	}
 }
 
