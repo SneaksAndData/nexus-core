@@ -276,6 +276,10 @@ func TestDefaultBuffer_Add(t *testing.T) {
 				},
 				Command: "python",
 				Args:    []string{"main.py", "--request-id=%s", "--sas-uri=%s"},
+				PayloadConfiguration: &v1.NexusAlgorithmPayloadConfiguration{
+					PayloadValidFor:          "24h",
+					PayloadSerializationMode: v1.SERIALIZE_TO_S3,
+				},
 				RuntimeEnvironment: &v1.NexusAlgorithmRuntimeEnvironment{
 					EnvironmentVariables: []corev1.EnvVar{
 						{
