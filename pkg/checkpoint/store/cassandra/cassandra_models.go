@@ -42,7 +42,6 @@ var (
 		"api_version",
 		"job_uid",
 		"parent",
-		"payload_valid_for",
 	}
 	checkpointByHostColumns = []string{
 		"host",
