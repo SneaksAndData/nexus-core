@@ -33,7 +33,6 @@ func TestCheckpointedRequest_ToCqlModel(t *testing.T) {
 		ApiVersion:              fakeRequest.ApiVersion,
 		JobUid:                  fakeRequest.JobUid,
 		Parent:                  "b64__e30=",
-		PayloadValidFor:         "86400s",
 	}
 
 	if !reflect.DeepEqual(expectedCqlModel, cqlModel) {

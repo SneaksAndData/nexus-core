@@ -257,7 +257,6 @@ func TestDefaultBuffer_Add(t *testing.T) {
 					RequestId:     "test-parent",
 					AlgorithmName: "test-algorithm-v2",
 				},
-				PayloadValidFor: "24h",
 			}, &v1.NexusAlgorithmSpec{
 				Container: &v1.NexusAlgorithmContainer{
 					Image:              "test-image",
@@ -277,6 +276,10 @@ func TestDefaultBuffer_Add(t *testing.T) {
 				},
 				Command: "python",
 				Args:    []string{"main.py", "--request-id=%s", "--sas-uri=%s"},
+				PayloadConfiguration: &v1.NexusAlgorithmPayloadConfiguration{
+					PayloadValidFor:          "24h",
+					PayloadSerializationMode: v1.SERIALIZE_TO_S3,
+				},
 				RuntimeEnvironment: &v1.NexusAlgorithmRuntimeEnvironment{
 					EnvironmentVariables: []corev1.EnvVar{
 						{

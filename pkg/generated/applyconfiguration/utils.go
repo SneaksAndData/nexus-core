@@ -34,6 +34,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	// Group=science.sneaksanddata.com, Version=v1
 	case v1.SchemeGroupVersion.WithKind("NexusAlgorithmContainer"):
 		return &sciencev1.NexusAlgorithmContainerApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("NexusAlgorithmPayloadConfiguration"):
+		return &sciencev1.NexusAlgorithmPayloadConfigurationApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("NexusAlgorithmResources"):
 		return &sciencev1.NexusAlgorithmResourcesApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("NexusAlgorithmRuntimeEnvironment"):
