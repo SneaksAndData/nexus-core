@@ -290,19 +290,30 @@ func (c *CheckpointCassandraModel) FromCassandraModel() (*models.CheckpointedReq
 	}, nil
 }
 
-func (c *CheckpointCassandraModel) ByHostModel() map[string]interface{} {
-	return map[string]interface{}{
-		"host":            c.ReceivedByHost,
-		"lifecycle_stage": c.LifecycleStage,
-		"algorithm":       c.Algorithm,
-		"id":              c.Id,
+func (c *CheckpointCassandraModel) ByHostModel() interface{} {
+	result := struct {
+		Host           string `db:"host"`
+		LifecycleStage string `db:"lifecycle_stage"`
+		Algorithm      string `db:"algorithm"`
+		Id             string `db:"id"`
+	}{
+		Host:           c.ReceivedByHost,
+		LifecycleStage: c.LifecycleStage,
+		Algorithm:      c.Algorithm,
+		Id:             c.Id,
 	}
+	return &result
 }
 
-func (c *CheckpointCassandraModel) ByTagModel() map[string]interface{} {
-	return map[string]interface{}{
-		"tag":       c.Tag,
-		"algorithm": c.Algorithm,
-		"id":        c.Id,
+func (c *CheckpointCassandraModel) ByTagModel() interface{} {
+	result := struct {
+		Tag       string `db:"tag"`
+		Algorithm string `db:"algorithm"`
+		Id        string `db:"id"`
+	}{
+		Tag:       c.Tag,
+		Algorithm: c.Algorithm,
+		Id:        c.Id,
 	}
+	return &result
 }
