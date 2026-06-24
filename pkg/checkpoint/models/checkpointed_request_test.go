@@ -287,6 +287,10 @@ func TestFromAlgorithmRequest(t *testing.T) {
 	}, &v1.NexusAlgorithmSpec{
 		Container:        nil,
 		ComputeResources: nil,
+		PayloadConfiguration: &v1.NexusAlgorithmPayloadConfiguration{
+			PayloadValidFor:          "24h",
+			PayloadSerializationMode: v1.SERIALIZE_TO_S3,
+		},
 		WorkgroupRef: &v1.NexusAlgorithmWorkgroupRef{
 			Name:  "test",
 			Group: "science.sneaksanddata.com/v1",
