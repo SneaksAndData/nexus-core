@@ -48,7 +48,7 @@ jobs:
           hack/verify-codegen.sh
 
       - name: Setup just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@v4
 
       - name: Setup integration tests
         run: just up
