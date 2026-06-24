@@ -87,8 +87,8 @@ func TestDefaultBuffer_GetBuffered(t *testing.T) {
 		name    string
 		fixture *fixture
 	}{
-		{"get from buffer by host with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
-		{"get from buffer by host with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
+		{"get from buffer by host (buffered) with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"get from buffer by host (buffered) with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
 	}
 
 	for _, tc := range cases {
@@ -121,29 +121,38 @@ func TestDefaultBuffer_GetBuffered(t *testing.T) {
 }
 
 func TestDefaultBuffer_GetNew(t *testing.T) {
-	f := newFixture(t, newIndexedCassandraConfig())
-	checkpoints, err := f.buffer.GetNew("host123")
-
-	if err != nil {
-		t.Fatalf("error when reading NEW checkpoints by host: %v", err)
+	cases := []struct {
+		name    string
+		fixture *fixture
+	}{
+		{"get from buffer by host (new) with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"get from buffer by host (new) with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
 	}
 
-	result := []*models.CheckpointedRequest{}
+	for _, tc := range cases {
+		checkpoints, err := tc.fixture.buffer.GetNew("host123")
 
-	for checkpoint, err := range checkpoints {
 		if err != nil {
-			t.Fatalf("error when deserializing a NEW checkpoint: %v", err)
+			t.Fatalf("error when reading NEW checkpoints by host: %v", err)
 		}
 
-		result = append(result, checkpoint)
-	}
+		result := []*models.CheckpointedRequest{}
 
-	if len(result) != 1 {
-		t.Fatalf("expected only one checkpoint, but got %d", len(result))
-	}
+		for checkpoint, err := range checkpoints {
+			if err != nil {
+				t.Fatalf("error when deserializing a NEW checkpoint: %v", err)
+			}
 
-	if result[0].Id != "f47ac10b-58cc-4372-a567-0e02b2c3d479" {
-		t.Fatalf("Only a checkpoint with id f47ac10b-58cc-4372-a567-0e02b2c3d479 should be NEW for host123, but found %s", result[0].Id)
+			result = append(result, checkpoint)
+		}
+
+		if len(result) != 1 {
+			t.Fatalf("expected only one checkpoint, but got %d", len(result))
+		}
+
+		if result[0].Id != "f47ac10b-58cc-4372-a567-0e02b2c3d479" {
+			t.Fatalf("Only a checkpoint with id f47ac10b-58cc-4372-a567-0e02b2c3d479 should be NEW for host123, but found %s", result[0].Id)
+		}
 	}
 }
 
