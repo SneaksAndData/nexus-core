@@ -8,6 +8,8 @@ import (
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
 	"github.com/SneaksAndData/nexus-core/pkg/pipeline"
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
 	"github.com/SneaksAndData/nexus-core/pkg/util"
@@ -31,8 +33,7 @@ func (c *S3BufferConfig) GetStaticCredentialsProvider() s3credentials.StaticCred
 }
 
 type DefaultBuffer struct {
-	checkpointStore CheckpointStore
-	metadataStore   MetadataStore
+	checkpointStore store.CheckpointStore
 	blobStore       payload.RequestPayloadStore
 	config          *S3BufferConfig
 	logger          *klog.Logger
@@ -44,13 +45,12 @@ type DefaultBuffer struct {
 }
 
 // NewAstraS3Buffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
-func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *AstraBundleConfig, metricTags map[string]string) *DefaultBuffer { // coverage-ignore
+func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *cassandra.AstraBundleConfig, metricTags map[string]string) *DefaultBuffer { // coverage-ignore
 	logger := klog.FromContext(ctx)
 
-	cqlStore := NewAstraCqlStore(logger, astraConfig)
+	cqlStore := cassandra.NewAstraStore(logger, astraConfig)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
-		metadataStore:   cqlStore,
 		blobStore: payload.NewS3PayloadStore(
 			ctx, logger,
 			config.GetStaticCredentialsProvider(),
@@ -68,13 +68,12 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 }
 
 // NewScyllaS3Buffer creates a default buffer that uses ScyllaDb for checkpointing and S3-compatible storage for payload persistence
-func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig *ScyllaCqlStoreConfig, metricTags map[string]string) *DefaultBuffer {
+func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig *cassandra.ScyllaConfig, metricTags map[string]string) *DefaultBuffer {
 	logger := klog.FromContext(ctx)
 
-	cqlStore := NewScyllaCqlStore(logger, scyllaConfig)
+	cqlStore := cassandra.NewScyllaStore(logger, scyllaConfig)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
-		metadataStore:   cqlStore,
 		blobStore:       payload.NewS3PayloadStore(ctx, logger, config.GetStaticCredentialsProvider(), config.Endpoint, config.Region, config.PayloadStoragePath),
 		config:          config,
 		logger:          &logger,
@@ -133,7 +132,7 @@ func (buffer *DefaultBuffer) Update(checkpoint *models.CheckpointedRequest) erro
 }
 
 func (buffer *DefaultBuffer) GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
-	return buffer.metadataStore.ReadMetadata(checkpoint)
+	return buffer.checkpointStore.ReadMetadata(checkpoint)
 }
 
 func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
@@ -160,7 +159,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	bufferedCheckpoint.LifecycleStage = models.LifecycleStageBuffered
 	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedParent)
 
-	if err := buffer.metadataStore.UpsertMetadata(bufferedEntry); err != nil {
+	if err := buffer.checkpointStore.UpsertMetadata(bufferedEntry); err != nil {
 		return nil, err
 	}
 
