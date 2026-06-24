@@ -52,15 +52,14 @@ type CheckpointedRequest struct {
 	ApiVersion              string                 `json:"api_version"`
 	JobUid                  string                 `json:"job_uid,omitempty"`
 	Parent                  *AlgorithmRequestRef   `json:"parent,omitempty"`
-	PayloadValidFor         string                 `json:"payload_valid_for,omitempty"`
 }
 
 func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
-	if c.PayloadValidFor == "" {
+	if c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor == "" {
 		return nil
 	}
 
-	result, _ := time.ParseDuration(c.PayloadValidFor)
+	result, _ := time.ParseDuration(c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor)
 	return &result
 }
 
@@ -73,8 +72,8 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 	}
 
 	// check time.Duration
-	if request.PayloadValidFor != "" {
-		_, err = time.ParseDuration(request.PayloadValidFor)
+	if config.PayloadConfiguration.PayloadValidFor != "" {
+		_, err = time.ParseDuration(config.PayloadConfiguration.PayloadValidFor)
 
 		if err != nil {
 			return nil, nil, err
@@ -94,7 +93,6 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		Parent:                 request.ParentRequest,
 		ApiVersion:             request.RequestApiVersion,
 		AppliedConfiguration:   config.Merge(request.CustomConfiguration),
-		PayloadValidFor:        request.PayloadValidFor,
 	}, serializedPayload, nil
 }
 
@@ -118,7 +116,6 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
 		Parent:                  c.Parent.DeepCopy(),
-		PayloadValidFor:         c.PayloadValidFor,
 	}
 }
 

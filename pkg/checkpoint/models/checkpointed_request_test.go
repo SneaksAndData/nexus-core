@@ -284,7 +284,6 @@ func TestFromAlgorithmRequest(t *testing.T) {
 		RequestApiVersion:   "",
 		Tag:                 "test",
 		ParentRequest:       nil,
-		PayloadValidFor:     "24h",
 	}, &v1.NexusAlgorithmSpec{
 		Container:        nil,
 		ComputeResources: nil,

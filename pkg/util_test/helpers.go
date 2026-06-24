@@ -62,6 +62,5 @@ func GetFakeRequest(hasParent bool) *models.CheckpointedRequest {
 		ApiVersion:             "1.2",
 		JobUid:                 "1231",
 		Parent:                 parentRef,
-		PayloadValidFor:        "86400s",
 	}
 }

@@ -21,14 +21,15 @@ package v1
 // NexusAlgorithmSpecApplyConfiguration represents a declarative configuration of the NexusAlgorithmSpec type for use
 // with apply.
 type NexusAlgorithmSpecApplyConfiguration struct {
-	Container                  *NexusAlgorithmContainerApplyConfiguration          `json:"container,omitempty"`
-	ComputeResources           *NexusAlgorithmResourcesApplyConfiguration          `json:"computeResources,omitempty"`
-	WorkgroupRef               *NexusAlgorithmWorkgroupRefApplyConfiguration       `json:"workgroupRef,omitempty"`
-	Command                    *string                                             `json:"command,omitempty"`
-	Args                       []string                                            `json:"args,omitempty"`
-	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironmentApplyConfiguration `json:"runtimeEnvironment,omitempty"`
-	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviourApplyConfiguration      `json:"errorHandlingBehaviour,omitempty"`
-	DatadogIntegrationSettings *NexusDatadogIntegrationSettingsApplyConfiguration  `json:"datadogIntegrationSettings,omitempty"`
+	Container                  *NexusAlgorithmContainerApplyConfiguration            `json:"container,omitempty"`
+	ComputeResources           *NexusAlgorithmResourcesApplyConfiguration            `json:"computeResources,omitempty"`
+	WorkgroupRef               *NexusAlgorithmWorkgroupRefApplyConfiguration         `json:"workgroupRef,omitempty"`
+	Command                    *string                                               `json:"command,omitempty"`
+	Args                       []string                                              `json:"args,omitempty"`
+	PayloadConfiguration       *NexusAlgorithmPayloadConfigurationApplyConfiguration `json:"payloadConfiguration,omitempty"`
+	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironmentApplyConfiguration   `json:"runtimeEnvironment,omitempty"`
+	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviourApplyConfiguration        `json:"errorHandlingBehaviour,omitempty"`
+	DatadogIntegrationSettings *NexusDatadogIntegrationSettingsApplyConfiguration    `json:"datadogIntegrationSettings,omitempty"`
 }
 
 // NexusAlgorithmSpecApplyConfiguration constructs a declarative configuration of the NexusAlgorithmSpec type for use with
@@ -76,6 +77,14 @@ func (b *NexusAlgorithmSpecApplyConfiguration) WithArgs(values ...string) *Nexus
 	for i := range values {
 		b.Args = append(b.Args, values[i])
 	}
+	return b
+}
+
+// WithPayloadConfiguration sets the PayloadConfiguration field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PayloadConfiguration field is set to the value of the last call.
+func (b *NexusAlgorithmSpecApplyConfiguration) WithPayloadConfiguration(value *NexusAlgorithmPayloadConfigurationApplyConfiguration) *NexusAlgorithmSpecApplyConfiguration {
+	b.PayloadConfiguration = value
 	return b
 }
 

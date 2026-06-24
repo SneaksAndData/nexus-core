@@ -137,7 +137,6 @@ type CheckpointCassandraModel struct {
 	ApiVersion              string
 	JobUid                  string
 	Parent                  string
-	PayloadValidFor         string
 }
 
 func ToCassandraModel(request *models.CheckpointedRequest) (*CheckpointCassandraModel, error) {
@@ -179,7 +178,6 @@ func ToCassandraModel(request *models.CheckpointedRequest) (*CheckpointCassandra
 		ApiVersion:              request.ApiVersion,
 		JobUid:                  request.JobUid,
 		Parent:                  fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(parent)),
-		PayloadValidFor:         request.PayloadValidFor,
 	}, nil
 }
 
@@ -286,7 +284,6 @@ func (c *CheckpointCassandraModel) FromCassandraModel() (*models.CheckpointedReq
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
 		Parent:                  parent,
-		PayloadValidFor:         c.PayloadValidFor,
 	}, nil
 }
 

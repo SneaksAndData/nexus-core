@@ -34,7 +34,7 @@ func (c *S3BufferConfig) GetStaticCredentialsProvider() s3credentials.StaticCred
 
 type DefaultBuffer struct {
 	checkpointStore store.CheckpointStore
-	blobStore       payload.RequestPayloadStore
+	payloadStore    payload.RequestPayloadStore
 	config          *S3BufferConfig
 	logger          *klog.Logger
 	metrics         *statsd.Client
@@ -51,7 +51,7 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 	cqlStore := cassandra.NewAstraStore(logger, astraConfig)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
-		blobStore: payload.NewS3PayloadStore(
+		payloadStore: payload.NewS3PayloadStore(
 			ctx, logger,
 			config.GetStaticCredentialsProvider(),
 			config.Endpoint,
@@ -74,14 +74,16 @@ func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig
 	cqlStore := cassandra.NewScyllaStore(logger, scyllaConfig)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
-		blobStore:       payload.NewS3PayloadStore(ctx, logger, config.GetStaticCredentialsProvider(), config.Endpoint, config.Region, config.PayloadStoragePath),
-		config:          config,
-		logger:          &logger,
-		metrics:         telemetry.GetClient(ctx),
-		ctx:             ctx,
-		actor:           nil,
-		name:            "default_scylladb_s3",
-		tags:            metricTags,
+		// TODO: payload store should be a map or array
+		// Actual store to use depends on request config
+		payloadStore: payload.NewS3PayloadStore(ctx, logger, config.GetStaticCredentialsProvider(), config.Endpoint, config.Region, config.PayloadStoragePath),
+		config:       config,
+		logger:       &logger,
+		metrics:      telemetry.GetClient(ctx),
+		ctx:          ctx,
+		actor:        nil,
+		name:         "default_scylladb_s3",
+		tags:         metricTags,
 	}
 }
 
@@ -143,19 +145,18 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 		return nil, err
 	}
 
-	if err := buffer.blobStore.Persist(buffer.ctx, string(*input.SerializedPayload), input.Checkpoint.Id, input.Checkpoint.Algorithm); err != nil {
+	if err := buffer.payloadStore.Persist(buffer.ctx, string(*input.SerializedPayload), input.Checkpoint.Id, input.Checkpoint.Algorithm); err != nil {
 		return nil, err
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
 	payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
-	payloadUri, err := buffer.blobStore.GenerateUrl(buffer.ctx, input.Checkpoint.Id, input.Checkpoint.Algorithm, payloadValidity)
+	payloadUri, err := buffer.payloadStore.GenerateUrl(buffer.ctx, input.Checkpoint.Id, input.Checkpoint.Algorithm, payloadValidity)
 	if err != nil {
 		return nil, err
 	}
 
 	bufferedCheckpoint.PayloadUri = payloadUri
-	bufferedCheckpoint.PayloadValidFor = payloadValidity.String()
 	bufferedCheckpoint.LifecycleStage = models.LifecycleStageBuffered
 	bufferedEntry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedParent)
 

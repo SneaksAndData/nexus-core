@@ -25,5 +25,4 @@ type AlgorithmRequest struct {
 	RequestApiVersion   string                 `json:"requestApiVersion,omitempty"`
 	Tag                 string                 `json:"tag,omitempty"`
 	ParentRequest       *AlgorithmRequestRef   `json:"parentRequest,omitempty"`
-	PayloadValidFor     string                 `json:"payloadValidFor,omitempty"`
 }
