@@ -17,3 +17,19 @@ cqlsh localhost -f /opt/storage/submission_buffer.cql
 echo 'Checking table'
 
 cqlsh localhost -e 'SELECT * FROM nexus.submission_buffer'
+
+echo 'Applying checkpoints_by_host table'
+
+cqlsh localhost -f /opt/storage/checkpoints_by_host.cql
+
+echo 'Checking table'
+
+cqlsh localhost -e 'SELECT * FROM nexus.checkpoints_by_host'
+
+echo 'Applying checkpoints_by_tag table'
+
+cqlsh localhost -f /opt/storage/checkpoints_by_tag.cql
+
+echo 'Checking table'
+
+cqlsh localhost -e 'SELECT * FROM nexus.checkpoints_by_tag'

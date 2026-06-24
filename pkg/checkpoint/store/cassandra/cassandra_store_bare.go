@@ -92,16 +92,16 @@ func (bcs *BareCassandraStore) ReadCheckpoint(algorithm string, id string) (*mod
 }
 
 func (bcs *BareCassandraStore) ReadCheckpointsByHost(host string, lifecycleStage models.LifecycleStage) (iter.Seq2[*models.CheckpointedRequest, error], error) {
-	byHostResults := []*struct {
-		host           string `db:"host"`
-		lifecycleStage string `db:"lifecycle_stage"`
-		algorithm      string `db:"algorithm"`
-		id             string `db:"id"`
+	byHostResults := &[]*struct {
+		Host           string `db:"host"`
+		LifecycleStage string `db:"lifecycle_stage"`
+		Algorithm      string `db:"algorithm"`
+		Id             string `db:"id"`
 	}{}
 
-	var byHostQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByHost.Get()).BindMap(qb.M{
-		"host":           host,
-		"lifecycleStage": lifecycleStage,
+	var byHostQuery = CheckpointedRequestTableByHost.SelectQuery(bcs.cassandraStore.cqlSession).BindMap(qb.M{
+		"host":            host,
+		"lifecycle_stage": lifecycleStage,
 	})
 	if err := byHostQuery.SelectRelease(byHostResults); err != nil { // coverage-ignore
 		bcs.cassandraStore.logger.V(1).Error(err, "error when reading a checkpoint by host table", "host", host, "lifecycleStage", lifecycleStage)
@@ -109,8 +109,8 @@ func (bcs *BareCassandraStore) ReadCheckpointsByHost(host string, lifecycleStage
 	}
 
 	return func(yield func(*models.CheckpointedRequest, error) bool) {
-		for _, byHostResult := range byHostResults {
-			if !yield(bcs.ReadCheckpoint(byHostResult.algorithm, byHostResult.id)) {
+		for _, byHostResult := range *byHostResults {
+			if !yield(bcs.ReadCheckpoint(byHostResult.Algorithm, byHostResult.Id)) {
 				return
 			}
 		}
