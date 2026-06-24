@@ -1,19 +1,18 @@
 package models
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"time"
+
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/aws/smithy-go/ptr"
-	"github.com/scylladb/gocqlx/v3/table"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"strings"
-	"time"
 )
 
 type LifecycleStage string
@@ -32,7 +31,6 @@ const (
 	JobLabelFrameworkVersionKey = "science.sneaksanddata.com/nexus-version"
 	NexusComponentLabel         = "science.sneaksanddata.com/nexus-component"
 	JobLabelAlgorithmRun        = "algorithm-run"
-	EncodePrefix                = "b64__"
 )
 
 type CheckpointedRequest struct {
@@ -57,124 +55,6 @@ type CheckpointedRequest struct {
 	PayloadValidFor         string                 `json:"payload_valid_for,omitempty"`
 }
 
-type CheckpointedRequestCqlModel struct {
-	Algorithm               string
-	Id                      string
-	LifecycleStage          string
-	PayloadUri              string
-	ResultUri               string
-	AlgorithmFailureCause   string
-	AlgorithmFailureDetails string
-	ReceivedByHost          string
-	ReceivedAt              time.Time
-	SentAt                  time.Time
-	AppliedConfiguration    string
-	ConfigurationOverrides  string
-	ContentHash             string
-	LastModified            time.Time
-	Tag                     string
-	ApiVersion              string
-	JobUid                  string
-	Parent                  string
-	PayloadValidFor         string
-}
-
-var checkpointColumns = []string{
-	"algorithm",
-	"id",
-	"lifecycle_stage",
-	"payload_uri",
-	"result_uri",
-	"algorithm_failure_cause",
-	"algorithm_failure_details",
-	"received_by_host",
-	"received_at",
-	"sent_at",
-	"applied_configuration",
-	"configuration_overrides",
-	"content_hash",
-	"last_modified",
-	"tag",
-	"api_version",
-	"job_uid",
-	"parent",
-	"payload_valid_for",
-}
-
-const tableName = "nexus.checkpoints"
-
-var CheckpointedRequestTable = table.New(table.Metadata{
-	Name:    tableName,
-	Columns: checkpointColumns,
-	PartKey: []string{
-		"algorithm",
-		"id",
-	},
-	SortKey: []string{},
-})
-
-var CheckpointedRequestTableIndexByHost = table.New(table.Metadata{
-	Name:    tableName,
-	Columns: checkpointColumns,
-	PartKey: []string{
-		"received_by_host",
-		"lifecycle_stage",
-	},
-	SortKey: []string{},
-})
-
-var CheckpointedRequestTableIndexByTag = table.New(table.Metadata{
-	Name:    tableName,
-	Columns: checkpointColumns,
-	PartKey: []string{
-		"tag",
-	},
-	SortKey: []string{},
-})
-
-func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error) {
-	parent := []byte("{}")
-	serializedOverrides := []byte("{}")
-	serializedConfig, err := json.Marshal(c.AppliedConfiguration)
-
-	if err != nil {
-		return nil, err
-	}
-
-	if c.ConfigurationOverrides != nil {
-		serializedOverrides, _ = json.Marshal(c.ConfigurationOverrides)
-	}
-
-	if c.Parent != nil {
-		parent, err = json.Marshal(c.Parent)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &CheckpointedRequestCqlModel{
-		Algorithm:               c.Algorithm,
-		Id:                      c.Id,
-		LifecycleStage:          c.LifecycleStage,
-		PayloadUri:              c.PayloadUri,
-		ResultUri:               c.ResultUri,
-		AlgorithmFailureCause:   c.AlgorithmFailureCause,
-		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
-		ReceivedByHost:          c.ReceivedByHost,
-		ReceivedAt:              c.ReceivedAt,
-		SentAt:                  c.SentAt,
-		AppliedConfiguration:    fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(serializedConfig)),
-		ConfigurationOverrides:  fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(serializedOverrides)),
-		ContentHash:             c.ContentHash,
-		LastModified:            c.LastModified,
-		Tag:                     c.Tag,
-		ApiVersion:              c.ApiVersion,
-		JobUid:                  c.JobUid,
-		Parent:                  fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(parent)),
-		PayloadValidFor:         c.PayloadValidFor,
-	}, nil
-}
-
 func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
 	if c.PayloadValidFor == "" {
 		return nil
@@ -182,118 +62,6 @@ func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
 
 	result, _ := time.ParseDuration(c.PayloadValidFor)
 	return &result
-}
-
-func (c *CheckpointedRequestCqlModel) readSerializedSpec(serializedSpec string) (*v1.NexusAlgorithmSpec, error) {
-	spec := &v1.NexusAlgorithmSpec{}
-	var serializedValue []byte
-	var err error
-
-	if serializedSpec == "{}" || serializedSpec == "" {
-		return nil, nil
-	}
-
-	// backwards-compatible code: only use b64 decode if it was used to write the value
-	if strings.HasPrefix(serializedSpec, EncodePrefix) {
-		serializedValue, err = base64.StdEncoding.DecodeString(strings.TrimPrefix(serializedSpec, EncodePrefix))
-		if err != nil {
-			return nil, err
-		}
-
-		if string(serializedValue) == "{}" || string(serializedValue) == "" {
-			return nil, nil
-		}
-	} else {
-		serializedValue = []byte(serializedSpec)
-	}
-
-	err = json.Unmarshal(serializedValue, spec)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return spec, nil
-}
-
-func (c *CheckpointedRequestCqlModel) getParent() (*AlgorithmRequestRef, error) {
-	parent := &AlgorithmRequestRef{}
-	var serializedValue []byte
-	var err error
-
-	if c.Parent == "" || c.Parent == "{}" {
-		return nil, nil
-	}
-
-	// backwards-compatible code: only use b64 decode if it was used to write the value
-	if strings.HasPrefix(c.Parent, EncodePrefix) {
-		serializedValue, err = base64.StdEncoding.DecodeString(strings.TrimPrefix(c.Parent, EncodePrefix))
-		if err != nil {
-			return nil, err
-		}
-
-		if string(serializedValue) == "{}" || string(serializedValue) == "" {
-			return nil, nil
-		}
-	} else {
-		serializedValue = []byte(c.Parent)
-	}
-	err = json.Unmarshal(serializedValue, parent)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return parent, nil
-}
-
-func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, error) {
-	var appliedConfig *v1.NexusAlgorithmSpec
-	var overrides *v1.NexusAlgorithmSpec
-	var parent *AlgorithmRequestRef
-
-	var unmarshalErr error
-
-	// ignore override unmarshal if set to empty object
-	overrides, unmarshalErr = c.readSerializedSpec(c.ConfigurationOverrides)
-
-	if unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	appliedConfig, unmarshalErr = c.readSerializedSpec(c.AppliedConfiguration)
-
-	if unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	parent, unmarshalErr = c.getParent()
-
-	if unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	return &CheckpointedRequest{
-		Algorithm:               c.Algorithm,
-		Id:                      c.Id,
-		LifecycleStage:          c.LifecycleStage,
-		PayloadUri:              c.PayloadUri,
-		ResultUri:               c.ResultUri,
-		AlgorithmFailureCause:   c.AlgorithmFailureCause,
-		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
-		ReceivedByHost:          c.ReceivedByHost,
-		ReceivedAt:              c.ReceivedAt,
-		SentAt:                  c.SentAt,
-		AppliedConfiguration:    appliedConfig,
-		ConfigurationOverrides:  overrides,
-		ContentHash:             c.ContentHash,
-		LastModified:            c.LastModified,
-		Tag:                     c.Tag,
-		ApiVersion:              c.ApiVersion,
-		JobUid:                  c.JobUid,
-		Parent:                  parent,
-		PayloadValidFor:         c.PayloadValidFor,
-	}, nil
 }
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {

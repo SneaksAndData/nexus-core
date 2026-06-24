@@ -1,6 +1,9 @@
 package resolvers
 
 import (
+	"testing"
+	"time"
+
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -10,8 +13,6 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog/v2/ktesting"
-	"testing"
-	"time"
 )
 
 type fixture struct {

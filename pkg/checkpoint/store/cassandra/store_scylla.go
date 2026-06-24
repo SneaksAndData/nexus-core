@@ -1,20 +1,22 @@
 package cassandra
 
 import (
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
 	"github.com/gocql/gocql"
 	"k8s.io/klog/v2"
 )
 
 // ScyllaConfig defines configuration for gocql needed to connect to ScyllaDB
 type ScyllaConfig struct {
-	Hosts    []string `mapstructure:"hosts"`
-	Port     string   `mapstructure:"port"`
-	User     string   `mapstructure:"user"`
-	Password string   `mapstructure:"password"`
-	LocalDC  string   `mapstructure:"local-dc"`
+	Hosts            []string `mapstructure:"hosts"`
+	Port             string   `mapstructure:"port"`
+	User             string   `mapstructure:"user"`
+	Password         string   `mapstructure:"password"`
+	LocalDC          string   `mapstructure:"local-dc"`
+	IndexesSupported bool     `mapstructure:"indexes-supported"`
 }
 
-func NewScyllaStore(logger klog.Logger, config *ScyllaConfig) *CheckpointCassandraStore {
+func NewScyllaStore(logger klog.Logger, config *ScyllaConfig) store.CheckpointStore {
 	cluster := gocql.NewCluster(config.Hosts...)
 	fallback := gocql.RoundRobinHostPolicy()
 	if config.LocalDC != "" { // coverage-ignore
@@ -33,5 +35,10 @@ func NewScyllaStore(logger klog.Logger, config *ScyllaConfig) *CheckpointCassand
 		}
 	}
 
-	return NewCassandraStore(cluster, logger)
+	cassandraStore := NewCassandraStore(cluster, logger)
+
+	if config.IndexesSupported {
+		return NewIndexedCassandraStore(cassandraStore)
+	}
+	return NewBareCassandraStore(cassandraStore)
 }
