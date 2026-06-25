@@ -102,7 +102,7 @@ func (store *S3RequestPayloadStore) GenerateUrl(ctx context.Context, checkpoint 
 		Bucket: s3Path.Bucket,
 		Key:    s3Path.Key,
 	},
-		s3.WithPresignExpires(*checkpoint.PayloadValidityPeriod()))
+		s3.WithPresignExpires(checkpoint.PayloadValidityPeriod()))
 
 	if err != nil {
 		store.logger.V(0).Error(err, "error when generating payload URI")
