@@ -167,7 +167,7 @@ func (ics *IndexedCassandraStore) GenerateUrl(_ context.Context, checkpoint *mod
 		return "", fmt.Errorf("no payload proxy configuration provided, unable to generate a proxy url for %s/%s", checkpoint.Algorithm, checkpoint.Id)
 	}
 	// Nexus URL signer ignores hostname, thus use localhost for simplicity
-	baseUrl := checkpoint.GetProxyUrlToSign("localhost", ics.payloadProxyConfiguration.ServePathTemplate)
+	baseUrl := checkpoint.GetProxyUrlToSign(ics.payloadProxyConfiguration.ServePathTemplate)
 	signed, err := urlsign.Sign(baseUrl, ics.payloadProxyConfiguration.TenantId, checkpoint.PayloadValidityPeriod(), checkpoint.ContentHash, ics.payloadProxyConfiguration.SignSecret)
 
 	if err != nil {
