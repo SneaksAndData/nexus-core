@@ -47,7 +47,7 @@ type DefaultBuffer struct {
 func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *cassandra.AstraBundleConfig, metricTags map[string]string) *DefaultBuffer { // coverage-ignore
 	logger := klog.FromContext(ctx)
 
-	cqlStore := cassandra.NewAstraStore(logger, astraConfig)
+	cqlStore := cassandra.NewAstraStore(logger, astraConfig, nil)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
 		payloadStore: payload.NewS3PayloadStore(
@@ -70,7 +70,7 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig *cassandra.ScyllaConfig, metricTags map[string]string) *DefaultBuffer {
 	logger := klog.FromContext(ctx)
 
-	cqlStore := cassandra.NewScyllaStore(logger, scyllaConfig)
+	cqlStore := cassandra.NewScyllaStore(logger, scyllaConfig, nil)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
 		// TODO: payload store should be a map or array
@@ -149,8 +149,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
-	//payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
-	payloadUri, err := buffer.payloadStore.GenerateUrl(buffer.ctx, input.Checkpoint.Id, input.Checkpoint.Algorithm, payloadValidity)
+	payloadUri, err := buffer.payloadStore.GenerateUrl(buffer.ctx, input.Checkpoint)
 	if err != nil {
 		return nil, err
 	}
