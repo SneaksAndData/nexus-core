@@ -42,7 +42,6 @@ func newFixture(t *testing.T, config *cassandra.ScyllaConfig) *fixture {
 	f := &fixture{}
 	f.buffer = NewScyllaS3Buffer(ctx, &S3BufferConfig{
 		BufferConfig: &BufferConfig{
-			PayloadValidFor:            time.Hour,
 			FailureRateBaseDelay:       time.Second,
 			FailureRateMaxDelay:        time.Second * 2,
 			RateLimitElementsPerSecond: 10,
