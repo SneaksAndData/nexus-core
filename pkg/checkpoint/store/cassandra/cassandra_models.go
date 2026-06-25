@@ -14,11 +14,11 @@ import (
 
 // table names
 const (
-	checkpointTableName         = "nexus.checkpoints"
-	checkpointByHostTableName   = "nexus.checkpoints_by_host"
-	checkpointByTagTableName    = "nexus.checkpoints_by_tag"
-	checkpointPayloadsTableName = "nexus.checkpoint_payloads"
-	EncodePrefix                = "b64__"
+	checkpointTableName       = "nexus.checkpoints"
+	checkpointByHostTableName = "nexus.checkpoints_by_host"
+	checkpointByTagTableName  = "nexus.checkpoints_by_tag"
+	payloadBufferTable        = "nexus.payload_buffer"
+	EncodePrefix              = "b64__"
 )
 
 // table metadata
@@ -54,11 +54,11 @@ var (
 		"algorithm",
 		"id",
 	}
-	//checkpointPayloadsColumns = []string{
-	//	"algorithm",
-	//	"id",
-	//	"payload",
-	//}
+	payloadBufferColumns = []string{
+		"algorithm",
+		"id",
+		"payload_content",
+	}
 )
 
 // table definitions for goclqx
@@ -106,15 +106,15 @@ var (
 		},
 		SortKey: []string{"id"},
 	})
-	//CheckpointedRequestPayloadTable = table.New(table.Metadata{
-	//	Name:    checkpointPayloadsTableName,
-	//	Columns: checkpointPayloadsColumns,
-	//	PartKey: []string{
-	//		"algorithm",
-	//		"id",
-	//	},
-	//	SortKey: []string{},
-	//})
+	PayloadBufferTable = table.New(table.Metadata{
+		Name:    payloadBufferTable,
+		Columns: payloadBufferColumns,
+		PartKey: []string{
+			"algorithm",
+			"id",
+		},
+		SortKey: []string{},
+	})
 )
 
 type CheckpointCassandraModel struct {

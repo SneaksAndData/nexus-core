@@ -1,22 +1,30 @@
 package cassandra
 
 import (
+	"context"
+	"encoding/base64"
+	"fmt"
 	"iter"
 	"time"
 
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
+	"github.com/SneaksAndData/nexus-core/pkg/urlsign"
+	"github.com/SneaksAndData/nexus-core/pkg/util"
 	"github.com/gocql/gocql"
 	"github.com/scylladb/gocqlx/v3/qb"
 )
 
 type BareCassandraStore struct {
-	cassandraStore *CheckpointCassandraStore
+	cassandraStore            *CheckpointCassandraStore
+	payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration
 }
 
-func NewBareCassandraStore(store *CheckpointCassandraStore) store.CheckpointStore {
+func NewBareCassandraStore(store *CheckpointCassandraStore, payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration) store.CheckpointStore {
 	return &BareCassandraStore{
-		cassandraStore: store,
+		cassandraStore:            store,
+		payloadProxyConfiguration: payloadProxyConfiguration,
 	}
 }
 
@@ -33,7 +41,6 @@ func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedR
 		// 1 - actual checkpoint update/insert
 		// 2 - update/insert into the by_hosts table
 		// 3 - update/insert into the by_tag table
-		// 4 (optional) - update/insert into the payload_buffer table
 
 		// 1
 		var upsertQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTable.Insert()).Strict()
@@ -43,9 +50,6 @@ func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedR
 
 		// 3
 		var upsertByTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag.Insert()).Strict()
-
-		// TODO: implement 4
-		//var upsertPayloadQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestPayloadTable.Insert()).Strict()
 
 		bcs.cassandraStore.logger.V(1).Info("adding main query to batch", "query", upsertQuery.String())
 
@@ -159,4 +163,50 @@ func (bcs *BareCassandraStore) ReadMetadata(checkpoint *models.CheckpointedReque
 	}
 
 	return result, nil
+}
+
+func (bcs *BareCassandraStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {
+	if bcs.payloadProxyConfiguration == nil {
+		return fmt.Errorf("no payload proxy configuration provided, unable to persist checkpoint payload for %s/%s", templateName, requestId)
+	}
+
+	compressedPayload, err := util.CompressString(payload)
+
+	if err != nil {
+		return err
+	}
+
+	insertValues := &struct {
+		Algorithm      string `db:"algorithm"`
+		Id             string `db:"id"`
+		PayloadContent string `db:"payload_content"`
+	}{
+		Algorithm:      templateName,
+		Id:             requestId,
+		PayloadContent: base64.StdEncoding.EncodeToString(compressedPayload),
+	}
+
+	var insertQuery = PayloadBufferTable.InsertQueryContext(ctx, bcs.cassandraStore.cqlSession).BindStruct(insertValues)
+
+	if err := insertQuery.ExecRelease(); err != nil { // coverage-ignore
+		bcs.cassandraStore.logger.V(1).Error(err, "error when persisting payload to the checkpoint store", "algorithm", templateName, "id", requestId)
+		return err
+	}
+
+	return nil
+}
+
+func (bcs *BareCassandraStore) GenerateUrl(_ context.Context, checkpoint *models.CheckpointedRequest) (string, error) {
+	if bcs.payloadProxyConfiguration == nil {
+		return "", fmt.Errorf("no payload proxy configuration provided, unable to generate a proxy url for %s/%s", checkpoint.Algorithm, checkpoint.Id)
+	}
+
+	baseUrl := checkpoint.GetProxyUrlToSign(bcs.payloadProxyConfiguration.ServePathTemplate)
+	signed, err := urlsign.Sign(baseUrl, bcs.payloadProxyConfiguration.TenantId, checkpoint.PayloadValidityPeriod(), checkpoint.ContentHash, bcs.payloadProxyConfiguration.SignSecret)
+
+	if err != nil {
+		return "", err
+	}
+
+	return signed.Url.String(), nil
 }

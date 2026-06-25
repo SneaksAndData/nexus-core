@@ -1,8 +1,11 @@
 package models
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -54,13 +57,23 @@ type CheckpointedRequest struct {
 	Parent                  *AlgorithmRequestRef   `json:"parent,omitempty"`
 }
 
-func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
-	if c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor == "" {
-		return nil
+func (c *CheckpointedRequest) PayloadValidityPeriod() time.Duration {
+	if c.AppliedConfiguration.PayloadConfiguration == nil || c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor == "" {
+		defaultDuration, _ := time.ParseDuration("24h")
+		return defaultDuration
 	}
 
 	result, _ := time.ParseDuration(c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor)
-	return &result
+	return result
+}
+
+func (c *CheckpointedRequest) GetProxyUrlToSign(servePathTemplate string) url.URL {
+	// Nexus URL signer ignores hostname, thus use localhost for simplicity
+	return url.URL{
+		Scheme: "https",
+		Host:   "localhost",
+		Path:   fmt.Sprintf(servePathTemplate, c.Id),
+	}
 }
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
@@ -71,14 +84,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		return nil, nil, err
 	}
 
-	// check time.Duration
-	if config.PayloadConfiguration.PayloadValidFor != "" {
-		_, err = time.ParseDuration(config.PayloadConfiguration.PayloadValidFor)
-
-		if err != nil {
-			return nil, nil, err
-		}
-	}
+	crc := crc32.ChecksumIEEE(serializedPayload)
 
 	return &CheckpointedRequest{
 		Algorithm:              algorithmName,
@@ -93,6 +99,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		Parent:                 request.ParentRequest,
 		ApiVersion:             request.RequestApiVersion,
 		AppliedConfiguration:   config.Merge(request.CustomConfiguration),
+		ContentHash:            base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%08x", crc))),
 	}, serializedPayload, nil
 }
 

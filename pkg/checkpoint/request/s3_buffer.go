@@ -12,7 +12,6 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
 	"github.com/SneaksAndData/nexus-core/pkg/pipeline"
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
-	"github.com/SneaksAndData/nexus-core/pkg/util"
 	s3credentials "github.com/aws/aws-sdk-go-v2/credentials"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -150,7 +149,7 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
-	payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
+	//payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
 	payloadUri, err := buffer.payloadStore.GenerateUrl(buffer.ctx, input.Checkpoint.Id, input.Checkpoint.Algorithm, payloadValidity)
 	if err != nil {
 		return nil, err

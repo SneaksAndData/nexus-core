@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -94,15 +94,15 @@ func (store *S3RequestPayloadStore) Persist(ctx context.Context, payload string,
 	return nil
 }
 
-func (store *S3RequestPayloadStore) GenerateUrl(ctx context.Context, requestId string, templateName string, validFor time.Duration) (string, error) {
-	payloadPath := store.getStoragePath(requestId, templateName)
+func (store *S3RequestPayloadStore) GenerateUrl(ctx context.Context, checkpoint *models.CheckpointedRequest) (string, error) {
+	payloadPath := store.getStoragePath(checkpoint.Id, checkpoint.Algorithm)
 	s3Path := parsePath(payloadPath)
 
 	result, err := store.signer.PresignGetObject(ctx, &s3.GetObjectInput{
 		Bucket: s3Path.Bucket,
 		Key:    s3Path.Key,
 	},
-		s3.WithPresignExpires(validFor))
+		s3.WithPresignExpires(*checkpoint.PayloadValidityPeriod()))
 
 	if err != nil {
 		store.logger.V(0).Error(err, "error when generating payload URI")
