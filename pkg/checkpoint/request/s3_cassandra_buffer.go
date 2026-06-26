@@ -54,7 +54,8 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 		checkpointStore: cqlStore,
 		payloadStores: map[v1.PayloadSerializationMode]payload.RequestPayloadStore{
 			v1.SERIALIZE_TO_S3: payload.NewS3PayloadStore(
-				ctx, logger,
+				ctx, 
+				logger,
 				config.GetStaticCredentialsProvider(),
 				config.Endpoint,
 				config.Region,
