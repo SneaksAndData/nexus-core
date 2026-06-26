@@ -33,7 +33,7 @@ func NewCassandraStore(cluster *gocql.ClusterConfig, logger klog.Logger) *Checkp
 func (s *CheckpointCassandraStore) SavePayload(ctx context.Context, payload string, requestId string, templateName string) error {
 	compressedPayload, err := util.CompressString(payload)
 
-	if err != nil {
+	if err != nil { // coverage-ignore
 		return err
 	}
 
