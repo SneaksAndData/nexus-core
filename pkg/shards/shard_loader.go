@@ -2,14 +2,17 @@ package shards
 
 import (
 	"context"
+	"os"
+	"path"
+	"strings"
+
 	clientset "github.com/SneaksAndData/nexus-core/pkg/generated/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
-	"os"
-	"path"
-	"strings"
 )
+
+const InClusterShardName = "standalone"
 
 // LoadClients read kubeconfig files in the path and creates ShardClient instances from them
 func LoadClients(shardConfigPath string, namespace string, logger klog.Logger) ([]*ShardClient, error) {
@@ -48,6 +51,29 @@ func LoadClients(shardConfigPath string, namespace string, logger klog.Logger) (
 	}
 
 	return shardClients, nil
+}
+
+func InClusterShardClient(namespace string, logger klog.Logger) (*ShardClient, error) { // coverage-ignore
+	cfg, err := clientcmd.BuildConfigFromFlags("", "")
+	if err != nil {
+		logger.Error(err, "error building in-cluster kubeconfig for an in-cluster shard client")
+		return nil, err
+	}
+
+	kubeClient, err := kubernetes.NewForConfig(cfg)
+	if err != nil { // coverage-ignore
+		logger.Error(err, "error building kubernetes clientset for an in-cluster shard client")
+		return nil, err
+	}
+
+	nexusClient, err := clientset.NewForConfig(cfg)
+	if err != nil { // coverage-ignore
+		logger.Error(err, "error building kubernetes clientset for NexusAlgorithmTemplate API for an in-cluster shard client")
+		return nil, err
+	}
+
+	return NewShardClient(kubeClient, nexusClient, InClusterShardName, namespace, logger), nil
+
 }
 
 // LoadShards reads kubeconfigs files from the path and creates Shard instances from them
