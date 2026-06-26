@@ -10,7 +10,6 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
 	"github.com/gocql/gocql"
 	"k8s.io/klog/v2"
@@ -102,7 +101,7 @@ func NewAstraCqlStoreConfig(logger klog.Logger, config *AstraBundleConfig) *Chec
 }
 
 // NewAstraStore creates a CqlStore connected to DataStax AstraDB serverless instance
-func NewAstraStore(logger klog.Logger, bundle *AstraBundleConfig, payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration) store.CheckpointStore { // coverage-ignore
+func NewAstraStore(logger klog.Logger, bundle *AstraBundleConfig) store.CheckpointStore { // coverage-ignore
 	config := NewAstraCqlStoreConfig(logger, bundle)
 	cluster := gocql.NewCluster(config.GatewayHost)
 	cluster.Authenticator = gocql.PasswordAuthenticator{
@@ -117,7 +116,7 @@ func NewAstraStore(logger klog.Logger, bundle *AstraBundleConfig, payloadProxyCo
 	cluster.Consistency = gocql.LocalQuorum
 	cassandraStore := NewCassandraStore(cluster, logger)
 	if bundle.IndexesSupported {
-		return NewIndexedCassandraStore(cassandraStore, payloadProxyConfiguration)
+		return NewIndexedCassandraStore(cassandraStore)
 	}
-	return NewBareCassandraStore(cassandraStore, payloadProxyConfiguration)
+	return NewBareCassandraStore(cassandraStore)
 }

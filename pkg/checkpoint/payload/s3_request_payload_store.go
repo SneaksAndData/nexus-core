@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -92,22 +91,4 @@ func (store *S3RequestPayloadStore) Persist(ctx context.Context, payload string,
 	store.logger.V(4).Info("successfully persisted algorithm payload", "payloadPath", payloadPath, "etag", *result.ETag)
 
 	return nil
-}
-
-func (store *S3RequestPayloadStore) GenerateUrl(ctx context.Context, checkpoint *models.CheckpointedRequest) (string, error) {
-	payloadPath := store.getStoragePath(checkpoint.Id, checkpoint.Algorithm)
-	s3Path := parsePath(payloadPath)
-
-	result, err := store.signer.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: s3Path.Bucket,
-		Key:    s3Path.Key,
-	},
-		s3.WithPresignExpires(checkpoint.PayloadValidityPeriod()))
-
-	if err != nil {
-		store.logger.V(0).Error(err, "error when generating payload URI")
-		return "", err
-	}
-
-	return result.URL, nil
 }

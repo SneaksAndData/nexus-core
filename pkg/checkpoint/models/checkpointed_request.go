@@ -11,6 +11,8 @@ import (
 	"time"
 
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
+	"github.com/SneaksAndData/nexus-core/pkg/urlsign"
 	"github.com/aws/smithy-go/ptr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -67,13 +69,25 @@ func (c *CheckpointedRequest) PayloadValidityPeriod() time.Duration {
 	return result
 }
 
-func (c *CheckpointedRequest) GetProxyUrlToSign(servePathTemplate string) url.URL {
+func (c *CheckpointedRequest) GenerateUrl(payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration) (string, error) {
+	if payloadProxyConfiguration == nil {
+		return "", fmt.Errorf("no payload proxy configuration provided, unable to generate a proxy url for %s/%s", c.Algorithm, c.Id)
+	}
+
 	// Nexus URL signer ignores hostname, thus use localhost for simplicity
-	return url.URL{
+	baseUrl := url.URL{
 		Scheme: "https",
 		Host:   "localhost",
-		Path:   fmt.Sprintf(servePathTemplate, c.Id),
+		Path:   fmt.Sprintf(payloadProxyConfiguration.ServePathTemplate, c.Algorithm, c.Id),
 	}
+
+	signed, err := urlsign.Sign(baseUrl, payloadProxyConfiguration.TenantId, c.PayloadValidityPeriod(), c.ContentHash, payloadProxyConfiguration.SignSecret)
+
+	if err != nil {
+		return "", err
+	}
+
+	return signed.Url.String(), nil
 }
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {

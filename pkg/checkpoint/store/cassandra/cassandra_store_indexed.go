@@ -3,26 +3,21 @@ package cassandra
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"iter"
 	"time"
 
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
-	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
-	"github.com/SneaksAndData/nexus-core/pkg/urlsign"
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 )
 
 type IndexedCassandraStore struct {
-	cassandraStore            *CheckpointCassandraStore
-	payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration
+	cassandraStore *CheckpointCassandraStore
 }
 
-func NewIndexedCassandraStore(store *CheckpointCassandraStore, payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration) store.CheckpointStore {
+func NewIndexedCassandraStore(store *CheckpointCassandraStore) store.CheckpointStore {
 	return &IndexedCassandraStore{
-		cassandraStore:            store,
-		payloadProxyConfiguration: payloadProxyConfiguration,
+		cassandraStore: store,
 	}
 }
 
@@ -132,10 +127,6 @@ func (ics *IndexedCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRe
 }
 
 func (ics *IndexedCassandraStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {
-	if ics.payloadProxyConfiguration == nil {
-		return fmt.Errorf("no payload proxy configuration provided, unable to persist checkpoint payload for %s/%s", templateName, requestId)
-	}
-
 	compressedPayload, err := util.CompressString(payload)
 
 	if err != nil {
@@ -160,19 +151,4 @@ func (ics *IndexedCassandraStore) Persist(ctx context.Context, payload string, r
 	}
 
 	return nil
-}
-
-func (ics *IndexedCassandraStore) GenerateUrl(_ context.Context, checkpoint *models.CheckpointedRequest) (string, error) {
-	if ics.payloadProxyConfiguration == nil {
-		return "", fmt.Errorf("no payload proxy configuration provided, unable to generate a proxy url for %s/%s", checkpoint.Algorithm, checkpoint.Id)
-	}
-	// Nexus URL signer ignores hostname, thus use localhost for simplicity
-	baseUrl := checkpoint.GetProxyUrlToSign(ics.payloadProxyConfiguration.ServePathTemplate)
-	signed, err := urlsign.Sign(baseUrl, ics.payloadProxyConfiguration.TenantId, checkpoint.PayloadValidityPeriod(), checkpoint.ContentHash, ics.payloadProxyConfiguration.SignSecret)
-
-	if err != nil {
-		return "", err
-	}
-
-	return signed.Url.String(), nil
 }
