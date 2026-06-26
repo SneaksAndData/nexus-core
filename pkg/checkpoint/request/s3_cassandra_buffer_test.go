@@ -237,11 +237,14 @@ func TestDefaultBuffer_GetMetadata(t *testing.T) {
 
 func TestDefaultBuffer_Add(t *testing.T) {
 	cases := []struct {
-		name    string
-		fixture *fixture
+		name              string
+		fixture           *fixture
+		serializationMode v1.PayloadSerializationMode
 	}{
-		{"add to buffer that uses indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
-		{"add to buffer that uses bare Cassandra store", newFixture(t, newBareCassandraConfig())},
+		{"add to buffer that uses indexed Cassandra store, with S3 serialization", newFixture(t, newIndexedCassandraConfig()), v1.SERIALIZE_TO_S3},
+		{"add to buffer that uses bare Cassandra store, with S3 serialization", newFixture(t, newBareCassandraConfig()), v1.SERIALIZE_TO_S3},
+		{"add to buffer that uses indexed Cassandra store, without S3 serialization", newFixture(t, newIndexedCassandraConfig()), v1.SERIALIZE_TO_BACKEND},
+		{"add to buffer that uses bare Cassandra store, without S3 serialization", newFixture(t, newBareCassandraConfig()), v1.SERIALIZE_TO_BACKEND},
 	}
 
 	for _, tc := range cases {
@@ -283,7 +286,7 @@ func TestDefaultBuffer_Add(t *testing.T) {
 				Args:    []string{"main.py", "--request-id=%s", "--sas-uri=%s"},
 				PayloadConfiguration: &v1.NexusAlgorithmPayloadConfiguration{
 					PayloadValidFor:          "24h",
-					PayloadSerializationMode: v1.SERIALIZE_TO_S3,
+					PayloadSerializationMode: tc.serializationMode,
 				},
 				RuntimeEnvironment: &v1.NexusAlgorithmRuntimeEnvironment{
 					EnvironmentVariables: []corev1.EnvVar{
