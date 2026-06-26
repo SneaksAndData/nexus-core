@@ -3,7 +3,7 @@ package util
 import (
 	"bytes"
 	"compress/gzip"
-	"log"
+	"io"
 )
 
 // CompressString gzips a string and returns the resulting byte array
@@ -18,8 +18,28 @@ func CompressString(input string) ([]byte, error) {
 	}
 
 	if err := writer.Close(); err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	return buf.Bytes(), nil
+}
+
+// DecompressString takes gzipped bytes and returns the original string
+func DecompressString(compressed []byte) (string, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(compressed))
+	if err != nil {
+		return "", err
+	}
+	// Ensure the reader is closed to free up resources
+	defer func(reader *gzip.Reader) {
+		_ = reader.Close()
+	}(reader)
+
+	// Read all decompressed data
+	decompressedBytes, err := io.ReadAll(reader)
+	if err != nil {
+		return "", err
+	}
+
+	return string(decompressedBytes), nil
 }

@@ -2,13 +2,11 @@ package cassandra
 
 import (
 	"context"
-	"encoding/base64"
 	"iter"
 	"time"
 
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
-	"github.com/SneaksAndData/nexus-core/pkg/util"
 	"github.com/gocql/gocql"
 	"github.com/scylladb/gocqlx/v3/qb"
 )
@@ -161,28 +159,5 @@ func (bcs *BareCassandraStore) ReadMetadata(checkpoint *models.CheckpointedReque
 }
 
 func (bcs *BareCassandraStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {
-	compressedPayload, err := util.CompressString(payload)
-
-	if err != nil {
-		return err
-	}
-
-	insertValues := &struct {
-		Algorithm      string `db:"algorithm"`
-		Id             string `db:"id"`
-		PayloadContent string `db:"payload_content"`
-	}{
-		Algorithm:      templateName,
-		Id:             requestId,
-		PayloadContent: base64.StdEncoding.EncodeToString(compressedPayload),
-	}
-
-	var insertQuery = PayloadBufferTable.InsertQueryContext(ctx, bcs.cassandraStore.cqlSession).BindStruct(insertValues)
-
-	if err := insertQuery.ExecRelease(); err != nil { // coverage-ignore
-		bcs.cassandraStore.logger.V(1).Error(err, "error when persisting payload to the checkpoint store", "algorithm", templateName, "id", requestId)
-		return err
-	}
-
-	return nil
+	return bcs.cassandraStore.SavePayload(ctx, payload, requestId, templateName)
 }

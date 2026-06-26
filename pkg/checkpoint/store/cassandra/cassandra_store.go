@@ -1,6 +1,10 @@
 package cassandra
 
 import (
+	"context"
+	"encoding/base64"
+
+	"github.com/SneaksAndData/nexus-core/pkg/util"
 	"github.com/gocql/gocql"
 	"github.com/scylladb/gocqlx/v3"
 	"k8s.io/klog/v2"
@@ -24,4 +28,31 @@ func NewCassandraStore(cluster *gocql.ClusterConfig, logger klog.Logger) *Checkp
 		cqlSession: session,
 		logger:     logger,
 	}
+}
+
+func (s *CheckpointCassandraStore) SavePayload(ctx context.Context, payload string, requestId string, templateName string) error {
+	compressedPayload, err := util.CompressString(payload)
+
+	if err != nil {
+		return err
+	}
+
+	insertValues := &struct {
+		Algorithm      string `db:"algorithm"`
+		Id             string `db:"id"`
+		PayloadContent string `db:"payload_content"`
+	}{
+		Algorithm:      templateName,
+		Id:             requestId,
+		PayloadContent: base64.StdEncoding.EncodeToString(compressedPayload),
+	}
+
+	var insertQuery = PayloadBufferTable.InsertQueryContext(ctx, s.cqlSession).BindStruct(insertValues)
+
+	if err := insertQuery.ExecRelease(); err != nil { // coverage-ignore
+		s.logger.V(1).Error(err, "error when persisting payload to the checkpoint store", "algorithm", templateName, "id", requestId)
+		return err
+	}
+
+	return nil
 }
