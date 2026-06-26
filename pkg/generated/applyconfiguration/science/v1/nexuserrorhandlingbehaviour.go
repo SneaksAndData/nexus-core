@@ -20,6 +20,8 @@ package v1
 
 // NexusErrorHandlingBehaviourApplyConfiguration represents a declarative configuration of the NexusErrorHandlingBehaviour type for use
 // with apply.
+//
+// NexusErrorHandlingBehaviour defines error handling behaviours for algorithm exit codes
 type NexusErrorHandlingBehaviourApplyConfiguration struct {
 	TransientExitCodes []int32 `json:"transientExitCodes,omitempty"`
 	FatalExitCodes     []int32 `json:"fatalExitCodes,omitempty"`
