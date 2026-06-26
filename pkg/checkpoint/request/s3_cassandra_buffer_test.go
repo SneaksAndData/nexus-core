@@ -12,6 +12,7 @@ import (
 
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
 	"github.com/aws/smithy-go/ptr"
 	corev1 "k8s.io/api/core/v1"
@@ -42,7 +43,6 @@ func newFixture(t *testing.T, config *cassandra.ScyllaConfig) *fixture {
 	f := &fixture{}
 	f.buffer = NewScyllaS3Buffer(ctx, &S3BufferConfig{
 		BufferConfig: &BufferConfig{
-			PayloadValidFor:            time.Hour,
 			FailureRateBaseDelay:       time.Second,
 			FailureRateMaxDelay:        time.Second * 2,
 			RateLimitElementsPerSecond: 10,
@@ -54,6 +54,11 @@ func newFixture(t *testing.T, config *cassandra.ScyllaConfig) *fixture {
 		Region:             "us-east-1",
 		Endpoint:           "http://localhost:9000",
 		PayloadStoragePath: "s3a://nexus",
+		RequestPayloadProxyConfiguration: &payload.RequestPayloadProxyConfiguration{
+			TenantId:          "test-tenant",
+			ServePathTemplate: "/data/v1/payloads/%s/%s",
+			SignSecret:        []byte("test-secret"),
+		},
 	}, config, map[string]string{})
 
 	return f
@@ -232,11 +237,14 @@ func TestDefaultBuffer_GetMetadata(t *testing.T) {
 
 func TestDefaultBuffer_Add(t *testing.T) {
 	cases := []struct {
-		name    string
-		fixture *fixture
+		name              string
+		fixture           *fixture
+		serializationMode v1.PayloadSerializationMode
 	}{
-		{"add to buffer that uses indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
-		{"add to buffer that uses bare Cassandra store", newFixture(t, newBareCassandraConfig())},
+		{"add to buffer that uses indexed Cassandra store, with S3 serialization", newFixture(t, newIndexedCassandraConfig()), v1.SERIALIZE_TO_S3},
+		{"add to buffer that uses bare Cassandra store, with S3 serialization", newFixture(t, newBareCassandraConfig()), v1.SERIALIZE_TO_S3},
+		{"add to buffer that uses indexed Cassandra store, without S3 serialization", newFixture(t, newIndexedCassandraConfig()), v1.SERIALIZE_TO_BACKEND},
+		{"add to buffer that uses bare Cassandra store, without S3 serialization", newFixture(t, newBareCassandraConfig()), v1.SERIALIZE_TO_BACKEND},
 	}
 
 	for _, tc := range cases {
@@ -278,7 +286,7 @@ func TestDefaultBuffer_Add(t *testing.T) {
 				Args:    []string{"main.py", "--request-id=%s", "--sas-uri=%s"},
 				PayloadConfiguration: &v1.NexusAlgorithmPayloadConfiguration{
 					PayloadValidFor:          "24h",
-					PayloadSerializationMode: v1.SERIALIZE_TO_S3,
+					PayloadSerializationMode: tc.serializationMode,
 				},
 				RuntimeEnvironment: &v1.NexusAlgorithmRuntimeEnvironment{
 					EnvironmentVariables: []corev1.EnvVar{

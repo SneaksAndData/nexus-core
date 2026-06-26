@@ -12,7 +12,6 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
 	"github.com/SneaksAndData/nexus-core/pkg/pipeline"
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
-	"github.com/SneaksAndData/nexus-core/pkg/util"
 	s3credentials "github.com/aws/aws-sdk-go-v2/credentials"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -20,12 +19,13 @@ import (
 )
 
 type S3BufferConfig struct {
-	BufferConfig       *BufferConfig `mapstructure:"buffer-config,omitempty"`
-	AccessKeyID        string        `mapstructure:"access-key-id,omitempty"`
-	SecretAccessKey    string        `mapstructure:"secret-access-key,omitempty"`
-	Region             string        `mapstructure:"region,omitempty"`
-	Endpoint           string        `mapstructure:"endpoint,omitempty"`
-	PayloadStoragePath string        `mapstructure:"payload-storage-path,omitempty"`
+	BufferConfig                     *BufferConfig                             `mapstructure:"buffer-config,omitempty"`
+	AccessKeyID                      string                                    `mapstructure:"access-key-id,omitempty"`
+	SecretAccessKey                  string                                    `mapstructure:"secret-access-key,omitempty"`
+	Region                           string                                    `mapstructure:"region,omitempty"`
+	Endpoint                         string                                    `mapstructure:"endpoint,omitempty"`
+	PayloadStoragePath               string                                    `mapstructure:"payload-storage-path,omitempty"`
+	RequestPayloadProxyConfiguration *payload.RequestPayloadProxyConfiguration `mapstructure:"request-payload-proxy-configuration,omitempty"`
 }
 
 func (c *S3BufferConfig) GetStaticCredentialsProvider() s3credentials.StaticCredentialsProvider {
@@ -33,15 +33,16 @@ func (c *S3BufferConfig) GetStaticCredentialsProvider() s3credentials.StaticCred
 }
 
 type DefaultBuffer struct {
-	checkpointStore store.CheckpointStore
-	payloadStore    payload.RequestPayloadStore
-	config          *S3BufferConfig
-	logger          *klog.Logger
-	metrics         *statsd.Client
-	ctx             context.Context
-	actor           *pipeline.DefaultPipelineStageActor[*BufferInput, *BufferOutput]
-	name            string
-	tags            map[string]string
+	checkpointStore           store.CheckpointStore
+	payloadStores             map[v1.PayloadSerializationMode]payload.RequestPayloadStore
+	payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration
+	config                    *S3BufferConfig
+	logger                    *klog.Logger
+	metrics                   *statsd.Client
+	ctx                       context.Context
+	actor                     *pipeline.DefaultPipelineStageActor[*BufferInput, *BufferOutput]
+	name                      string
+	tags                      map[string]string
 }
 
 // NewAstraS3Buffer creates a default buffer that uses Astra DB for checkpointing and S3-compatible storage for payload persistence
@@ -51,19 +52,24 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 	cqlStore := cassandra.NewAstraStore(logger, astraConfig)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
-		payloadStore: payload.NewS3PayloadStore(
-			ctx, logger,
-			config.GetStaticCredentialsProvider(),
-			config.Endpoint,
-			config.Region,
-			config.PayloadStoragePath),
-		config:  config,
-		logger:  &logger,
-		metrics: ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
-		ctx:     ctx,
-		actor:   nil,
-		name:    "default_astradb_s3",
-		tags:    metricTags,
+		payloadStores: map[v1.PayloadSerializationMode]payload.RequestPayloadStore{
+			v1.SERIALIZE_TO_S3: payload.NewS3PayloadStore(
+				ctx, 
+				logger,
+				config.GetStaticCredentialsProvider(),
+				config.Endpoint,
+				config.Region,
+				config.PayloadStoragePath),
+			v1.SERIALIZE_TO_BACKEND: cqlStore.(payload.RequestPayloadStore),
+		},
+		payloadProxyConfiguration: config.RequestPayloadProxyConfiguration,
+		config:                    config,
+		logger:                    &logger,
+		metrics:                   ctx.Value(telemetry.MetricsClientContextKey).(*statsd.Client),
+		ctx:                       ctx,
+		actor:                     nil,
+		name:                      "default_astradb_s3",
+		tags:                      metricTags,
 	}
 }
 
@@ -74,16 +80,18 @@ func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig
 	cqlStore := cassandra.NewScyllaStore(logger, scyllaConfig)
 	return &DefaultBuffer{
 		checkpointStore: cqlStore,
-		// TODO: payload store should be a map or array
-		// Actual store to use depends on request config
-		payloadStore: payload.NewS3PayloadStore(ctx, logger, config.GetStaticCredentialsProvider(), config.Endpoint, config.Region, config.PayloadStoragePath),
-		config:       config,
-		logger:       &logger,
-		metrics:      telemetry.GetClient(ctx),
-		ctx:          ctx,
-		actor:        nil,
-		name:         "default_scylladb_s3",
-		tags:         metricTags,
+		payloadStores: map[v1.PayloadSerializationMode]payload.RequestPayloadStore{
+			v1.SERIALIZE_TO_S3:      payload.NewS3PayloadStore(ctx, logger, config.GetStaticCredentialsProvider(), config.Endpoint, config.Region, config.PayloadStoragePath),
+			v1.SERIALIZE_TO_BACKEND: cqlStore.(payload.RequestPayloadStore),
+		},
+		payloadProxyConfiguration: config.RequestPayloadProxyConfiguration,
+		config:                    config,
+		logger:                    &logger,
+		metrics:                   telemetry.GetClient(ctx),
+		ctx:                       ctx,
+		actor:                     nil,
+		name:                      "default_scylladb_s3",
+		tags:                      metricTags,
 	}
 }
 
@@ -145,13 +153,12 @@ func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, e
 		return nil, err
 	}
 
-	if err := buffer.payloadStore.Persist(buffer.ctx, string(*input.SerializedPayload), input.Checkpoint.Id, input.Checkpoint.Algorithm); err != nil {
+	if err := buffer.payloadStores[input.Checkpoint.AppliedConfiguration.PayloadConfiguration.PayloadSerializationMode].Persist(buffer.ctx, string(*input.SerializedPayload), input.Checkpoint.Id, input.Checkpoint.Algorithm); err != nil {
 		return nil, err
 	}
 
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
-	payloadValidity := *util.CoalescePointer(input.Checkpoint.PayloadValidityPeriod(), &buffer.config.BufferConfig.PayloadValidFor)
-	payloadUri, err := buffer.payloadStore.GenerateUrl(buffer.ctx, input.Checkpoint.Id, input.Checkpoint.Algorithm, payloadValidity)
+	payloadUri, err := input.Checkpoint.GenerateUrl(buffer.payloadProxyConfiguration)
 	if err != nil {
 		return nil, err
 	}

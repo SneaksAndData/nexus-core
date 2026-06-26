@@ -33,3 +33,11 @@ cqlsh localhost -f /opt/storage/checkpoints_by_tag.cql
 echo 'Checking table'
 
 cqlsh localhost -e 'SELECT * FROM nexus.checkpoints_by_tag'
+
+echo 'Applying payload_buffer table'
+
+cqlsh localhost -f /opt/storage/payload_buffer.cql
+
+echo 'Checking table'
+
+cqlsh localhost -e 'SELECT * FROM nexus.payload_buffer'

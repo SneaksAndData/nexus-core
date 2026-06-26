@@ -18,7 +18,7 @@ type SignedUrl struct {
 }
 
 func NewSignedFromUrl(signed url.URL) (*SignedUrl, error) { // coverage-ignore
-	parsed, err := signed.Parse(signed.String())
+	parsed, err := url.Parse(signed.String())
 
 	if err != nil { // coverage-ignore
 		return nil, err

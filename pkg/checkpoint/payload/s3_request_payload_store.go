@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
@@ -92,22 +91,4 @@ func (store *S3RequestPayloadStore) Persist(ctx context.Context, payload string,
 	store.logger.V(4).Info("successfully persisted algorithm payload", "payloadPath", payloadPath, "etag", *result.ETag)
 
 	return nil
-}
-
-func (store *S3RequestPayloadStore) GenerateUrl(ctx context.Context, requestId string, templateName string, validFor time.Duration) (string, error) {
-	payloadPath := store.getStoragePath(requestId, templateName)
-	s3Path := parsePath(payloadPath)
-
-	result, err := store.signer.PresignGetObject(ctx, &s3.GetObjectInput{
-		Bucket: s3Path.Bucket,
-		Key:    s3Path.Key,
-	},
-		s3.WithPresignExpires(validFor))
-
-	if err != nil {
-		store.logger.V(0).Error(err, "error when generating payload URI")
-		return "", err
-	}
-
-	return result.URL, nil
 }

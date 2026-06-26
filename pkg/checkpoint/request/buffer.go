@@ -23,7 +23,6 @@ type Buffer interface {
 }
 
 type BufferConfig struct {
-	PayloadValidFor            time.Duration `mapstructure:"payload-valid-for,omitempty"`
 	FailureRateBaseDelay       time.Duration `mapstructure:"failure-rate-base-delay,omitempty"`
 	FailureRateMaxDelay        time.Duration `mapstructure:"failure-rate-max-delay,omitempty"`
 	RateLimitElementsPerSecond int           `mapstructure:"rate-limit-elements-per-second,omitempty"`

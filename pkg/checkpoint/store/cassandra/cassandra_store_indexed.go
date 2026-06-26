@@ -1,6 +1,7 @@
 package cassandra
 
 import (
+	"context"
 	"iter"
 	"time"
 
@@ -121,4 +122,8 @@ func (ics *IndexedCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRe
 	}
 
 	return result, nil
+}
+
+func (ics *IndexedCassandraStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {
+	return ics.cassandraStore.SavePayload(ctx, payload, requestId, templateName)
 }

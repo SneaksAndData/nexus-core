@@ -1,6 +1,7 @@
 package cassandra
 
 import (
+	"context"
 	"iter"
 	"time"
 
@@ -33,7 +34,6 @@ func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedR
 		// 1 - actual checkpoint update/insert
 		// 2 - update/insert into the by_hosts table
 		// 3 - update/insert into the by_tag table
-		// 4 (optional) - update/insert into the payload_buffer table
 
 		// 1
 		var upsertQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTable.Insert()).Strict()
@@ -43,9 +43,6 @@ func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedR
 
 		// 3
 		var upsertByTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag.Insert()).Strict()
-
-		// TODO: implement 4
-		//var upsertPayloadQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestPayloadTable.Insert()).Strict()
 
 		bcs.cassandraStore.logger.V(1).Info("adding main query to batch", "query", upsertQuery.String())
 
@@ -159,4 +156,8 @@ func (bcs *BareCassandraStore) ReadMetadata(checkpoint *models.CheckpointedReque
 	}
 
 	return result, nil
+}
+
+func (bcs *BareCassandraStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {
+	return bcs.cassandraStore.SavePayload(ctx, payload, requestId, templateName)
 }

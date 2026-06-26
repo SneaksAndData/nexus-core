@@ -1,13 +1,18 @@
 package models
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
+	"net/url"
 	"os"
 	"strings"
 	"time"
 
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
+	"github.com/SneaksAndData/nexus-core/pkg/urlsign"
 	"github.com/aws/smithy-go/ptr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -54,13 +59,35 @@ type CheckpointedRequest struct {
 	Parent                  *AlgorithmRequestRef   `json:"parent,omitempty"`
 }
 
-func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
-	if c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor == "" {
-		return nil
+func (c *CheckpointedRequest) PayloadValidityPeriod() time.Duration {
+	if c.AppliedConfiguration.PayloadConfiguration == nil || c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor == "" {
+		defaultDuration, _ := time.ParseDuration("24h")
+		return defaultDuration
 	}
 
 	result, _ := time.ParseDuration(c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor)
-	return &result
+	return result
+}
+
+func (c *CheckpointedRequest) GenerateUrl(payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration) (string, error) {
+	if payloadProxyConfiguration == nil {
+		return "", fmt.Errorf("no payload proxy configuration provided, unable to generate a proxy url for %s/%s", c.Algorithm, c.Id)
+	}
+
+	// Nexus URL signer ignores hostname, thus use localhost for simplicity
+	baseUrl := url.URL{
+		Scheme: "https",
+		Host:   "localhost",
+		Path:   fmt.Sprintf(payloadProxyConfiguration.ServePathTemplate, c.Algorithm, c.Id),
+	}
+
+	signed, err := urlsign.Sign(baseUrl, payloadProxyConfiguration.TenantId, c.PayloadValidityPeriod(), c.ContentHash, payloadProxyConfiguration.SignSecret)
+
+	if err != nil {
+		return "", err
+	}
+
+	return signed.Url.String(), nil
 }
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
@@ -71,14 +98,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		return nil, nil, err
 	}
 
-	// check time.Duration
-	if config.PayloadConfiguration.PayloadValidFor != "" {
-		_, err = time.ParseDuration(config.PayloadConfiguration.PayloadValidFor)
-
-		if err != nil {
-			return nil, nil, err
-		}
-	}
+	crc := crc32.ChecksumIEEE(serializedPayload)
 
 	return &CheckpointedRequest{
 		Algorithm:              algorithmName,
@@ -93,6 +113,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		Parent:                 request.ParentRequest,
 		ApiVersion:             request.RequestApiVersion,
 		AppliedConfiguration:   config.Merge(request.CustomConfiguration),
+		ContentHash:            base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%08x", crc))),
 	}, serializedPayload, nil
 }
 
