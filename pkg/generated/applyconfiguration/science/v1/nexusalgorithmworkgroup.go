@@ -26,6 +26,8 @@ import (
 
 // NexusAlgorithmWorkgroupApplyConfiguration represents a declarative configuration of the NexusAlgorithmWorkgroup type for use
 // with apply.
+//
+// NexusAlgorithmWorkgroup specifies node tolerations for algorithm pods
 type NexusAlgorithmWorkgroupApplyConfiguration struct {
 	metav1.TypeMetaApplyConfiguration    `json:",inline"`
 	*metav1.ObjectMetaApplyConfiguration `json:"metadata,omitempty"`
@@ -43,6 +45,8 @@ func NexusAlgorithmWorkgroup(name, namespace string) *NexusAlgorithmWorkgroupApp
 	b.WithAPIVersion("science.sneaksanddata.com/v1")
 	return b
 }
+
+func (b NexusAlgorithmWorkgroupApplyConfiguration) IsApplyConfiguration() {}
 
 // WithKind sets the Kind field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
@@ -218,8 +222,24 @@ func (b *NexusAlgorithmWorkgroupApplyConfiguration) WithStatus(value *NexusAlgor
 	return b
 }
 
+// GetKind retrieves the value of the Kind field in the declarative configuration.
+func (b *NexusAlgorithmWorkgroupApplyConfiguration) GetKind() *string {
+	return b.TypeMetaApplyConfiguration.Kind
+}
+
+// GetAPIVersion retrieves the value of the APIVersion field in the declarative configuration.
+func (b *NexusAlgorithmWorkgroupApplyConfiguration) GetAPIVersion() *string {
+	return b.TypeMetaApplyConfiguration.APIVersion
+}
+
 // GetName retrieves the value of the Name field in the declarative configuration.
 func (b *NexusAlgorithmWorkgroupApplyConfiguration) GetName() *string {
 	b.ensureObjectMetaApplyConfigurationExists()
 	return b.ObjectMetaApplyConfiguration.Name
+}
+
+// GetNamespace retrieves the value of the Namespace field in the declarative configuration.
+func (b *NexusAlgorithmWorkgroupApplyConfiguration) GetNamespace() *string {
+	b.ensureObjectMetaApplyConfigurationExists()
+	return b.ObjectMetaApplyConfiguration.Namespace
 }

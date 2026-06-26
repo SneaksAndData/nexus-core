@@ -20,6 +20,8 @@ package v1
 
 // NexusAlgorithmContainerApplyConfiguration represents a declarative configuration of the NexusAlgorithmContainer type for use
 // with apply.
+//
+// NexusAlgorithmContainer provides container specification for each run
 type NexusAlgorithmContainerApplyConfiguration struct {
 	Image              *string `json:"image,omitempty"`
 	Registry           *string `json:"registry,omitempty"`

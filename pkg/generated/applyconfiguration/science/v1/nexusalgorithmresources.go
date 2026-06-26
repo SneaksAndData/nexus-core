@@ -24,8 +24,12 @@ import (
 
 // NexusAlgorithmResourcesApplyConfiguration represents a declarative configuration of the NexusAlgorithmResources type for use
 // with apply.
+//
+// NexusAlgorithmResources defines maximum compute resources that should be provisioned for the algorithm
 type NexusAlgorithmResourcesApplyConfiguration struct {
-	CpuLimit             *string              `json:"cpuLimit,omitempty"`
+	// Deprecated: Use Limits instead
+	CpuLimit *string `json:"cpuLimit,omitempty"`
+	// Deprecated: Use Limits instead
 	MemoryLimit          *string              `json:"memoryLimit,omitempty"`
 	DefaultResourceQuota *string              `json:"defaultResourceQuota,omitempty"`
 	Requests             *corev1.ResourceList `json:"requests,omitempty"`
