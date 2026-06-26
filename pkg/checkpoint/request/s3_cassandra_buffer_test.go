@@ -12,6 +12,7 @@ import (
 
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
 	"github.com/aws/smithy-go/ptr"
 	corev1 "k8s.io/api/core/v1"
@@ -53,6 +54,11 @@ func newFixture(t *testing.T, config *cassandra.ScyllaConfig) *fixture {
 		Region:             "us-east-1",
 		Endpoint:           "http://localhost:9000",
 		PayloadStoragePath: "s3a://nexus",
+		RequestPayloadProxyConfiguration: &payload.RequestPayloadProxyConfiguration{
+			TenantId:          "test-tenant",
+			ServePathTemplate: "/data/v1/payloads/%s/%s",
+			SignSecret:        []byte("test-secret"),
+		},
 	}, config, map[string]string{})
 
 	return f
