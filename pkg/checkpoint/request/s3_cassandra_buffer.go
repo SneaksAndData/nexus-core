@@ -54,7 +54,7 @@ func NewAstraS3Buffer(ctx context.Context, config *S3BufferConfig, astraConfig *
 		checkpointStore: cqlStore,
 		payloadStores: map[v1.PayloadSerializationMode]payload.RequestPayloadStore{
 			v1.SERIALIZE_TO_S3: payload.NewS3PayloadStore(
-				ctx, 
+				ctx,
 				logger,
 				config.GetStaticCredentialsProvider(),
 				config.Endpoint,
@@ -91,6 +91,28 @@ func NewScyllaS3Buffer(ctx context.Context, config *S3BufferConfig, scyllaConfig
 		ctx:                       ctx,
 		actor:                     nil,
 		name:                      "default_scylladb_s3",
+		tags:                      metricTags,
+	}
+}
+
+// NewKeyspacesS3Buffer creates a default buffer that uses AWS Keyspaces for checkpointing and S3-compatible storage for payload persistence
+func NewKeyspacesS3Buffer(ctx context.Context, config *S3BufferConfig, keyspacesConfig *cassandra.KeyspacesConfig, metricTags map[string]string) *DefaultBuffer { // coverage-ignore
+	logger := klog.FromContext(ctx)
+
+	cqlStore := cassandra.NewKeyspacesStore(logger, keyspacesConfig)
+	return &DefaultBuffer{
+		checkpointStore: cqlStore,
+		payloadStores: map[v1.PayloadSerializationMode]payload.RequestPayloadStore{
+			v1.SERIALIZE_TO_S3:      payload.NewS3PayloadStore(ctx, logger, config.GetStaticCredentialsProvider(), config.Endpoint, config.Region, config.PayloadStoragePath),
+			v1.SERIALIZE_TO_BACKEND: cqlStore.(payload.RequestPayloadStore),
+		},
+		payloadProxyConfiguration: config.RequestPayloadProxyConfiguration,
+		config:                    config,
+		logger:                    &logger,
+		metrics:                   telemetry.GetClient(ctx),
+		ctx:                       ctx,
+		actor:                     nil,
+		name:                      "default_keyspaces_s3",
 		tags:                      metricTags,
 	}
 }
