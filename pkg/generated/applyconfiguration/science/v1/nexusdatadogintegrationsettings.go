@@ -20,6 +20,8 @@ package v1
 
 // NexusDatadogIntegrationSettingsApplyConfiguration represents a declarative configuration of the NexusDatadogIntegrationSettings type for use
 // with apply.
+//
+// NexusDatadogIntegrationSettings defines settings for Nexus algorithms that use Datadog metrics and logging capabilities
 type NexusDatadogIntegrationSettingsApplyConfiguration struct {
 	MountDatadogSocket *bool `json:"mountDatadogSocket,omitempty"`
 }

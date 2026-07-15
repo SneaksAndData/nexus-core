@@ -20,6 +20,8 @@ package v1
 
 // NexusAlgorithmWorkgroupRefApplyConfiguration represents a declarative configuration of the NexusAlgorithmWorkgroupRef type for use
 // with apply.
+//
+// NexusAlgorithmWorkgroupRef contains a reference to the workgroup
 type NexusAlgorithmWorkgroupRefApplyConfiguration struct {
 	Name  *string `json:"name,omitempty"`
 	Group *string `json:"group,omitempty"`

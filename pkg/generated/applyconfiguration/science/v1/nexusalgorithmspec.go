@@ -20,6 +20,8 @@ package v1
 
 // NexusAlgorithmSpecApplyConfiguration represents a declarative configuration of the NexusAlgorithmSpec type for use
 // with apply.
+//
+// NexusAlgorithmSpec is the spec for a NexusAlgorithmTemplate resource
 type NexusAlgorithmSpecApplyConfiguration struct {
 	Container                  *NexusAlgorithmContainerApplyConfiguration            `json:"container,omitempty"`
 	ComputeResources           *NexusAlgorithmResourcesApplyConfiguration            `json:"computeResources,omitempty"`

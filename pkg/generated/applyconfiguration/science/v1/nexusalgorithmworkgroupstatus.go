@@ -24,6 +24,8 @@ import (
 
 // NexusAlgorithmWorkgroupStatusApplyConfiguration represents a declarative configuration of the NexusAlgorithmWorkgroupStatus type for use
 // with apply.
+//
+// NexusAlgorithmWorkgroupStatus is the status for a NexusAlgorithmWorkgroup resource
 type NexusAlgorithmWorkgroupStatusApplyConfiguration struct {
 	Conditions []metav1.ConditionApplyConfiguration `json:"conditions,omitempty"`
 }

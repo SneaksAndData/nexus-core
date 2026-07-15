@@ -24,6 +24,8 @@ import (
 
 // NexusAlgorithmWorkgroupSpecApplyConfiguration represents a declarative configuration of the NexusAlgorithmWorkgroupSpec type for use
 // with apply.
+//
+// NexusAlgorithmWorkgroupSpec is a spec for NexusAlgorithmWorkgroup resource
 type NexusAlgorithmWorkgroupSpecApplyConfiguration struct {
 	Description  *string             `json:"description,omitempty"`
 	Capabilities map[string]bool     `json:"capabilities,omitempty"`
