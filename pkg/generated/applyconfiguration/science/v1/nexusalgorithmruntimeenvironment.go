@@ -31,6 +31,7 @@ type NexusAlgorithmRuntimeEnvironmentApplyConfiguration struct {
 	MappedEnvironmentVariables []corev1.EnvFromSource        `json:"mappedEnvironmentVariables,omitempty"`
 	ConfigurationFileMounts    map[string]corev1.VolumeMount `json:"configurationFileMounts,omitempty"`
 	SecretFileMounts           map[string]corev1.VolumeMount `json:"secretFileMounts,omitempty"`
+	StorageMounts              map[string]corev1.VolumeMount `json:"storageMounts,omitempty"`
 	Annotations                map[string]string             `json:"annotations,omitempty"`
 	DeadlineSeconds            *int32                        `json:"deadlineSeconds,omitempty"`
 	MaximumRetries             *int32                        `json:"maximumRetries,omitempty"`
@@ -86,6 +87,20 @@ func (b *NexusAlgorithmRuntimeEnvironmentApplyConfiguration) WithSecretFileMount
 	}
 	for k, v := range entries {
 		b.SecretFileMounts[k] = v
+	}
+	return b
+}
+
+// WithStorageMounts puts the entries into the StorageMounts field in the declarative configuration
+// and returns the receiver, so that objects can be build by chaining "With" function invocations.
+// If called multiple times, the entries provided by each call will be put on the StorageMounts field,
+// overwriting an existing map entries in StorageMounts field with the same key.
+func (b *NexusAlgorithmRuntimeEnvironmentApplyConfiguration) WithStorageMounts(entries map[string]corev1.VolumeMount) *NexusAlgorithmRuntimeEnvironmentApplyConfiguration {
+	if b.StorageMounts == nil && len(entries) > 0 {
+		b.StorageMounts = make(map[string]corev1.VolumeMount, len(entries))
+	}
+	for k, v := range entries {
+		b.StorageMounts[k] = v
 	}
 	return b
 }

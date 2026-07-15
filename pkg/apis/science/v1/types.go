@@ -125,6 +125,7 @@ type NexusAlgorithmRuntimeEnvironment struct {
 	MappedEnvironmentVariables []corev1.EnvFromSource        `json:"mappedEnvironmentVariables,omitempty"`
 	ConfigurationFileMounts    map[string]corev1.VolumeMount `json:"configurationFileMounts,omitempty"`
 	SecretFileMounts           map[string]corev1.VolumeMount `json:"secretFileMounts,omitempty"`
+	StorageMounts              map[string]corev1.VolumeMount `json:"storageMounts,omitempty"`
 	Annotations                map[string]string             `json:"annotations,omitempty"`
 
 	DeadlineSeconds *int32 `json:"deadlineSeconds,omitempty"`

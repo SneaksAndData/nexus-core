@@ -136,6 +136,13 @@ func (in *NexusAlgorithmRuntimeEnvironment) DeepCopyInto(out *NexusAlgorithmRunt
 			(*out)[key] = *val.DeepCopy()
 		}
 	}
+	if in.StorageMounts != nil {
+		in, out := &in.StorageMounts, &out.StorageMounts
+		*out = make(map[string]corev1.VolumeMount, len(*in))
+		for key, val := range *in {
+			(*out)[key] = *val.DeepCopy()
+		}
+	}
 	if in.Annotations != nil {
 		in, out := &in.Annotations, &out.Annotations
 		*out = make(map[string]string, len(*in))
