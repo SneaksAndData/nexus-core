@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-cqlsh localhost -e "CREATE KEYSPACE nexus WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': 1 };"
+cqlsh localhost -e "CREATE KEYSPACE nexus WITH replication = { 'class': 'SimpleStrategy', 'replication_factor': 1 } AND tablets = { 'enabled': false };"
 
 echo 'Applying checkpoints table'
 
