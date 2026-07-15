@@ -2,16 +2,17 @@ package request
 
 import (
 	"context"
+	"iter"
+	"time"
+
 	"github.com/DataDog/datadog-go/v5/statsd"
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/SneaksAndData/nexus-core/pkg/pipeline"
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
-	"iter"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
-	"time"
 )
 
 type MemoryPassthroughBuffer struct {
@@ -118,7 +119,6 @@ func (buffer *MemoryPassthroughBuffer) bufferRequest(input *BufferInput) (*Buffe
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
 	bufferedCheckpoint.LifecycleStage = models.LifecycleStageBuffered
 	bufferedCheckpoint.PayloadUri = "memory"
-	bufferedCheckpoint.PayloadValidFor = "24h"
 	entry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedParent)
 
 	buffer.Checkpoints = append(buffer.Checkpoints, input.Checkpoint)

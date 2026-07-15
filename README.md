@@ -16,7 +16,20 @@ Nexus SDKs for other languages like [Python](https://github.com/SneaksAndData/ne
 - Utility methods for Kubernetes interactions
 - Simple actor framework which uses Kubernetes `workqueue` + channels as an actor's mailbox implementations and primary communication mechanism.
 
+## Running tests
+
+To set up the development environment, follow these steps:
+- Install just (https://just.systems/man/en/introduction.html) - a handy command runner, which we use for development tasks.
+- Install Kind (https://kind.sigs.k8s.io/) - a tool for running local Kubernetes clusters, which we use for testing.
+- Ensure you have Docker installed and running, as it is required for both Just and Kind to function properly.
+
+To start a local backend stack (Scylla, MinIO) for testing, run:
+```shell
+just fresh
+```
 
 ## Development Notes
 
 Since Nexus Core provides backbone functionality to other Nexus applications, issues found in those will most likely require a patch in Core. If you wish to use Nexus and help develop the Core, please open an issue and tag project maintainers.
+
+Remember to run `./hack/update-codegen.sh` if you are making changes to `types.go`.

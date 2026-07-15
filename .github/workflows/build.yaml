@@ -14,13 +14,13 @@ jobs:
     name: Validate code
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
-          go-version: '1.24.*'
+          go-version: '1.26.*'
           
       - name: Check Format
         run: gofmt -d ./
@@ -38,34 +38,20 @@ jobs:
         run: go build -v ./...
         
       - name: Lint
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.1.0
+          version: v2.12.2
           
       - name: Verify generated code
         run: |
           set -e
           hack/verify-codegen.sh
 
-      - name: Create Kind Cluster
-        uses: helm/kind-action@v1
-        with:
-          cluster_name: 'nexus-shard-0'
+      - name: Setup just
+        uses: extractions/setup-just@v4
 
-      - name: Export kubeconfig
-        run: |
-          mkdir -p ./test-resources/kubecfg/shards
-          kind export kubeconfig --name nexus-shard-0 --kubeconfig ./test-resources/kubecfg/shards/kind-nexus-shard-0.kubeconfig
-
-          chmod 777 ./test-resources/kubecfg/shards/kind-nexus-shard-0.kubeconfig
-
-      - name: Launch Compose Stack
-        run: |
-          docker compose up --quiet-pull -d
-
-      - name: Get Compose Logs
-        if: always()
-        run: docker compose logs
+      - name: Setup integration tests
+        run: just up
 
       - name: Test
         env: 

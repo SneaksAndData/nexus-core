@@ -17,20 +17,25 @@
 package v1
 
 import (
+	"maps"
+	"slices"
+	"strconv"
+
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"maps"
-	"slices"
 )
 
 type NexusWorkgroupCapability = string
+type PayloadSerializationMode = string
 
 const (
-	ARM64      = NexusWorkgroupCapability("arm64")
-	AMD64      = NexusWorkgroupCapability("amd64")
-	GPU        = NexusWorkgroupCapability("gpu")
-	AUTOSCALED = NexusWorkgroupCapability("autoscaled")
+	ARM64                = NexusWorkgroupCapability("arm64")
+	AMD64                = NexusWorkgroupCapability("amd64")
+	GPU                  = NexusWorkgroupCapability("gpu")
+	AUTOSCALED           = NexusWorkgroupCapability("autoscaled")
+	SERIALIZE_TO_BACKEND = PayloadSerializationMode("backend")
+	SERIALIZE_TO_S3      = PayloadSerializationMode("s3")
 )
 
 // +genclient
@@ -78,9 +83,26 @@ type NexusAlgorithmWorkgroupSpec struct {
 
 // NexusAlgorithmResources defines maximum compute resources that should be provisioned for the algorithm
 type NexusAlgorithmResources struct {
-	CpuLimit        string            `json:"cpuLimit"`
-	MemoryLimit     string            `json:"memoryLimit"`
-	CustomResources map[string]string `json:"customResources,omitempty"`
+	// Deprecated: Use Limits instead
+	CpuLimit string `json:"cpuLimit"`
+	// Deprecated: Use Limits instead
+	MemoryLimit string `json:"memoryLimit"`
+
+	DefaultResourceQuota string               `json:"defaultResourceQuota"`
+	Requests             *corev1.ResourceList `json:"requests,omitempty"`
+	Limits               *corev1.ResourceList `json:"limits"`
+	CustomResources      map[string]string    `json:"customResources,omitempty"`
+}
+
+func (nar *NexusAlgorithmResources) GetDefaultQuota() float64 {
+	result, err := strconv.ParseFloat(nar.DefaultResourceQuota, 64)
+
+	// avoid failing and return safe value instead
+	if err != nil {
+		return 0.1
+	}
+
+	return result
 }
 
 // NexusAlgorithmContainer provides container specification for each run
@@ -89,6 +111,12 @@ type NexusAlgorithmContainer struct {
 	Registry           string `json:"registry"`
 	VersionTag         string `json:"versionTag"`
 	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+}
+
+// NexusAlgorithmPayloadConfiguration defines environment configuration for each run
+type NexusAlgorithmPayloadConfiguration struct {
+	PayloadValidFor          string                   `json:"payloadValidFor,omitempty"`
+	PayloadSerializationMode PayloadSerializationMode `json:"payloadSerialization,omitempty"`
 }
 
 // NexusAlgorithmRuntimeEnvironment defines environment configuration for each run
@@ -116,14 +144,15 @@ type NexusDatadogIntegrationSettings struct {
 
 // NexusAlgorithmSpec is the spec for a NexusAlgorithmTemplate resource
 type NexusAlgorithmSpec struct {
-	Container                  *NexusAlgorithmContainer          `json:"container"`
-	ComputeResources           *NexusAlgorithmResources          `json:"computeResources,omitempty"`
-	WorkgroupRef               *NexusAlgorithmWorkgroupRef       `json:"workgroupRef,omitempty"`
-	Command                    string                            `json:"command"`
-	Args                       []string                          `json:"args,omitempty"`
-	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironment `json:"runtimeEnvironment,omitempty"`
-	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviour      `json:"errorHandlingBehaviour,omitempty"`
-	DatadogIntegrationSettings *NexusDatadogIntegrationSettings  `json:"datadogIntegrationSettings,omitempty"`
+	Container                  *NexusAlgorithmContainer            `json:"container"`
+	ComputeResources           *NexusAlgorithmResources            `json:"computeResources,omitempty"`
+	WorkgroupRef               *NexusAlgorithmWorkgroupRef         `json:"workgroupRef,omitempty"`
+	Command                    string                              `json:"command"`
+	Args                       []string                            `json:"args,omitempty"`
+	PayloadConfiguration       *NexusAlgorithmPayloadConfiguration `json:"payloadConfiguration,omitempty"`
+	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironment   `json:"runtimeEnvironment,omitempty"`
+	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviour        `json:"errorHandlingBehaviour,omitempty"`
+	DatadogIntegrationSettings *NexusDatadogIntegrationSettings    `json:"datadogIntegrationSettings,omitempty"`
 }
 
 func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithmSpec {

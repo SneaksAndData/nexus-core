@@ -24,7 +24,7 @@ import (
 	sciencev1 "github.com/SneaksAndData/nexus-core/pkg/generated/applyconfiguration/science/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"
-	testing "k8s.io/client-go/testing"
+	managedfields "k8s.io/apimachinery/pkg/util/managedfields"
 )
 
 // ForKind returns an apply configuration type for the given GroupVersionKind, or nil if no
@@ -34,6 +34,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	// Group=science.sneaksanddata.com, Version=v1
 	case v1.SchemeGroupVersion.WithKind("NexusAlgorithmContainer"):
 		return &sciencev1.NexusAlgorithmContainerApplyConfiguration{}
+	case v1.SchemeGroupVersion.WithKind("NexusAlgorithmPayloadConfiguration"):
+		return &sciencev1.NexusAlgorithmPayloadConfigurationApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("NexusAlgorithmResources"):
 		return &sciencev1.NexusAlgorithmResourcesApplyConfiguration{}
 	case v1.SchemeGroupVersion.WithKind("NexusAlgorithmRuntimeEnvironment"):
@@ -61,6 +63,6 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 	return nil
 }
 
-func NewTypeConverter(scheme *runtime.Scheme) *testing.TypeConverter {
-	return &testing.TypeConverter{Scheme: scheme, TypeResolver: internal.Parser()}
+func NewTypeConverter(scheme *runtime.Scheme) managedfields.TypeConverter {
+	return managedfields.NewSchemeTypeConverter(scheme, internal.Parser())
 }

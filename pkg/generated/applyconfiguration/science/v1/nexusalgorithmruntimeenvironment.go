@@ -24,6 +24,8 @@ import (
 
 // NexusAlgorithmRuntimeEnvironmentApplyConfiguration represents a declarative configuration of the NexusAlgorithmRuntimeEnvironment type for use
 // with apply.
+//
+// NexusAlgorithmRuntimeEnvironment defines environment configuration for each run
 type NexusAlgorithmRuntimeEnvironmentApplyConfiguration struct {
 	EnvironmentVariables       []corev1.EnvVar               `json:"environmentVariables,omitempty"`
 	MappedEnvironmentVariables []corev1.EnvFromSource        `json:"mappedEnvironmentVariables,omitempty"`

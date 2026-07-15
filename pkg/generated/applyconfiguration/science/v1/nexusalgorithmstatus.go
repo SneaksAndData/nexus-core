@@ -24,6 +24,8 @@ import (
 
 // NexusAlgorithmStatusApplyConfiguration represents a declarative configuration of the NexusAlgorithmStatus type for use
 // with apply.
+//
+// NexusAlgorithmStatus is the status for a NexusAlgorithmTemplate resource
 type NexusAlgorithmStatusApplyConfiguration struct {
 	SyncedSecrets        []string                             `json:"syncedSecrets,omitempty"`
 	SyncedConfigurations []string                             `json:"syncedConfigurations,omitempty"`

@@ -1,12 +1,13 @@
 package shards
 
 import (
-	"k8s.io/klog/v2"
 	"testing"
+
+	"k8s.io/klog/v2"
 )
 
 func Test_LoadShards(t *testing.T) {
-	shards, err := LoadShards(t.Context(), "test", "../../test-resources/kubecfg/shards", "nexus", klog.FromContext(t.Context()))
+	shards, err := LoadShards(t.Context(), "test", "../../test-resources/kind", "nexus", klog.FromContext(t.Context()))
 
 	if err != nil {
 		t.Fatal(err)

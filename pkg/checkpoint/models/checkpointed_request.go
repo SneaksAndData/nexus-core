@@ -4,16 +4,20 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"hash/crc32"
+	"net/url"
+	"os"
+	"strings"
+	"time"
+
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
+	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
+	"github.com/SneaksAndData/nexus-core/pkg/urlsign"
 	"github.com/aws/smithy-go/ptr"
-	"github.com/scylladb/gocqlx/v3/table"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"os"
-	"strings"
-	"time"
 )
 
 type LifecycleStage string
@@ -32,7 +36,6 @@ const (
 	JobLabelFrameworkVersionKey = "science.sneaksanddata.com/nexus-version"
 	NexusComponentLabel         = "science.sneaksanddata.com/nexus-component"
 	JobLabelAlgorithmRun        = "algorithm-run"
-	EncodePrefix                = "b64__"
 )
 
 type CheckpointedRequest struct {
@@ -54,246 +57,37 @@ type CheckpointedRequest struct {
 	ApiVersion              string                 `json:"api_version"`
 	JobUid                  string                 `json:"job_uid,omitempty"`
 	Parent                  *AlgorithmRequestRef   `json:"parent,omitempty"`
-	PayloadValidFor         string                 `json:"payload_valid_for,omitempty"`
 }
 
-type CheckpointedRequestCqlModel struct {
-	Algorithm               string
-	Id                      string
-	LifecycleStage          string
-	PayloadUri              string
-	ResultUri               string
-	AlgorithmFailureCause   string
-	AlgorithmFailureDetails string
-	ReceivedByHost          string
-	ReceivedAt              time.Time
-	SentAt                  time.Time
-	AppliedConfiguration    string
-	ConfigurationOverrides  string
-	ContentHash             string
-	LastModified            time.Time
-	Tag                     string
-	ApiVersion              string
-	JobUid                  string
-	Parent                  string
-	PayloadValidFor         string
+func (c *CheckpointedRequest) PayloadValidityPeriod() time.Duration {
+	if c.AppliedConfiguration.PayloadConfiguration == nil || c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor == "" {
+		defaultDuration, _ := time.ParseDuration("24h")
+		return defaultDuration
+	}
+
+	result, _ := time.ParseDuration(c.AppliedConfiguration.PayloadConfiguration.PayloadValidFor)
+	return result
 }
 
-var checkpointColumns = []string{
-	"algorithm",
-	"id",
-	"lifecycle_stage",
-	"payload_uri",
-	"result_uri",
-	"algorithm_failure_cause",
-	"algorithm_failure_details",
-	"received_by_host",
-	"received_at",
-	"sent_at",
-	"applied_configuration",
-	"configuration_overrides",
-	"content_hash",
-	"last_modified",
-	"tag",
-	"api_version",
-	"job_uid",
-	"parent",
-	"payload_valid_for",
-}
+func (c *CheckpointedRequest) GenerateUrl(payloadProxyConfiguration *payload.RequestPayloadProxyConfiguration) (string, error) {
+	if payloadProxyConfiguration == nil {
+		return "", fmt.Errorf("no payload proxy configuration provided, unable to generate a proxy url for %s/%s", c.Algorithm, c.Id)
+	}
 
-const tableName = "nexus.checkpoints"
+	// Nexus URL signer ignores hostname, thus use localhost for simplicity
+	baseUrl := url.URL{
+		Scheme: "https",
+		Host:   "localhost",
+		Path:   fmt.Sprintf(payloadProxyConfiguration.ServePathTemplate, c.Algorithm, c.Id),
+	}
 
-var CheckpointedRequestTable = table.New(table.Metadata{
-	Name:    tableName,
-	Columns: checkpointColumns,
-	PartKey: []string{
-		"algorithm",
-		"id",
-	},
-	SortKey: []string{},
-})
-
-var CheckpointedRequestTableIndexByHost = table.New(table.Metadata{
-	Name:    tableName,
-	Columns: checkpointColumns,
-	PartKey: []string{
-		"received_by_host",
-		"lifecycle_stage",
-	},
-	SortKey: []string{},
-})
-
-var CheckpointedRequestTableIndexByTag = table.New(table.Metadata{
-	Name:    tableName,
-	Columns: checkpointColumns,
-	PartKey: []string{
-		"tag",
-	},
-	SortKey: []string{},
-})
-
-func (c *CheckpointedRequest) ToCqlModel() (*CheckpointedRequestCqlModel, error) {
-	parent := []byte("{}")
-	serializedOverrides := []byte("{}")
-	serializedConfig, err := json.Marshal(c.AppliedConfiguration)
+	signed, err := urlsign.Sign(baseUrl, payloadProxyConfiguration.TenantId, c.PayloadValidityPeriod(), c.ContentHash, payloadProxyConfiguration.SignSecret)
 
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	if c.ConfigurationOverrides != nil {
-		serializedOverrides, _ = json.Marshal(c.ConfigurationOverrides)
-	}
-
-	if c.Parent != nil {
-		parent, err = json.Marshal(c.Parent)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return &CheckpointedRequestCqlModel{
-		Algorithm:               c.Algorithm,
-		Id:                      c.Id,
-		LifecycleStage:          c.LifecycleStage,
-		PayloadUri:              c.PayloadUri,
-		ResultUri:               c.ResultUri,
-		AlgorithmFailureCause:   c.AlgorithmFailureCause,
-		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
-		ReceivedByHost:          c.ReceivedByHost,
-		ReceivedAt:              c.ReceivedAt,
-		SentAt:                  c.SentAt,
-		AppliedConfiguration:    fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(serializedConfig)),
-		ConfigurationOverrides:  fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(serializedOverrides)),
-		ContentHash:             c.ContentHash,
-		LastModified:            c.LastModified,
-		Tag:                     c.Tag,
-		ApiVersion:              c.ApiVersion,
-		JobUid:                  c.JobUid,
-		Parent:                  fmt.Sprintf("%s%s", EncodePrefix, base64.StdEncoding.EncodeToString(parent)),
-		PayloadValidFor:         c.PayloadValidFor,
-	}, nil
-}
-
-func (c *CheckpointedRequest) PayloadValidityPeriod() *time.Duration {
-	if c.PayloadValidFor == "" {
-		return nil
-	}
-
-	result, _ := time.ParseDuration(c.PayloadValidFor)
-	return &result
-}
-
-func (c *CheckpointedRequestCqlModel) readSerializedSpec(serializedSpec string) (*v1.NexusAlgorithmSpec, error) {
-	spec := &v1.NexusAlgorithmSpec{}
-	var serializedValue []byte
-	var err error
-
-	if serializedSpec == "{}" || serializedSpec == "" {
-		return nil, nil
-	}
-
-	// backwards-compatible code: only use b64 decode if it was used to write the value
-	if strings.HasPrefix(serializedSpec, EncodePrefix) {
-		serializedValue, err = base64.StdEncoding.DecodeString(strings.TrimPrefix(serializedSpec, EncodePrefix))
-		if err != nil {
-			return nil, err
-		}
-
-		if string(serializedValue) == "{}" || string(serializedValue) == "" {
-			return nil, nil
-		}
-	} else {
-		serializedValue = []byte(serializedSpec)
-	}
-
-	err = json.Unmarshal(serializedValue, spec)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return spec, nil
-}
-
-func (c *CheckpointedRequestCqlModel) getParent() (*AlgorithmRequestRef, error) {
-	parent := &AlgorithmRequestRef{}
-	var serializedValue []byte
-	var err error
-
-	if c.Parent == "" || c.Parent == "{}" {
-		return nil, nil
-	}
-
-	// backwards-compatible code: only use b64 decode if it was used to write the value
-	if strings.HasPrefix(c.Parent, EncodePrefix) {
-		serializedValue, err = base64.StdEncoding.DecodeString(strings.TrimPrefix(c.Parent, EncodePrefix))
-		if err != nil {
-			return nil, err
-		}
-
-		if string(serializedValue) == "{}" || string(serializedValue) == "" {
-			return nil, nil
-		}
-	} else {
-		serializedValue = []byte(c.Parent)
-	}
-	err = json.Unmarshal(serializedValue, parent)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return parent, nil
-}
-
-func (c *CheckpointedRequestCqlModel) FromCqlModel() (*CheckpointedRequest, error) {
-	var appliedConfig *v1.NexusAlgorithmSpec
-	var overrides *v1.NexusAlgorithmSpec
-	var parent *AlgorithmRequestRef
-
-	var unmarshalErr error
-
-	// ignore override unmarshal if set to empty object
-	overrides, unmarshalErr = c.readSerializedSpec(c.ConfigurationOverrides)
-
-	if unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	appliedConfig, unmarshalErr = c.readSerializedSpec(c.AppliedConfiguration)
-
-	if unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	parent, unmarshalErr = c.getParent()
-
-	if unmarshalErr != nil {
-		return nil, unmarshalErr
-	}
-
-	return &CheckpointedRequest{
-		Algorithm:               c.Algorithm,
-		Id:                      c.Id,
-		LifecycleStage:          c.LifecycleStage,
-		PayloadUri:              c.PayloadUri,
-		ResultUri:               c.ResultUri,
-		AlgorithmFailureCause:   c.AlgorithmFailureCause,
-		AlgorithmFailureDetails: c.AlgorithmFailureDetails,
-		ReceivedByHost:          c.ReceivedByHost,
-		ReceivedAt:              c.ReceivedAt,
-		SentAt:                  c.SentAt,
-		AppliedConfiguration:    appliedConfig,
-		ConfigurationOverrides:  overrides,
-		ContentHash:             c.ContentHash,
-		LastModified:            c.LastModified,
-		Tag:                     c.Tag,
-		ApiVersion:              c.ApiVersion,
-		JobUid:                  c.JobUid,
-		Parent:                  parent,
-		PayloadValidFor:         c.PayloadValidFor,
-	}, nil
+	return signed.Url.String(), nil
 }
 
 func FromAlgorithmRequest(requestId string, algorithmName string, request *AlgorithmRequest, config *v1.NexusAlgorithmSpec) (*CheckpointedRequest, []byte, error) {
@@ -304,14 +98,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		return nil, nil, err
 	}
 
-	// check time.Duration
-	if request.PayloadValidFor != "" {
-		_, err = time.ParseDuration(request.PayloadValidFor)
-
-		if err != nil {
-			return nil, nil, err
-		}
-	}
+	crc := crc32.ChecksumIEEE(serializedPayload)
 
 	return &CheckpointedRequest{
 		Algorithm:              algorithmName,
@@ -326,7 +113,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		Parent:                 request.ParentRequest,
 		ApiVersion:             request.RequestApiVersion,
 		AppliedConfiguration:   config.Merge(request.CustomConfiguration),
-		PayloadValidFor:        request.PayloadValidFor,
+		ContentHash:            base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%08x", crc))),
 	}, serializedPayload, nil
 }
 
@@ -350,7 +137,6 @@ func (c *CheckpointedRequest) DeepCopy() *CheckpointedRequest {
 		ApiVersion:              c.ApiVersion,
 		JobUid:                  c.JobUid,
 		Parent:                  c.Parent.DeepCopy(),
-		PayloadValidFor:         c.PayloadValidFor,
 	}
 }
 
@@ -372,6 +158,9 @@ func defaultFailurePolicy() *batchv1.PodFailurePolicy {
 }
 
 func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference) batchv1.Job {
+	var jobResourceLimits corev1.ResourceList
+	var jobResourceRequests corev1.ResourceList
+
 	owners := []metav1.OwnerReference{}
 	parentInfo := []corev1.EnvVar{}
 	if parent != nil {
@@ -390,14 +179,25 @@ func (c *CheckpointedRequest) ToV1Job(appVersion string, workgroup *v1.NexusAlgo
 		}
 	}
 
-	jobResourceLimits := corev1.ResourceList{
-		corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
-		corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
+	// allow clients to migrate
+	if c.AppliedConfiguration.ComputeResources.Limits != nil {
+		jobResourceLimits = *c.AppliedConfiguration.ComputeResources.Limits
+	} else {
+		jobResourceLimits = corev1.ResourceList{
+			corev1.ResourceCPU:    resource.MustParse(c.AppliedConfiguration.ComputeResources.CpuLimit),
+			corev1.ResourceMemory: resource.MustParse(c.AppliedConfiguration.ComputeResources.MemoryLimit),
+		}
 	}
 
-	jobResourceRequests := jobResourceLimits.DeepCopy()
-	cpuLimit := jobResourceRequests[corev1.ResourceCPU]
-	jobResourceRequests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%.0fm", float64(cpuLimit.MilliValue())*0.1))
+	// allow clients to migrate
+	if c.AppliedConfiguration.ComputeResources.Requests != nil {
+		jobResourceRequests = *c.AppliedConfiguration.ComputeResources.Requests
+	} else {
+		jobResourceRequests = jobResourceLimits.DeepCopy()
+
+		cpuLimit := jobResourceRequests[corev1.ResourceCPU]
+		jobResourceRequests[corev1.ResourceCPU] = resource.MustParse(fmt.Sprintf("%.0fm", float64(cpuLimit.MilliValue())*c.AppliedConfiguration.ComputeResources.GetDefaultQuota()))
+	}
 
 	for customResourceKey, customResourceValue := range c.AppliedConfiguration.ComputeResources.CustomResources {
 		jobResourceLimits[corev1.ResourceName(customResourceKey)] = resource.MustParse(customResourceValue)
