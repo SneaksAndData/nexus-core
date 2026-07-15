@@ -3,6 +3,8 @@ package pipeline
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/SneaksAndData/nexus-core/pkg/telemetry"
 	"golang.org/x/time/rate"
@@ -10,10 +12,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog/v2"
-	"time"
 )
 
 type ActorElementProcessor[TIn comparable, TOut comparable] func(element TIn) (TOut, error)
+
+// ActorProcessingErrorHandler always succeed
+type ActorProcessingErrorHandler[TIn comparable] func(element TIn)
 type ActorPostStart func(ctx context.Context) error
 
 func NewActorPostStart(postStart func(ctx context.Context) error) *ActorPostStart {
@@ -26,12 +30,13 @@ type StageActor[TIn comparable, TOut comparable] interface {
 }
 
 type DefaultPipelineStageActor[TIn comparable, TOut comparable] struct {
-	stageName string
-	stageTags map[string]string
-	queue     workqueue.TypedRateLimitingInterface[TIn]
-	workers   int
-	processor ActorElementProcessor[TIn, TOut]
-	receiver  StageActor[TOut, any]
+	stageName    string
+	stageTags    map[string]string
+	queue        workqueue.TypedRateLimitingInterface[TIn]
+	workers      int
+	processor    ActorElementProcessor[TIn, TOut]
+	errorHandler ActorProcessingErrorHandler[TIn]
+	receiver     StageActor[TOut, any]
 }
 
 func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](actorName string,
@@ -42,6 +47,7 @@ func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](actorName str
 	rateLimitElementsBurst int,
 	queueWorkers int,
 	processor ActorElementProcessor[TIn, TOut],
+	errorHandler ActorProcessingErrorHandler[TIn],
 	receiver StageActor[TOut, any]) *DefaultPipelineStageActor[TIn, TOut] {
 	rateLimiter := workqueue.NewTypedMaxOfRateLimiter(
 		workqueue.NewTypedItemExponentialFailureRateLimiter[TIn](failureRateBaseDelay, failureRateMaxDelay),
@@ -49,12 +55,13 @@ func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](actorName str
 	)
 
 	return &DefaultPipelineStageActor[TIn, TOut]{
-		stageName: actorName,
-		stageTags: actorTags,
-		queue:     workqueue.NewTypedRateLimitingQueue(rateLimiter),
-		workers:   queueWorkers,
-		processor: processor,
-		receiver:  receiver,
+		stageName:    actorName,
+		stageTags:    actorTags,
+		queue:        workqueue.NewTypedRateLimitingQueue(rateLimiter),
+		workers:      queueWorkers,
+		processor:    processor,
+		errorHandler: errorHandler,
+		receiver:     receiver,
 	}
 }
 
@@ -91,7 +98,10 @@ func (a *DefaultPipelineStageActor[TIn, TOut]) processNextElement(ctx context.Co
 	logger.V(0).Error(err, "error when processing", "stage", a.stageName)
 	logger.V(4).Error(err, "received an element that cannot be processed", "element", element, "stage", a.stageName)
 
-	// forget this submission to prevent clogging the queue
+	// call error handler assigned to this pipeline
+	a.errorHandler(element)
+
+	// forget the element once the error has been handled
 	a.queue.Forget(element)
 	return true
 }

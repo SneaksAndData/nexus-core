@@ -127,6 +127,7 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 		buffer.config.BufferConfig.RateLimitElementsBurst,
 		buffer.config.BufferConfig.Workers,
 		buffer.bufferRequest,
+		buffer.handleFailure,
 		submitter,
 	)
 
@@ -165,6 +166,19 @@ func (buffer *DefaultBuffer) Update(checkpoint *models.CheckpointedRequest) erro
 
 func (buffer *DefaultBuffer) GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
 	return buffer.checkpointStore.ReadMetadata(checkpoint)
+}
+
+func (buffer *DefaultBuffer) handleFailure(input *BufferInput) {
+	buffer.logger.V(0).Info("received a faulty input, will mark submission as failed", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
+
+	failedCheckpoint := input.Checkpoint.DeepCopy()
+	failedCheckpoint.LifecycleStage = models.LifecycleStageSchedulingFailed
+
+	err := buffer.checkpointStore.UpsertCheckpoint(failedCheckpoint)
+
+	if err != nil {
+		buffer.logger.Error(err, "error when updating submission to failed", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
+	}
 }
 
 func (buffer *DefaultBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
