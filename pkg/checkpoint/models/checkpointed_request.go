@@ -81,7 +81,7 @@ func (c *CheckpointedRequest) GenerateUrl(payloadProxyConfiguration *payload.Req
 		Path:   fmt.Sprintf(payloadProxyConfiguration.ServePathTemplate, c.Algorithm, c.Id),
 	}
 
-	signed, err := urlsign.Sign(baseUrl, payloadProxyConfiguration.TenantId, c.PayloadValidityPeriod(), c.ContentHash, payloadProxyConfiguration.SignSecret)
+	signed, err := urlsign.Sign(baseUrl, payloadProxyConfiguration.TenantId, c.PayloadValidityPeriod(), c.ContentHash, []byte(payloadProxyConfiguration.SignSecret))
 
 	if err != nil {
 		return "", err
