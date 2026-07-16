@@ -122,6 +122,9 @@ func (ics *IndexedCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRe
 
 	var query = ics.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Get()).BindStruct(*result)
 	if err := query.GetRelease(result); err != nil { // coverage-ignore
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, nil
+		}
 		ics.cassandraStore.logger.V(1).Error(err, "error when reading a buffered checkpoint metadata", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 		return nil, err
 	}

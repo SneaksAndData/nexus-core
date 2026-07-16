@@ -155,6 +155,9 @@ func (bcs *BareCassandraStore) ReadMetadata(checkpoint *models.CheckpointedReque
 
 	var query = bcs.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Get()).BindStruct(*result)
 	if err := query.GetRelease(result); err != nil { // coverage-ignore
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, nil
+		}
 		bcs.cassandraStore.logger.V(1).Error(err, "error when reading a buffered checkpoint metadata", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 		return nil, err
 	}
