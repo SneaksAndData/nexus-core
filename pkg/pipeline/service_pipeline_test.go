@@ -3,10 +3,11 @@ package pipeline
 import (
 	"context"
 	"fmt"
-	"k8s.io/klog/v2"
-	"k8s.io/klog/v2/ktesting"
 	"testing"
 	"time"
+
+	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/ktesting"
 )
 
 var (
@@ -32,6 +33,7 @@ func Test_DefaultPipelineStageActor(t *testing.T) {
 		func(element int) (string, error) {
 			return countElement(element)
 		},
+		func(element int) { fmt.Printf("failed to count element %d", element) },
 		nil,
 	)
 	sender := NewDefaultPipelineStageActor(
@@ -44,6 +46,9 @@ func Test_DefaultPipelineStageActor(t *testing.T) {
 		2,
 		func(element *testElement) (int, error) {
 			return sendElement(ctx, element)
+		},
+		func(element *testElement) {
+			fmt.Printf("failed to send element: %+v", element)
 		},
 		receiver)
 
