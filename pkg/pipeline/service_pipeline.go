@@ -37,6 +37,7 @@ type DefaultPipelineStageActor[TIn comparable, TOut comparable] struct {
 	processor    ActorElementProcessor[TIn, TOut]
 	errorHandler ActorProcessingErrorHandler[TIn]
 	receiver     StageActor[TOut, any]
+	isRunning    bool
 }
 
 func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](actorName string,
@@ -62,6 +63,7 @@ func NewDefaultPipelineStageActor[TIn comparable, TOut comparable](actorName str
 		processor:    processor,
 		errorHandler: errorHandler,
 		receiver:     receiver,
+		isRunning:    false,
 	}
 }
 
@@ -113,7 +115,10 @@ func (a *DefaultPipelineStageActor[TIn, TOut]) runActor(ctx context.Context) {
 
 func (a *DefaultPipelineStageActor[TIn, TOut]) Start(ctx context.Context, postStart *ActorPostStart) {
 	defer utilruntime.HandleCrash()
-	defer a.queue.ShutDown()
+	defer func() {
+		a.isRunning = false
+		a.queue.ShutDown()
+	}()
 
 	logger := klog.FromContext(ctx)
 
@@ -131,9 +136,15 @@ func (a *DefaultPipelineStageActor[TIn, TOut]) Start(ctx context.Context, postSt
 		}
 	}
 
+	a.isRunning = true
+
 	<-ctx.Done()
 
 	logger.V(0).Info("shutting down workers for stage", "stage", a.stageName)
+}
+
+func (a *DefaultPipelineStageActor[TIn, TOut]) IsRunning() bool {
+	return a.isRunning
 }
 
 func (a *DefaultPipelineStageActor[TIn, TOut]) Receive(element TIn) {
