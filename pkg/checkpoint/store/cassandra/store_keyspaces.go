@@ -28,7 +28,7 @@ type KeyspacesConfig struct {
 	 * sf-class2-root.crt \
 	 * > keyspaces-bundle.pem
 	 */
-	CaPath string `mapstructure:"ca_path"`
+	CaPath string `mapstructure:"ca-path"`
 	Region string `mapstructure:"region"`
 }
 

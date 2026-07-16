@@ -1,7 +1,7 @@
 package payload
 
 type RequestPayloadProxyConfiguration struct {
-	TenantId          string `json:"tenantId"`
-	ServePathTemplate string `json:"servePathTemplate"`
-	SignSecret        []byte `json:"signSecret"`
+	TenantId          string `mapstructure:"tenant-id"`
+	ServePathTemplate string `mapstructure:"serve-path-template"`
+	SignSecret        string `mapstructure:"sign-secret"`
 }

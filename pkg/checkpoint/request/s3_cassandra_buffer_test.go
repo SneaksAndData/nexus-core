@@ -60,7 +60,7 @@ func newFixture(t *testing.T, config *cassandra.ScyllaConfig) *fixture {
 		RequestPayloadProxyConfiguration: &payload.RequestPayloadProxyConfiguration{
 			TenantId:          "test-tenant",
 			ServePathTemplate: "/data/v1/payloads/%s/%s",
-			SignSecret:        []byte("test-secret"),
+			SignSecret:        "test-secret",
 		},
 	}, config, map[string]string{})
 
