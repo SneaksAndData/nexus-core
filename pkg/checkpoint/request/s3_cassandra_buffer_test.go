@@ -7,6 +7,8 @@
 package request
 
 import (
+	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -17,6 +19,7 @@ import (
 	"github.com/aws/smithy-go/ptr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2/ktesting"
 )
 
@@ -62,6 +65,61 @@ func newFixture(t *testing.T, config *cassandra.ScyllaConfig) *fixture {
 	}, config, map[string]string{})
 
 	return f
+}
+
+func waitForBuffer(t *testing.T, f *fixture) {
+	err := wait.PollUntilContextTimeout(t.Context(), 1*time.Second, 5*time.Second, true, func(ctx context.Context) (done bool, err error) {
+		if f.buffer.actor != nil {
+			return f.buffer.actor.IsRunning(), nil
+		}
+
+		return false, nil
+	})
+	if err != nil {
+		t.Fatalf("error while waiting for buffer to startup %s", err)
+	}
+}
+
+func waitForBuffered(t *testing.T, f *fixture, expectedRequestId string, expectedTemplateName string, timeout time.Duration) {
+	err := wait.PollUntilContextTimeout(t.Context(), 1*time.Second, timeout, true, func(ctx context.Context) (done bool, err error) {
+		checkpoint, err := f.buffer.Get(expectedRequestId, expectedTemplateName)
+
+		if err != nil {
+			return true, fmt.Errorf("error when reading an expected checkpoint entry: %v", err)
+		}
+
+		if checkpoint == nil {
+			return false, nil
+		}
+
+		if checkpoint.LifecycleStage == models.LifecycleStageBuffered {
+			return true, nil
+		}
+
+		return false, nil
+	})
+
+	if err != nil {
+		t.Fatalf("error when waiting for buffer operation result %s", err)
+	}
+
+	checkpoint, err := f.buffer.Get(expectedRequestId, expectedTemplateName)
+
+	if err != nil {
+		t.Fatalf("error when verifying buffer operation result %s", err)
+	}
+
+	if checkpoint.LifecycleStage != models.LifecycleStageBuffered {
+		t.Fatalf("lifecycle stage should be Buffered, but is %s", checkpoint.LifecycleStage)
+	}
+
+	if checkpoint.Parent == nil {
+		t.Fatalf("parent should not be nil")
+	}
+
+	if checkpoint.Parent.RequestId != "test-parent" {
+		t.Fatalf("parent request id should be test-parent-uid, but is %s", checkpoint.Parent.RequestId)
+	}
 }
 
 func TestDefaultBuffer_Get(t *testing.T) {
@@ -313,7 +371,7 @@ func TestDefaultBuffer_Add(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			go tc.fixture.buffer.Start(nil)
 
-			time.Sleep(1 * time.Second)
+			waitForBuffer(t, tc.fixture)
 
 			err := tc.fixture.buffer.Add("new-id", "test-algorithm-v2", &models.AlgorithmRequest{
 				AlgorithmParameters: map[string]interface{}{
@@ -389,29 +447,7 @@ func TestDefaultBuffer_Add(t *testing.T) {
 				t.Fatalf("error when buffering checkpoint: %v", err)
 			}
 
-			time.Sleep(time.Second * 5)
-
-			checkpoint, err := tc.fixture.buffer.Get("new-id", "test-algorithm-v2")
-
-			if err != nil {
-				t.Fatalf("error when reading an expected checkpoint entry: %v", err)
-			}
-
-			if checkpoint == nil {
-				t.Fatalf("expected checkpoint not found in the buffer after calling Add")
-			}
-
-			if checkpoint.LifecycleStage != models.LifecycleStageBuffered {
-				t.Fatalf("lifecycle stage should be Buffered, but is %s", checkpoint.LifecycleStage)
-			}
-
-			if checkpoint.Parent == nil {
-				t.Fatalf("parent should not be nil")
-			}
-
-			if checkpoint.Parent.RequestId != "test-parent" {
-				t.Fatalf("parent request id should be test-parent-uid, but is %s", checkpoint.Parent.RequestId)
-			}
+			waitForBuffered(t, tc.fixture, "new-id", "test-algorithm-v2", 5*time.Second)
 		})
 	}
 }

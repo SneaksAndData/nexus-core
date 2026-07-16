@@ -80,8 +80,6 @@ func Test_DefaultPipelineStageActor(t *testing.T) {
 		counted += index
 	}
 
-	ctx.Done()
-
 	if expected != counted {
 		t.Errorf("Incorrect behaviour observed for the pipeline: expected %d for a cumulative sum, observed %d as a result", expected, counted)
 	}
