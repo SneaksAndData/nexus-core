@@ -2,11 +2,13 @@ package cassandra
 
 import (
 	"context"
+	"errors"
 	"iter"
 	"time"
 
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
+	"github.com/gocql/gocql"
 )
 
 type IndexedCassandraStore struct {
@@ -49,6 +51,9 @@ func (ics *IndexedCassandraStore) ReadCheckpoint(algorithm string, id string) (*
 
 	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTable.Get()).BindStruct(*result)
 	if err := query.GetRelease(result); err != nil { // coverage-ignore
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, nil
+		}
 		ics.cassandraStore.logger.V(1).Error(err, "error when reading a checkpoint", "algorithm", algorithm, "id", id)
 		return nil, err
 	}
@@ -117,6 +122,9 @@ func (ics *IndexedCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRe
 
 	var query = ics.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Get()).BindStruct(*result)
 	if err := query.GetRelease(result); err != nil { // coverage-ignore
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, nil
+		}
 		ics.cassandraStore.logger.V(1).Error(err, "error when reading a buffered checkpoint metadata", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 		return nil, err
 	}

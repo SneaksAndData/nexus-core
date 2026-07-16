@@ -125,6 +125,68 @@ func TestDefaultBuffer_GetBuffered(t *testing.T) {
 	}
 }
 
+func TestDefaultBuffer_GetBuffered_DoesNotExist(t *testing.T) {
+	cases := []struct {
+		name    string
+		fixture *fixture
+	}{
+		{"get buffered, not existing with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"get buffered, not existing with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			checkpoint, err := tc.fixture.buffer.Get("something", "not-existing")
+
+			if err != nil {
+				t.Fatalf("error when reading a non-existent checkpoint: %v", err)
+			}
+
+			if checkpoint != nil {
+				t.Fatalf("checkpoint should be nil, but got %s", checkpoint.Id)
+			}
+		})
+	}
+}
+
+func TestDefaultBuffer_GetBufferedByHost_DoesNotExist(t *testing.T) {
+	cases := []struct {
+		name    string
+		fixture *fixture
+	}{
+		{"get from buffer by host (buffered, not existing) with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"get from buffer by host (buffered, not existing) with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			checkpoints, err := tc.fixture.buffer.GetBuffered("non-existent-host")
+
+			if err != nil {
+				t.Fatalf("error when reading a non-existent checkpoint: %v", err)
+			}
+
+			if checkpoints == nil {
+				t.Fatal("checkpoints should not be nil")
+			}
+
+			result := []*models.CheckpointedRequest{}
+
+			for checkpoint, err := range checkpoints {
+				if err != nil {
+					t.Fatalf("error when deserializing a buffered checkpoint: %v", err)
+				}
+
+				result = append(result, checkpoint)
+			}
+
+			if len(result) > 0 {
+				t.Fatalf("checkpoints should be empty, but got %d", len(result))
+			}
+		})
+	}
+}
+
 func TestDefaultBuffer_GetNew(t *testing.T) {
 	cases := []struct {
 		name    string
