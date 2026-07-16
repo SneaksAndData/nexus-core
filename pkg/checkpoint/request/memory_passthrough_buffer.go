@@ -29,10 +29,9 @@ type MemoryPassthroughBuffer struct {
 // NewMemoryPassthroughBuffer creates a default buffer that does not persist payloads. This buffer persists ALL information in app memory and is ONLY intended to use in tests. DO NOT USE THIS IN PRODUCTION.
 // Some methods in this buffer will behave different from Cassandra buffers, for example Update replaces the checkpoint instead of updating its properties.
 func NewMemoryPassthroughBuffer(ctx context.Context, metricTags map[string]string) *MemoryPassthroughBuffer {
-	logger := klog.FromContext(ctx)
 	return &MemoryPassthroughBuffer{
 		Checkpoints: []*models.CheckpointedRequest{},
-		logger:      &logger,
+		logger:      new(klog.FromContext(ctx)),
 		metrics:     telemetry.GetClient(ctx),
 		ctx:         ctx,
 		actor:       nil,
@@ -133,6 +132,15 @@ func (buffer *MemoryPassthroughBuffer) bufferRequest(input *BufferInput) (*Buffe
 	}, nil
 }
 
+func (buffer *MemoryPassthroughBuffer) handleFailure(input *BufferInput) {
+	for _, checkpoint := range buffer.Checkpoints {
+		if checkpoint.Id == input.Checkpoint.Id {
+			checkpoint.LifecycleStage = models.LifecycleStageSchedulingFailed
+			return
+		}
+	}
+}
+
 func (buffer *MemoryPassthroughBuffer) Start(submitter pipeline.StageActor[*BufferOutput, types.UID]) {
 	buffer.actor = pipeline.NewDefaultPipelineStageActor[*BufferInput, *BufferOutput](
 		buffer.name,
@@ -143,6 +151,7 @@ func (buffer *MemoryPassthroughBuffer) Start(submitter pipeline.StageActor[*Buff
 		10,
 		2,
 		buffer.bufferRequest,
+		buffer.handleFailure,
 		submitter,
 	)
 
