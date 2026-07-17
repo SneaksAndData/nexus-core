@@ -168,3 +168,7 @@ func (bcs *BareCassandraStore) ReadMetadata(checkpoint *models.CheckpointedReque
 func (bcs *BareCassandraStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {
 	return bcs.cassandraStore.SavePayload(ctx, payload, requestId, templateName)
 }
+
+func (bcs *BareCassandraStore) Retrieve(ctx context.Context, requestId string, templateName string) ([]byte, error) {
+	return bcs.cassandraStore.RetrievePayload(ctx, requestId, templateName)
+}

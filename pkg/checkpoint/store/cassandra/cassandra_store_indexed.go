@@ -135,3 +135,7 @@ func (ics *IndexedCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRe
 func (ics *IndexedCassandraStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {
 	return ics.cassandraStore.SavePayload(ctx, payload, requestId, templateName)
 }
+
+func (ics *IndexedCassandraStore) Retrieve(ctx context.Context, requestId string, templateName string) ([]byte, error) {
+	return ics.cassandraStore.RetrievePayload(ctx, requestId, templateName)
+}

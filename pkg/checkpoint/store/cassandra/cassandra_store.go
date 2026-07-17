@@ -3,6 +3,7 @@ package cassandra
 import (
 	"context"
 	"encoding/base64"
+	"errors"
 
 	"github.com/SneaksAndData/nexus-core/pkg/util"
 	"github.com/gocql/gocql"
@@ -55,4 +56,32 @@ func (s *CheckpointCassandraStore) SavePayload(ctx context.Context, payload stri
 	}
 
 	return nil
+}
+
+func (s *CheckpointCassandraStore) RetrievePayload(ctx context.Context, requestId string, templateName string) ([]byte, error) {
+	result := &struct {
+		Algorithm      string `db:"algorithm"`
+		Id             string `db:"id"`
+		PayloadContent string `db:"payload_content"`
+	}{
+		Algorithm: templateName,
+		Id:        requestId,
+	}
+
+	var readQuery = PayloadBufferTable.SelectQueryContext(ctx, s.cqlSession).BindStruct(result)
+	if err := readQuery.GetRelease(result); err != nil { // coverage-ignore
+		if errors.Is(err, gocql.ErrNotFound) {
+			return nil, nil
+		}
+		s.logger.V(1).Error(err, "error when reading a persisted payload", "algorithm", templateName, "id", requestId)
+		return nil, err
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(result.PayloadContent)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return util.Decompress(decoded)
 }
