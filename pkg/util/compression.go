@@ -24,11 +24,11 @@ func CompressString(input string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// DecompressString takes gzipped bytes and returns the original string
-func DecompressString(compressed []byte) (string, error) {
+// Decompress takes gzipped bytes and returns the original string
+func Decompress(compressed []byte) ([]byte, error) {
 	reader, err := gzip.NewReader(bytes.NewReader(compressed))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	// Ensure the reader is closed to free up resources
 	defer func(reader *gzip.Reader) {
@@ -38,8 +38,8 @@ func DecompressString(compressed []byte) (string, error) {
 	// Read all decompressed data
 	decompressedBytes, err := io.ReadAll(reader)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return string(decompressedBytes), nil
+	return decompressedBytes, nil
 }

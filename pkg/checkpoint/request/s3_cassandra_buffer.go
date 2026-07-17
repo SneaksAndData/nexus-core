@@ -168,6 +168,17 @@ func (buffer *DefaultBuffer) GetBufferedEntry(checkpoint *models.CheckpointedReq
 	return buffer.checkpointStore.ReadMetadata(checkpoint)
 }
 
+func (buffer *DefaultBuffer) GetPersisted(requestId string, algorithmName string) ([]byte, error) {
+	checkpoint, err := buffer.Get(requestId, algorithmName)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer.payloadStores[checkpoint.AppliedConfiguration.PayloadConfiguration.PayloadSerializationMode].Retrieve(context.TODO(), requestId, algorithmName)
+
+}
+
 func (buffer *DefaultBuffer) handleFailure(input *BufferInput) {
 	buffer.logger.V(0).Info("received a faulty input, will mark submission as failed", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
 

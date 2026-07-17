@@ -3,6 +3,7 @@ package payload
 import (
 	"context"
 	"fmt"
+	"io"
 	"regexp"
 	"strings"
 
@@ -91,4 +92,29 @@ func (store *S3RequestPayloadStore) Persist(ctx context.Context, payload string,
 	store.logger.V(4).Info("successfully persisted algorithm payload", "payloadPath", payloadPath, "etag", *result.ETag)
 
 	return nil
+}
+
+func (store *S3RequestPayloadStore) Retrieve(ctx context.Context, requestId string, templateName string) ([]byte, error) {
+	payloadPath := store.getStoragePath(requestId, templateName)
+	s3Path := parsePath(payloadPath)
+
+	payloadContent, err := store.client.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: s3Path.Bucket,
+		Key:    s3Path.Key,
+	})
+
+	if err != nil {
+		store.logger.V(0).Error(err, "error when retrieving payload from S3", "requestId", requestId, "templateName", templateName)
+		return nil, err
+	}
+
+	if payloadContent != nil {
+		defer func(Body io.ReadCloser) {
+			_ = Body.Close()
+		}(payloadContent.Body)
+
+		return io.ReadAll(payloadContent.Body)
+	}
+
+	return nil, nil
 }

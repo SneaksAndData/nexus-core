@@ -17,8 +17,8 @@ type SignedUrl struct {
 	Signature string
 }
 
-func NewSignedFromUrl(signed url.URL) (*SignedUrl, error) { // coverage-ignore
-	parsed, err := url.Parse(signed.String())
+func NewSignedFromUrl(urlString string) (*SignedUrl, error) { // coverage-ignore
+	parsed, err := url.Parse(urlString)
 
 	if err != nil { // coverage-ignore
 		return nil, err
@@ -27,7 +27,7 @@ func NewSignedFromUrl(signed url.URL) (*SignedUrl, error) { // coverage-ignore
 	signature := parsed.Query().Get(SignatureQueryParamName)
 
 	if signature == "" {
-		return nil, fmt.Errorf("cannot create a signed url reference for url %s - no `%s` parameter found", SignatureQueryParamName, signed.String())
+		return nil, fmt.Errorf("cannot create a signed url reference for url %s - no `%s` parameter found", SignatureQueryParamName, urlString)
 	}
 
 	return &SignedUrl{

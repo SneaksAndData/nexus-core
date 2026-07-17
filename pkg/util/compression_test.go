@@ -19,13 +19,13 @@ func Test_CompressDecompressString(t *testing.T) {
 				t.Fatalf("failed to compress test string: %v", err)
 			}
 
-			decompressed, err := DecompressString(compressedBytes)
+			decompressed, err := Decompress(compressedBytes)
 			if err != nil {
 				t.Fatalf("failed to decompress test string: %v", err)
 			}
 
-			if decompressed != tc.testString {
-				t.Fatalf("failed to compress-decompress a test string: got %q, want %q", decompressed, tc.testString)
+			if string(decompressed) != tc.testString {
+				t.Fatalf("failed to compress-decompress a test string: got %q, want %q", string(decompressed), tc.testString)
 			}
 		})
 	}

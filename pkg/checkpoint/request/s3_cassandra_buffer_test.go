@@ -8,7 +8,9 @@ package request
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"testing"
 	"time"
 
@@ -19,6 +21,7 @@ import (
 	"github.com/aws/smithy-go/ptr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/diff"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/klog/v2/ktesting"
 )
@@ -355,7 +358,7 @@ func TestDefaultBuffer_GetMetadata(t *testing.T) {
 	}
 }
 
-func TestDefaultBuffer_Add(t *testing.T) {
+func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 	cases := []struct {
 		name              string
 		fixture           *fixture
@@ -369,15 +372,17 @@ func TestDefaultBuffer_Add(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
+			var testPayload = map[string]interface{}{
+				"parameterA": "a",
+				"parameterB": "b",
+			}
+
 			go tc.fixture.buffer.Start(nil)
 
 			waitForBuffer(t, tc.fixture)
 
 			err := tc.fixture.buffer.Add("new-id", "test-algorithm-v2", &models.AlgorithmRequest{
-				AlgorithmParameters: map[string]interface{}{
-					"parameterA": "a",
-					"parameterB": "b",
-				},
+				AlgorithmParameters: testPayload,
 				CustomConfiguration: nil,
 				RequestApiVersion:   "",
 				Tag:                 "",
@@ -448,6 +453,22 @@ func TestDefaultBuffer_Add(t *testing.T) {
 			}
 
 			waitForBuffered(t, tc.fixture, "new-id", "test-algorithm-v2", 5*time.Second)
+
+			retrieved, err := tc.fixture.buffer.GetPersisted("new-id", "test-algorithm-v2")
+
+			if err != nil {
+				t.Fatalf("error when retrieving checkpoint: %v", err)
+			}
+
+			var storedPayload map[string]interface{}
+			err = json.Unmarshal(retrieved, &storedPayload)
+			if err != nil {
+				t.Fatalf("error when unmarshalling stored payload: %v", err)
+			}
+
+			if !reflect.DeepEqual(storedPayload, testPayload) {
+				t.Fatalf("stored payload is not equal to the test payload %v", diff.ObjectGoPrintSideBySide(storedPayload, testPayload))
+			}
 		})
 	}
 }
