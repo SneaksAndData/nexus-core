@@ -16,27 +16,29 @@ import (
 )
 
 type MemoryPassthroughBuffer struct {
-	Checkpoints     []*models.CheckpointedRequest
-	BufferedEntries []*models.SubmissionBufferEntry
-	logger          *klog.Logger
-	metrics         *statsd.Client
-	ctx             context.Context
-	actor           *pipeline.DefaultPipelineStageActor[*BufferInput, *BufferOutput]
-	name            string
-	tags            map[string]string
+	Checkpoints      []*models.CheckpointedRequest
+	BufferedPayloads map[string][]byte
+	BufferedEntries  []*models.SubmissionBufferEntry
+	logger           *klog.Logger
+	metrics          *statsd.Client
+	ctx              context.Context
+	actor            *pipeline.DefaultPipelineStageActor[*BufferInput, *BufferOutput]
+	name             string
+	tags             map[string]string
 }
 
 // NewMemoryPassthroughBuffer creates a default buffer that does not persist payloads. This buffer persists ALL information in app memory and is ONLY intended to use in tests. DO NOT USE THIS IN PRODUCTION.
 // Some methods in this buffer will behave different from Cassandra buffers, for example Update replaces the checkpoint instead of updating its properties.
 func NewMemoryPassthroughBuffer(ctx context.Context, metricTags map[string]string) *MemoryPassthroughBuffer {
 	return &MemoryPassthroughBuffer{
-		Checkpoints: []*models.CheckpointedRequest{},
-		logger:      new(klog.FromContext(ctx)),
-		metrics:     telemetry.GetClient(ctx),
-		ctx:         ctx,
-		actor:       nil,
-		name:        "default_memory_passthrough",
-		tags:        metricTags,
+		BufferedPayloads: make(map[string][]byte),
+		Checkpoints:      []*models.CheckpointedRequest{},
+		logger:           new(klog.FromContext(ctx)),
+		metrics:          telemetry.GetClient(ctx),
+		ctx:              ctx,
+		actor:            nil,
+		name:             "default_memory_passthrough",
+		tags:             metricTags,
 	}
 }
 
@@ -114,6 +116,15 @@ func (buffer *MemoryPassthroughBuffer) Add(requestId string, algorithmName strin
 	return nil
 }
 
+func (buffer *MemoryPassthroughBuffer) GetPersisted(requestId string, algorithmName string) ([]byte, error) {
+	checkpoint, err := buffer.Get(requestId, algorithmName)
+	if err != nil {
+		return nil, err
+	}
+
+	return buffer.BufferedPayloads[checkpoint.Id], nil
+}
+
 func (buffer *MemoryPassthroughBuffer) bufferRequest(input *BufferInput) (*BufferOutput, error) {
 	bufferedCheckpoint := input.Checkpoint.DeepCopy()
 	bufferedCheckpoint.LifecycleStage = models.LifecycleStageBuffered
@@ -121,6 +132,7 @@ func (buffer *MemoryPassthroughBuffer) bufferRequest(input *BufferInput) (*Buffe
 	entry := models.FromCheckpoint(bufferedCheckpoint, input.ResolvedWorkgroup, input.ResolvedParent)
 
 	buffer.Checkpoints = append(buffer.Checkpoints, input.Checkpoint)
+	buffer.BufferedPayloads[input.Checkpoint.Id] = *input.SerializedPayload
 	buffer.BufferedEntries = append(buffer.BufferedEntries, entry)
 
 	return &BufferOutput{
