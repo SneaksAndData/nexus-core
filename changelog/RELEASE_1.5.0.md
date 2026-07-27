@@ -34,3 +34,21 @@
 ### 5. Utilities & DevX Upgrades
 * **Transition to Just:** Retired dependency on Makefiles/bash scripts in several workflows by adopting a unified `justfile` for automating codebase tasks (lint, generate, run-scylla, test, etc.).
 * **Improved Testing Infrastructure:** Used context poll loops in buffer tests to eliminate flaky/timed-out behaviors, and dramatically increased Cassandra/Scylla test coverage.
+
+### 6. Dependency & Go Version Upgrades
+* **Go Runtime:** Upgraded minimum Go version requirement to **Go 1.26.0** (from 1.24.4).
+* **Kubernetes Client & API:** Upgraded `k8s.io/api`, `k8s.io/apimachinery`, `k8s.io/client-go`, and `k8s.io/code-generator` from version **0.33.2** to **0.36.2**.
+* **Datadog Integration:**
+  - `datadog-api-client-go/v2` upgraded from `v2.39.0` to **v2.61.0**.
+  - `datadog-go/v5` upgraded from `v5.6.0` to **v5.9.0**.
+  - `slog-datadog/v2` upgraded from `v2.8.2` to **v2.10.4**.
+* **AWS SDK & AWS Keyspaces Connection:**
+  - Upgraded AWS SDK v2 core libraries to **v1.42.0** (with S3 service up to **v1.104.0**).
+  - Added new direct dependency `github.com/aws/aws-sigv4-auth-cassandra-gocql-driver-plugin` (**v1.1.0**) to support IAM SigV4 authentication when connecting to AWS Keyspaces.
+* **Cassandra/ScyllaDB Drivers:**
+  - Upgraded underlying Scylla `gocql` driver fork replacement from `v1.15.1` to **v1.18.2**.
+  - Upgraded `scylladb/gocqlx/v3` from `v3.0.2` to **v3.0.4**.
+* **Other Miscellaneous Bumps:**
+  - Upgraded `spf13/viper` to `v1.21.0`.
+  - Upgraded `samber/slog-multi` to `v1.8.0`.
+  - Added `golang.org/x/crypto v0.53.0` for cryptographic URL signing utilities.
