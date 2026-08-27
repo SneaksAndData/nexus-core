@@ -48,7 +48,7 @@ func (s *CheckpointCassandraStore) SavePayload(ctx context.Context, payload stri
 		PayloadContent: base64.StdEncoding.EncodeToString(compressedPayload),
 	}
 
-	var insertQuery = PayloadBufferTable.InsertQueryContext(ctx, s.cqlSession).BindStruct(insertValues)
+	var insertQuery = PayloadBufferTable(s.cluster.Keyspace).InsertQueryContext(ctx, s.cqlSession).BindStruct(insertValues)
 
 	if err := insertQuery.ExecRelease(); err != nil { // coverage-ignore
 		s.logger.V(1).Error(err, "error when persisting payload to the checkpoint store", "algorithm", templateName, "id", requestId)
@@ -68,7 +68,7 @@ func (s *CheckpointCassandraStore) RetrievePayload(ctx context.Context, requestI
 		Id:        requestId,
 	}
 
-	var readQuery = PayloadBufferTable.SelectQueryContext(ctx, s.cqlSession).BindStruct(result)
+	var readQuery = PayloadBufferTable(s.cluster.Keyspace).SelectQueryContext(ctx, s.cqlSession).BindStruct(result)
 	if err := readQuery.GetRelease(result); err != nil { // coverage-ignore
 		if errors.Is(err, gocql.ErrNotFound) {
 			return nil, nil

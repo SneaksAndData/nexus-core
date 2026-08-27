@@ -52,3 +52,4 @@
   - Upgraded `spf13/viper` to `v1.21.0`.
   - Upgraded `samber/slog-multi` to `v1.8.0`.
   - Added `golang.org/x/crypto v0.53.0` for cryptographic URL signing utilities.
+  

@@ -28,8 +28,9 @@ type KeyspacesConfig struct {
 	 * sf-class2-root.crt \
 	 * > keyspaces-bundle.pem
 	 */
-	CaPath string `mapstructure:"ca-path"`
-	Region string `mapstructure:"region"`
+	CaPath   string `mapstructure:"ca-path"`
+	Region   string `mapstructure:"region"`
+	Keyspace string `mapstructure:"keyspace"`
 }
 
 func (k *KeyspacesConfig) getIsolatedKeyspacesAuth() *sigv4.AwsAuthenticator { // coverage-ignore
@@ -54,6 +55,7 @@ func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.Checkp
 
 	cluster.Consistency = gocql.LocalQuorum
 	cluster.DisableInitialHostLookup = false
+	cluster.Keyspace = config.Keyspace
 
 	cassandraStore := NewCassandraStore(cluster, logger)
 

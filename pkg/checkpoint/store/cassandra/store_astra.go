@@ -20,6 +20,7 @@ type AstraBundleConfig struct {
 	GatewayUser                  string `mapstructure:"gateway-user"`
 	GatewayPassword              string `mapstructure:"gateway-password"`
 	IndexesSupported             bool   `mapstructure:"indexes-supported"`
+	Keyspace                     string `mapstructure:"keyspace"`
 }
 
 // CheckpointStoreAstraConfig defines configuration for gocql needed to connect to AstraDB
@@ -114,6 +115,7 @@ func NewAstraStore(logger klog.Logger, bundle *AstraBundleConfig) store.Checkpoi
 		EnableHostVerification: false,
 	}
 	cluster.Consistency = gocql.LocalQuorum
+	cluster.Keyspace = bundle.Keyspace
 	cassandraStore := NewCassandraStore(cluster, logger)
 	if bundle.IndexesSupported {
 		return NewIndexedCassandraStore(cassandraStore)
