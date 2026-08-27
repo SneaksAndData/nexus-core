@@ -28,7 +28,7 @@ func (ics *IndexedCassandraStore) UpsertCheckpoint(checkpoint *models.Checkpoint
 	if serialized, err := ToCassandraModel(cloned); err == nil {
 		ics.cassandraStore.logger.V(1).Info("upserting checkpoint", "checkpoint", serialized)
 
-		var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTable.Insert()).BindStruct(*serialized).Strict()
+		var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTable(ics.cassandraStore.cluster.Keyspace).Insert()).BindStruct(*serialized).Strict()
 		ics.cassandraStore.logger.V(1).Info("executing query", "query", query.String())
 
 		if err := query.ExecRelease(); err != nil { // coverage-ignore
@@ -49,7 +49,7 @@ func (ics *IndexedCassandraStore) ReadCheckpoint(algorithm string, id string) (*
 		Id:        id,
 	}
 
-	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTable.Get()).BindStruct(*result)
+	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTable(ics.cassandraStore.cluster.Keyspace).Get()).BindStruct(*result)
 	if err := query.GetRelease(result); err != nil { // coverage-ignore
 		if errors.Is(err, gocql.ErrNotFound) {
 			return nil, nil
@@ -68,7 +68,7 @@ func (ics *IndexedCassandraStore) ReadCheckpointsByHost(host string, lifecycleSt
 	}
 	queryResult := []*CheckpointCassandraModel{}
 
-	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTableIndexByHost.GetBuilder().AllowFiltering().ToCql()).BindStruct(*predicate)
+	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTableIndexByHost(ics.cassandraStore.cluster.Keyspace).GetBuilder().AllowFiltering().ToCql()).BindStruct(*predicate)
 	if err := query.SelectRelease(&queryResult); err != nil { // coverage-ignore
 		ics.cassandraStore.logger.V(1).Error(err, "error when reading buffered checkpoints", "host", host)
 		return nil, err
@@ -89,7 +89,7 @@ func (ics *IndexedCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.
 	}
 	queryResult := []*CheckpointCassandraModel{}
 
-	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTableIndexByTag.Get()).BindStruct(*predicate)
+	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTableIndexByTag(ics.cassandraStore.cluster.Keyspace).Get()).BindStruct(*predicate)
 	if err := query.SelectRelease(&queryResult); err != nil { // coverage-ignore
 		ics.cassandraStore.logger.V(1).Error(err, "error when reading checkpoints by a tag", "tag", requestTag)
 		return nil, err

@@ -14,6 +14,7 @@ type ScyllaConfig struct {
 	Password         string   `mapstructure:"password"`
 	LocalDC          string   `mapstructure:"local-dc"`
 	IndexesSupported bool     `mapstructure:"indexes-supported"`
+	Keyspace         string   `mapstructure:"keyspace"`
 }
 
 func NewScyllaStore(logger klog.Logger, config *ScyllaConfig) store.CheckpointStore {
@@ -34,6 +35,8 @@ func NewScyllaStore(logger klog.Logger, config *ScyllaConfig) store.CheckpointSt
 			Password: config.Password,
 		}
 	}
+
+	cluster.Keyspace = config.Keyspace
 
 	cassandraStore := NewCassandraStore(cluster, logger)
 

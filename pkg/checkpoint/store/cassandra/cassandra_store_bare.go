@@ -37,13 +37,13 @@ func (bcs *BareCassandraStore) UpsertCheckpoint(checkpoint *models.CheckpointedR
 		// 3 - update/insert into the by_tag table
 
 		// 1
-		var upsertQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTable.Insert()).Strict()
+		var upsertQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTable(bcs.cassandraStore.cluster.Keyspace).Insert()).Strict()
 
 		// 2
-		var upsertByHostQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByHost.Insert()).Strict()
+		var upsertByHostQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByHost(bcs.cassandraStore.cluster.Keyspace).Insert()).Strict()
 
 		// 3
-		var upsertByTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag.Insert()).Strict()
+		var upsertByTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag(bcs.cassandraStore.cluster.Keyspace).Insert()).Strict()
 
 		bcs.cassandraStore.logger.V(1).Info("adding main query to batch", "query", upsertQuery.String())
 
@@ -80,7 +80,7 @@ func (bcs *BareCassandraStore) ReadCheckpoint(algorithm string, id string) (*mod
 		Id:        id,
 	}
 
-	var query = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTable.Get()).BindStruct(*result)
+	var query = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTable(bcs.cassandraStore.cluster.Keyspace).Get()).BindStruct(*result)
 	if err := query.GetRelease(result); err != nil { // coverage-ignore
 		if errors.Is(err, gocql.ErrNotFound) {
 			return nil, nil
@@ -100,7 +100,7 @@ func (bcs *BareCassandraStore) ReadCheckpointsByHost(host string, lifecycleStage
 		Id             string `db:"id"`
 	}{}
 
-	var byHostQuery = CheckpointedRequestTableByHost.SelectQuery(bcs.cassandraStore.cqlSession).BindMap(qb.M{
+	var byHostQuery = CheckpointedRequestTableByHost(bcs.cassandraStore.cluster.Keyspace).SelectQuery(bcs.cassandraStore.cqlSession).BindMap(qb.M{
 		"host":            host,
 		"lifecycle_stage": lifecycleStage,
 	})
@@ -120,7 +120,7 @@ func (bcs *BareCassandraStore) ReadCheckpointsByHost(host string, lifecycleStage
 
 func (bcs *BareCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
 	byTagResults := &[]*models.CheckpointedRequest{}
-	var byTagQuery = CheckpointedRequestTableByTag.SelectQuery(bcs.cassandraStore.cqlSession).BindMap(qb.M{
+	var byTagQuery = CheckpointedRequestTableByTag(bcs.cassandraStore.cluster.Keyspace).SelectQuery(bcs.cassandraStore.cqlSession).BindMap(qb.M{
 		"tag": requestTag,
 	})
 	if err := byTagQuery.SelectRelease(byTagResults); err != nil { // coverage-ignore

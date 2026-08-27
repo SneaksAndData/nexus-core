@@ -14,10 +14,10 @@ import (
 
 // table names
 const (
-	checkpointTableName       = "nexus.checkpoints"
-	checkpointByHostTableName = "nexus.checkpoints_by_host"
-	checkpointByTagTableName  = "nexus.checkpoints_by_tag"
-	payloadBufferTable        = "nexus.payload_buffer"
+	checkpointTableName       = "%s.checkpoints"
+	checkpointByHostTableName = "%s.checkpoints_by_host"
+	checkpointByTagTableName  = "%s.checkpoints_by_tag"
+	payloadBufferTable        = "%s.payload_buffer"
 	EncodePrefix              = "b64__"
 )
 
@@ -62,9 +62,10 @@ var (
 )
 
 // table definitions for goclqx
-var (
-	CheckpointedRequestTable = table.New(table.Metadata{
-		Name:    checkpointTableName,
+
+func CheckpointedRequestTable(keyspace string) *table.Table {
+	return table.New(table.Metadata{
+		Name:    fmt.Sprintf(checkpointTableName, keyspace),
 		Columns: checkpointColumns,
 		PartKey: []string{
 			"algorithm",
@@ -72,8 +73,11 @@ var (
 		},
 		SortKey: []string{},
 	})
-	CheckpointedRequestTableIndexByHost = table.New(table.Metadata{
-		Name:    checkpointTableName,
+}
+
+func CheckpointedRequestTableIndexByHost(keyspace string) *table.Table {
+	return table.New(table.Metadata{
+		Name:    fmt.Sprintf(checkpointTableName, keyspace),
 		Columns: checkpointColumns,
 		PartKey: []string{
 			"received_by_host",
@@ -81,8 +85,11 @@ var (
 		},
 		SortKey: []string{},
 	})
-	CheckpointedRequestTableByHost = table.New(table.Metadata{
-		Name:    checkpointByHostTableName,
+}
+
+func CheckpointedRequestTableByHost(keyspace string) *table.Table {
+	return table.New(table.Metadata{
+		Name:    fmt.Sprintf(checkpointByHostTableName, keyspace),
 		Columns: checkpointByHostColumns,
 		PartKey: []string{
 			"host",
@@ -90,24 +97,33 @@ var (
 		},
 		SortKey: []string{"id"},
 	})
-	CheckpointedRequestTableIndexByTag = table.New(table.Metadata{
-		Name:    checkpointTableName,
+}
+
+func CheckpointedRequestTableIndexByTag(keyspace string) *table.Table {
+	return table.New(table.Metadata{
+		Name:    fmt.Sprintf(checkpointTableName, keyspace),
 		Columns: checkpointColumns,
 		PartKey: []string{
 			"tag",
 		},
 		SortKey: []string{},
 	})
-	CheckpointedRequestTableByTag = table.New(table.Metadata{
-		Name:    checkpointByTagTableName,
+}
+
+func CheckpointedRequestTableByTag(keyspace string) *table.Table {
+	return table.New(table.Metadata{
+		Name:    fmt.Sprintf(checkpointByTagTableName, keyspace),
 		Columns: checkpointByTagColumns,
 		PartKey: []string{
 			"tag",
 		},
 		SortKey: []string{"id"},
 	})
-	PayloadBufferTable = table.New(table.Metadata{
-		Name:    payloadBufferTable,
+}
+
+func PayloadBufferTable(keyspace string) *table.Table {
+	return table.New(table.Metadata{
+		Name:    fmt.Sprintf(payloadBufferTable, keyspace),
 		Columns: payloadBufferColumns,
 		PartKey: []string{
 			"algorithm",
@@ -115,7 +131,7 @@ var (
 		},
 		SortKey: []string{},
 	})
-)
+}
 
 type CheckpointCassandraModel struct {
 	Algorithm               string
