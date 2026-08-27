@@ -34,6 +34,7 @@ func newIndexedCassandraConfig() *cassandra.ScyllaConfig {
 	return &cassandra.ScyllaConfig{
 		Hosts:            []string{"127.0.0.1"},
 		IndexesSupported: true,
+		Keyspace:         "nexus",
 	}
 }
 
@@ -41,6 +42,7 @@ func newBareCassandraConfig() *cassandra.ScyllaConfig {
 	return &cassandra.ScyllaConfig{
 		Hosts:            []string{"127.0.0.1"},
 		IndexesSupported: false,
+		Keyspace:         "nexus",
 	}
 }
 
