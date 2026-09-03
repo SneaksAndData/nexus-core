@@ -115,8 +115,8 @@ type NexusAlgorithmContainer struct {
 
 // NexusAlgorithmPayloadConfiguration defines environment configuration for each run
 type NexusAlgorithmPayloadConfiguration struct {
-	PayloadValidFor          string                   `json:"payloadValidFor,omitempty"`
-	PayloadSerializationMode PayloadSerializationMode `json:"payloadSerialization,omitempty"`
+	PayloadValidFor          string                   `json:"payloadValidFor"`
+	PayloadSerializationMode PayloadSerializationMode `json:"payloadSerializationMode"`
 }
 
 // NexusAlgorithmRuntimeEnvironment defines environment configuration for each run
@@ -150,7 +150,7 @@ type NexusAlgorithmSpec struct {
 	WorkgroupRef               *NexusAlgorithmWorkgroupRef         `json:"workgroupRef,omitempty"`
 	Command                    string                              `json:"command"`
 	Args                       []string                            `json:"args,omitempty"`
-	PayloadConfiguration       *NexusAlgorithmPayloadConfiguration `json:"payloadConfiguration,omitempty"`
+	PayloadConfiguration       *NexusAlgorithmPayloadConfiguration `json:"payloadConfiguration"`
 	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironment   `json:"runtimeEnvironment,omitempty"`
 	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviour        `json:"errorHandlingBehaviour,omitempty"`
 	DatadogIntegrationSettings *NexusDatadogIntegrationSettings    `json:"datadogIntegrationSettings,omitempty"`

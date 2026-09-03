@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"reflect"
 	"testing"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/models"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store/cassandra"
+	"github.com/SneaksAndData/nexus-core/pkg/urlsign"
 	"github.com/aws/smithy-go/ptr"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -471,6 +473,14 @@ func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 			if !reflect.DeepEqual(storedPayload, testPayload) {
 				t.Fatalf("stored payload is not equal to the test payload %v", diff.ObjectGoPrintSideBySide(storedPayload, testPayload))
 			}
+
+			checkpoint, err := tc.fixture.buffer.Get("new-id", "test-algorithm-v2")
+			payloadUrl, _ := url.Parse(checkpoint.PayloadUri)
+			err = urlsign.Verify(*payloadUrl, []byte("test-secret"))
+			if err != nil {
+				t.Fatalf("error when verifying payload url: %v", err)
+			}
+
 		})
 	}
 }
