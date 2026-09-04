@@ -474,7 +474,7 @@ func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 				t.Fatalf("stored payload is not equal to the test payload %v", diff.ObjectGoPrintSideBySide(storedPayload, testPayload))
 			}
 
-			checkpoint, err := tc.fixture.buffer.Get("new-id", "test-algorithm-v2")
+			checkpoint, _ := tc.fixture.buffer.Get("new-id", "test-algorithm-v2")
 			payloadUrl, _ := url.Parse(checkpoint.PayloadUri)
 			err = urlsign.Verify(*payloadUrl, []byte("test-secret"))
 			if err != nil {
