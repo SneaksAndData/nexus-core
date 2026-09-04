@@ -24,7 +24,7 @@ package v1
 // NexusAlgorithmPayloadConfiguration defines environment configuration for each run
 type NexusAlgorithmPayloadConfigurationApplyConfiguration struct {
 	PayloadValidFor          *string `json:"payloadValidFor,omitempty"`
-	PayloadSerializationMode *string `json:"payloadSerialization,omitempty"`
+	PayloadSerializationMode *string `json:"payloadSerializationMode,omitempty"`
 }
 
 // NexusAlgorithmPayloadConfigurationApplyConfiguration constructs a declarative configuration of the NexusAlgorithmPayloadConfiguration type for use with

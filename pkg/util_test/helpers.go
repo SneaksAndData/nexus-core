@@ -54,6 +54,10 @@ func GetFakeRequest(hasParent bool) *models.CheckpointedRequest {
 			DatadogIntegrationSettings: &v1.NexusDatadogIntegrationSettings{
 				MountDatadogSocket: ptr.Bool(true),
 			},
+			PayloadConfiguration: &v1.NexusAlgorithmPayloadConfiguration{
+				PayloadValidFor:          "24h",
+				PayloadSerializationMode: v1.SERIALIZE_TO_BACKEND,
+			},
 		},
 		ConfigurationOverrides: nil,
 		ContentHash:            "12313",

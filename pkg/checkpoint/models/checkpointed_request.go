@@ -76,9 +76,9 @@ func (c *CheckpointedRequest) GenerateUrl(payloadProxyConfiguration *payload.Req
 
 	// Nexus URL signer ignores hostname, thus use localhost for simplicity
 	baseUrl := url.URL{
-		Scheme: "https",
-		Host:   "localhost",
-		Path:   fmt.Sprintf(payloadProxyConfiguration.ServePathTemplate, c.Algorithm, c.Id),
+		Scheme: payloadProxyConfiguration.GetProxyScheme(),
+		Host:   payloadProxyConfiguration.ExternalName,
+		Path:   fmt.Sprintf(payloadProxyConfiguration.GetServePathTemplate(), c.Algorithm, c.Id),
 	}
 
 	signed, err := urlsign.Sign(baseUrl, payloadProxyConfiguration.TenantId, c.PayloadValidityPeriod(), c.ContentHash, []byte(payloadProxyConfiguration.SignSecret))

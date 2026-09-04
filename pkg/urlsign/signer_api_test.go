@@ -119,6 +119,28 @@ func TestVerifyEmptySignature(t *testing.T) {
 	}
 }
 
+func TestGenerateAndVerify(t *testing.T) {
+	// Nexus URL signer ignores hostname, thus use localhost for simplicity
+	baseUrl := url.URL{
+		Scheme: "https",
+		Host:   "localhost",
+		Path:   fmt.Sprintf("/data/v1/payloads/%s/requests/%s", "hello-world", "daff55f9-069c-4538-864c-640d7a938d91"),
+	}
+
+	signed, err := Sign(baseUrl, "00000000-0000-0000-0000-000000000000", time.Hour*24, "ZTM5YjVkOTg=", []byte("test"))
+
+	if err != nil {
+		t.Fatalf("failed to sign: %s", err)
+	}
+
+	url1, _ := url.Parse(signed.Url.String())
+	err = Verify(*url1, []byte("test"))
+	if err != nil {
+		t.Fatalf("failed to verify self: %s", err)
+	}
+
+}
+
 func TestVerifyExpiry(t *testing.T) {
 	secret := []byte("secret")
 	parsed, _ := url.Parse("https://s3.svc.local/bucket/prefix1/prefix2/file.json")
