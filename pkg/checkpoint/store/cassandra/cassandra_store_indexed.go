@@ -68,6 +68,7 @@ func (ics *IndexedCassandraStore) ReadCheckpointsByHost(host string, lifecycleSt
 	}
 	queryResult := []*CheckpointCassandraModel{}
 
+	// index will still be used, but client still requires allow filtering
 	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTableIndexByHost(ics.cassandraStore.cluster.Keyspace).GetBuilder().AllowFiltering().ToCql()).BindStruct(*predicate)
 	if err := query.SelectRelease(&queryResult); err != nil { // coverage-ignore
 		ics.cassandraStore.logger.V(1).Error(err, "error when reading buffered checkpoints", "host", host)
@@ -89,7 +90,8 @@ func (ics *IndexedCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.
 	}
 	queryResult := []*CheckpointCassandraModel{}
 
-	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTableIndexByTag(ics.cassandraStore.cluster.Keyspace).Get()).BindStruct(*predicate)
+	// index will still be used, but client still requires allow filtering
+	var query = ics.cassandraStore.cqlSession.Query(CheckpointedRequestTableIndexByTag(ics.cassandraStore.cluster.Keyspace).GetBuilder().AllowFiltering().ToCql()).BindStruct(*predicate)
 	if err := query.SelectRelease(&queryResult); err != nil { // coverage-ignore
 		ics.cassandraStore.logger.V(1).Error(err, "error when reading checkpoints by a tag", "tag", requestTag)
 		return nil, err
