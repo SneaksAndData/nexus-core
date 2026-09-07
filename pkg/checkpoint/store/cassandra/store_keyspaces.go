@@ -31,6 +31,7 @@ type KeyspacesConfig struct {
 	CaPath   string `mapstructure:"ca-path"`
 	Region   string `mapstructure:"region"`
 	Keyspace string `mapstructure:"keyspace"`
+	UseIRSA  bool   `mapstructure:"use-irsa"`
 }
 
 func (k *KeyspacesConfig) getIsolatedKeyspacesAuth() *sigv4.AwsAuthenticator { // coverage-ignore
@@ -44,10 +45,19 @@ func (k *KeyspacesConfig) getIsolatedKeyspacesAuth() *sigv4.AwsAuthenticator { /
 	}
 }
 
+func (k *KeyspacesConfig) getIRSAAuth() *sigv4.AwsAuthenticator { // coverage-ignore
+	return new(sigv4.NewAwsAuthenticator())
+}
+
 func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.CheckpointStore { // coverage-ignore
 	cluster := gocql.NewCluster(config.Hosts...)
 
-	cluster.Authenticator = config.getIsolatedKeyspacesAuth()
+	if config.UseIRSA {
+		cluster.Authenticator = config.getIRSAAuth()
+	} else {
+		cluster.Authenticator = config.getIsolatedKeyspacesAuth()
+	}
+
 	cluster.SslOpts = &gocql.SslOptions{
 		CaPath:                 config.CaPath,
 		EnableHostVerification: false,
