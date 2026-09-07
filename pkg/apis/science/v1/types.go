@@ -88,9 +88,11 @@ type NexusAlgorithmResources struct {
 	// Deprecated: Use Limits instead
 	MemoryLimit string `json:"memoryLimit"`
 
-	DefaultResourceQuota string               `json:"defaultResourceQuota"`
+	// +kubebuilder:default:="0.1"
+	// +optional
+	DefaultResourceQuota string               `json:"defaultResourceQuota,omitempty"`
 	Requests             *corev1.ResourceList `json:"requests,omitempty"`
-	Limits               *corev1.ResourceList `json:"limits"`
+	Limits               *corev1.ResourceList `json:"limits,omitempty"`
 	CustomResources      map[string]string    `json:"customResources,omitempty"`
 }
 
@@ -115,8 +117,13 @@ type NexusAlgorithmContainer struct {
 
 // NexusAlgorithmPayloadConfiguration defines environment configuration for each run
 type NexusAlgorithmPayloadConfiguration struct {
-	PayloadValidFor          string                   `json:"payloadValidFor"`
-	PayloadSerializationMode PayloadSerializationMode `json:"payloadSerializationMode"`
+	// +kubebuilder:default:="24h"
+	// +optional
+	PayloadValidFor string `json:"payloadValidFor,omitempty"`
+
+	// +kubebuilder:default:="s3"
+	// +optional
+	PayloadSerializationMode PayloadSerializationMode `json:"payloadSerializationMode,omitempty"`
 }
 
 // NexusAlgorithmRuntimeEnvironment defines environment configuration for each run
@@ -145,12 +152,13 @@ type NexusDatadogIntegrationSettings struct {
 
 // NexusAlgorithmSpec is the spec for a NexusAlgorithmTemplate resource
 type NexusAlgorithmSpec struct {
-	Container                  *NexusAlgorithmContainer            `json:"container"`
-	ComputeResources           *NexusAlgorithmResources            `json:"computeResources,omitempty"`
-	WorkgroupRef               *NexusAlgorithmWorkgroupRef         `json:"workgroupRef,omitempty"`
-	Command                    string                              `json:"command"`
-	Args                       []string                            `json:"args,omitempty"`
-	PayloadConfiguration       *NexusAlgorithmPayloadConfiguration `json:"payloadConfiguration"`
+	Container        *NexusAlgorithmContainer    `json:"container"`
+	ComputeResources *NexusAlgorithmResources    `json:"computeResources,omitempty"`
+	WorkgroupRef     *NexusAlgorithmWorkgroupRef `json:"workgroupRef,omitempty"`
+	Command          string                      `json:"command"`
+	Args             []string                    `json:"args,omitempty"`
+	// +optional
+	PayloadConfiguration       *NexusAlgorithmPayloadConfiguration `json:"payloadConfiguration,omitempty"`
 	RuntimeEnvironment         *NexusAlgorithmRuntimeEnvironment   `json:"runtimeEnvironment,omitempty"`
 	ErrorHandlingBehaviour     *NexusErrorHandlingBehaviour        `json:"errorHandlingBehaviour,omitempty"`
 	DatadogIntegrationSettings *NexusDatadogIntegrationSettings    `json:"datadogIntegrationSettings,omitempty"`
