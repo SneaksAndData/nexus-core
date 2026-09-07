@@ -88,9 +88,11 @@ type NexusAlgorithmResources struct {
 	// Deprecated: Use Limits instead
 	MemoryLimit string `json:"memoryLimit"`
 
-	DefaultResourceQuota string               `json:"defaultResourceQuota"`
+	// +kubebuilder:default:="0.1"
+	// +optional
+	DefaultResourceQuota string               `json:"defaultResourceQuota,omitempty"`
 	Requests             *corev1.ResourceList `json:"requests,omitempty"`
-	Limits               *corev1.ResourceList `json:"limits"`
+	Limits               *corev1.ResourceList `json:"limits,omitempty"`
 	CustomResources      map[string]string    `json:"customResources,omitempty"`
 }
 
