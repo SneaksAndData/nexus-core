@@ -1,6 +1,9 @@
 package cassandra
 
 import (
+	"net"
+	"os"
+
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
 	"github.com/gocql/gocql"
 	"k8s.io/klog/v2"
@@ -34,6 +37,12 @@ func NewScyllaStore(logger klog.Logger, config *ScyllaConfig) store.CheckpointSt
 			Username: config.User,
 			Password: config.Password,
 		}
+	}
+
+	if _, isLocalDeployment := os.LookupEnv("SCYLLA_STORE_LOCAL_ONLY"); isLocalDeployment {
+		cluster.AddressTranslator = gocql.AddressTranslatorFunc(func(addr net.IP, port int) (net.IP, int) {
+			return net.ParseIP("127.0.0.1"), 9042
+		})
 	}
 
 	cluster.Keyspace = config.Keyspace
