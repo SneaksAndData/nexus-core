@@ -13,6 +13,7 @@ import (
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/payload"
 	"github.com/SneaksAndData/nexus-core/pkg/urlsign"
+	"github.com/SneaksAndData/nexus-core/pkg/util"
 	"github.com/aws/smithy-go/ptr"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -108,7 +109,7 @@ func FromAlgorithmRequest(requestId string, algorithmName string, request *Algor
 		ReceivedAt:             time.Now(),
 		LastModified:           time.Now(),
 		ConfigurationOverrides: request.CustomConfiguration,
-		Tag:                    request.Tag,
+		Tag:                    util.CoalesceString(request.Tag, requestId),
 		JobUid:                 "",
 		Parent:                 request.ParentRequest,
 		ApiVersion:             request.RequestApiVersion,
