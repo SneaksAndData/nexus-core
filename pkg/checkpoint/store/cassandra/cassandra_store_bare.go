@@ -138,7 +138,7 @@ func (bcs *BareCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq
 }
 
 func (bcs *BareCassandraStore) UpsertMetadata(entry *models.SubmissionBufferEntry) error {
-	var query = bcs.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Insert()).BindStruct(*entry)
+	var query = bcs.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Insert()).BindStruct(*(entry.ToCassandraModel()))
 	if err := query.ExecRelease(); err != nil { // coverage-ignore
 		bcs.cassandraStore.logger.V(1).Error(err, "error when inserting buffered checkpoint metadata", "algorithm", entry.Algorithm, "id", entry.Id)
 		return err
@@ -148,7 +148,7 @@ func (bcs *BareCassandraStore) UpsertMetadata(entry *models.SubmissionBufferEntr
 }
 
 func (bcs *BareCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
-	result := &models.SubmissionBufferEntry{
+	result := &models.SubmissionBufferEntryCassandraModel{
 		Algorithm: checkpoint.Algorithm,
 		Id:        checkpoint.Id,
 	}
@@ -162,7 +162,7 @@ func (bcs *BareCassandraStore) ReadMetadata(checkpoint *models.CheckpointedReque
 		return nil, err
 	}
 
-	return result, nil
+	return result.ToModel(), nil
 }
 
 func (bcs *BareCassandraStore) Persist(ctx context.Context, payload string, requestId string, templateName string) error {

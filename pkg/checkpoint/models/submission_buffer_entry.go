@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"fmt"
+
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/buildmeta"
 	"github.com/scylladb/gocqlx/v3/table"
@@ -29,6 +30,31 @@ type SubmissionBufferEntry struct {
 	Id        string `json:"id"`
 	Cluster   string `json:"cluster"`
 	Template  string `json:"template,omitempty"`
+}
+
+type SubmissionBufferEntryCassandraModel struct {
+	Algorithm string `db:"algorithm"`
+	Id        string `db:"id"`
+	Cluster   string `db:"cluster"`
+	Template  string `db:"template"`
+}
+
+func (m *SubmissionBufferEntryCassandraModel) ToModel() *SubmissionBufferEntry {
+	return &SubmissionBufferEntry{
+		Algorithm: m.Algorithm,
+		Id:        m.Id,
+		Cluster:   m.Cluster,
+		Template:  m.Template,
+	}
+}
+
+func (sbe *SubmissionBufferEntry) ToCassandraModel() *SubmissionBufferEntryCassandraModel {
+	return &SubmissionBufferEntryCassandraModel{
+		Algorithm: sbe.Algorithm,
+		Id:        sbe.Id,
+		Cluster:   sbe.Cluster,
+		Template:  sbe.Template,
+	}
 }
 
 // SubmissionTemplate returns a Kubernetes Job object generated for the algorithm request
