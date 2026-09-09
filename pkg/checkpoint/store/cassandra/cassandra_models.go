@@ -134,24 +134,24 @@ func PayloadBufferTable(keyspace string) *table.Table {
 }
 
 type CheckpointCassandraModel struct {
-	Algorithm               string
-	Id                      string
-	LifecycleStage          string
-	PayloadUri              string
-	ResultUri               string
-	AlgorithmFailureCause   string
-	AlgorithmFailureDetails string
-	ReceivedByHost          string
-	ReceivedAt              time.Time
-	SentAt                  time.Time
-	AppliedConfiguration    string
-	ConfigurationOverrides  string
-	ContentHash             string
-	LastModified            time.Time
-	Tag                     string
-	ApiVersion              string
-	JobUid                  string
-	Parent                  string
+	Algorithm               string    `db:"algorithm"`
+	Id                      string    `db:"id"`
+	LifecycleStage          string    `db:"lifecycle_stage"`
+	PayloadUri              string    `db:"payload_uri"`
+	ResultUri               string    `db:"result_uri"`
+	AlgorithmFailureCause   string    `db:"algorithm_failure_cause"`
+	AlgorithmFailureDetails string    `db:"algorithm_failure_details"`
+	ReceivedByHost          string    `db:"received_by_host"`
+	ReceivedAt              time.Time `db:"received_at"`
+	SentAt                  time.Time `db:"sent_at"`
+	AppliedConfiguration    string    `db:"applied_configuration"`
+	ConfigurationOverrides  string    `db:"configuration_overrides"`
+	ContentHash             string    `db:"content_hash"`
+	LastModified            time.Time `db:"last_modified"`
+	Tag                     string    `db:"tag"`
+	ApiVersion              string    `db:"api_version"`
+	JobUid                  string    `db:"job_uid"`
+	Parent                  string    `db:"parent"`
 }
 
 func ToCassandraModel(request *models.CheckpointedRequest) (*CheckpointCassandraModel, error) {
