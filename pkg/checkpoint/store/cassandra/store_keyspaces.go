@@ -52,6 +52,10 @@ func (k *KeyspacesConfig) getIRSAAuth() *sigv4.AwsAuthenticator { // coverage-ig
 func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.CheckpointStore { // coverage-ignore
 	cluster := gocql.NewCluster(config.Hosts...)
 
+	cluster.IgnorePeerAddr = true
+	cluster.ProtoVersion = 4
+	cluster.DisableInitialHostLookup = true
+
 	if config.UseIRSA {
 		cluster.Authenticator = config.getIRSAAuth()
 	} else {
@@ -64,7 +68,6 @@ func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.Checkp
 	}
 
 	cluster.Consistency = gocql.LocalQuorum
-	cluster.DisableInitialHostLookup = false
 	cluster.Keyspace = config.Keyspace
 
 	cassandraStore := NewCassandraStore(cluster, logger)
