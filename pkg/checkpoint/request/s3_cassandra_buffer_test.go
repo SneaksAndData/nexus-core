@@ -367,11 +367,12 @@ func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 		name              string
 		fixture           *fixture
 		serializationMode v1.PayloadSerializationMode
+		id                string
 	}{
-		{"add to buffer that uses indexed Cassandra store, with S3 serialization", newFixture(t, newIndexedCassandraConfig()), v1.SERIALIZE_TO_S3},
-		{"add to buffer that uses bare Cassandra store, with S3 serialization", newFixture(t, newBareCassandraConfig()), v1.SERIALIZE_TO_S3},
-		{"add to buffer that uses indexed Cassandra store, without S3 serialization", newFixture(t, newIndexedCassandraConfig()), v1.SERIALIZE_TO_BACKEND},
-		{"add to buffer that uses bare Cassandra store, without S3 serialization", newFixture(t, newBareCassandraConfig()), v1.SERIALIZE_TO_BACKEND},
+		{"add to buffer that uses indexed Cassandra store, with S3 serialization", newFixture(t, newIndexedCassandraConfig()), v1.SERIALIZE_TO_S3, "test-run-1"},
+		{"add to buffer that uses bare Cassandra store, with S3 serialization", newFixture(t, newBareCassandraConfig()), v1.SERIALIZE_TO_S3, "test-run-2"},
+		{"add to buffer that uses indexed Cassandra store, without S3 serialization", newFixture(t, newIndexedCassandraConfig()), v1.SERIALIZE_TO_BACKEND, "test-run-3"},
+		{"add to buffer that uses bare Cassandra store, without S3 serialization", newFixture(t, newBareCassandraConfig()), v1.SERIALIZE_TO_BACKEND, "test-run-4"},
 	}
 
 	for _, tc := range cases {
@@ -385,7 +386,7 @@ func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 
 			waitForBuffer(t, tc.fixture)
 
-			err := tc.fixture.buffer.Add("new-id", "test-algorithm-v2", &models.AlgorithmRequest{
+			err := tc.fixture.buffer.Add(tc.id, "test-algorithm-v2", &models.AlgorithmRequest{
 				AlgorithmParameters: testPayload,
 				CustomConfiguration: nil,
 				RequestApiVersion:   "",
@@ -456,9 +457,9 @@ func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 				t.Fatalf("error when buffering checkpoint: %v", err)
 			}
 
-			waitForBuffered(t, tc.fixture, "new-id", "test-algorithm-v2", 5*time.Second)
+			waitForBuffered(t, tc.fixture, tc.id, "test-algorithm-v2", 5*time.Second)
 
-			retrieved, err := tc.fixture.buffer.GetPersisted("new-id", "test-algorithm-v2")
+			retrieved, err := tc.fixture.buffer.GetPersisted(tc.id, "test-algorithm-v2")
 
 			if err != nil {
 				t.Fatalf("error when retrieving checkpoint: %v", err)
@@ -474,7 +475,7 @@ func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 				t.Fatalf("stored payload is not equal to the test payload %v", diff.ObjectGoPrintSideBySide(storedPayload, testPayload))
 			}
 
-			checkpoint, _ := tc.fixture.buffer.Get("new-id", "test-algorithm-v2")
+			checkpoint, _ := tc.fixture.buffer.Get(tc.id, "test-algorithm-v2")
 			payloadUrl, _ := url.Parse(checkpoint.PayloadUri)
 			err = urlsign.Verify(*payloadUrl, []byte("test-secret"))
 			if err != nil {

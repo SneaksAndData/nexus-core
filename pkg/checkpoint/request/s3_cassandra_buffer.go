@@ -136,7 +136,7 @@ func (buffer *DefaultBuffer) Start(submitter pipeline.StageActor[*BufferOutput, 
 
 func (buffer *DefaultBuffer) Add(requestId string, algorithmName string, request *models.AlgorithmRequest, config *v1.NexusAlgorithmSpec, workgroup *v1.NexusAlgorithmWorkgroupSpec, parent *metav1.OwnerReference, isDryRun bool) error {
 	input, err := NewBufferInput(requestId, algorithmName, request, config, workgroup, parent, isDryRun)
-	if err != nil {
+	if err != nil { // coverage-ignore
 		return err
 	}
 
@@ -171,7 +171,7 @@ func (buffer *DefaultBuffer) GetBufferedEntry(checkpoint *models.CheckpointedReq
 func (buffer *DefaultBuffer) GetPersisted(requestId string, algorithmName string) ([]byte, error) {
 	checkpoint, err := buffer.Get(requestId, algorithmName)
 
-	if err != nil {
+	if err != nil { // coverage-ignore
 		return nil, err
 	}
 
@@ -179,7 +179,7 @@ func (buffer *DefaultBuffer) GetPersisted(requestId string, algorithmName string
 
 }
 
-func (buffer *DefaultBuffer) handleFailure(input *BufferInput) {
+func (buffer *DefaultBuffer) handleFailure(input *BufferInput) { // coverage-ignore
 	buffer.logger.V(0).Info("received a faulty input, will mark submission as failed", input.Checkpoint.Id, "algorithm", input.Checkpoint.Algorithm)
 
 	failedCheckpoint := input.Checkpoint.DeepCopy()
