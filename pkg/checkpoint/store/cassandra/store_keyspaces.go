@@ -12,7 +12,7 @@ import (
 // KeyspacesConfig defines configuration for gocql needed to connect to AWS Keyspaces
 type KeyspacesConfig struct {
 	Hosts []string `mapstructure:"hosts"`
-	Port  string   `mapstructure:"port"`
+	Port  int      `mapstructure:"port"`
 	/**
 	 * CaPath must contain file generated with commands below:
 	 * curl -O https://www.amazontrust.com/repository/AmazonRootCA1.pem
@@ -51,6 +51,7 @@ func (k *KeyspacesConfig) getIRSAAuth() *sigv4.AwsAuthenticator { // coverage-ig
 
 func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.CheckpointStore { // coverage-ignore
 	cluster := gocql.NewCluster(config.Hosts...)
+	cluster.Port = config.Port
 
 	cluster.IgnorePeerAddr = true
 	cluster.ProtoVersion = 4
