@@ -53,6 +53,10 @@ func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.Checkp
 	cluster := gocql.NewCluster(config.Hosts...)
 	cluster.Port = config.Port
 
+	cluster.IgnorePeerAddr = true
+	cluster.ProtoVersion = 4
+	cluster.DisableInitialHostLookup = true
+
 	if config.UseIRSA {
 		cluster.Authenticator = config.getIRSAAuth()
 	} else {
@@ -65,7 +69,6 @@ func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.Checkp
 	}
 
 	cluster.Consistency = gocql.LocalQuorum
-	cluster.DisableInitialHostLookup = false
 	cluster.Keyspace = config.Keyspace
 
 	cassandraStore := NewCassandraStore(cluster, logger)
