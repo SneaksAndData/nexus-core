@@ -47,8 +47,8 @@ func (k *KeyspacesConfig) getIsolatedKeyspacesAuth() *sigv4.AwsAuthenticator { /
 }
 
 func (k *KeyspacesConfig) getIRSAAuth(region string) *sigv4.AwsAuthenticator { // coverage-ignore
+	sess := session.Must(session.NewSession())
 	return new(sigv4.NewAwsAuthenticatorWithCredentialCallback(region, func() (sigv4.SigV4Credentials, error) {
-		sess := session.Must(session.NewSession())
 		// fetch credentials on each connection attempt
 		credentials, err := sess.Config.Credentials.Get()
 		if err != nil {
