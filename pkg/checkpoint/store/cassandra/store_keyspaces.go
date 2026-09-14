@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/SneaksAndData/nexus-core/pkg/checkpoint/store"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sigv4-auth-cassandra-gocql-driver-plugin/sigv4"
 	"github.com/gocql/gocql"
 	"k8s.io/klog/v2"
@@ -45,8 +46,21 @@ func (k *KeyspacesConfig) getIsolatedKeyspacesAuth() *sigv4.AwsAuthenticator { /
 	}
 }
 
-func (k *KeyspacesConfig) getIRSAAuth() *sigv4.AwsAuthenticator { // coverage-ignore
-	return new(sigv4.NewAwsAuthenticator())
+func (k *KeyspacesConfig) getIRSAAuth(region string) *sigv4.AwsAuthenticator { // coverage-ignore
+	return new(sigv4.NewAwsAuthenticatorWithCredentialCallback(region, func() (sigv4.SigV4Credentials, error) {
+		sess := session.Must(session.NewSession())
+		// fetch credentials on each connection attempt
+		credentials, err := sess.Config.Credentials.Get()
+		if err != nil {
+			return sigv4.SigV4Credentials{}, err
+		}
+
+		return sigv4.SigV4Credentials{
+			AccessKeyId:     credentials.AccessKeyID,
+			SecretAccessKey: credentials.SecretAccessKey,
+			SessionToken:    credentials.SessionToken,
+		}, nil
+	}))
 }
 
 func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.CheckpointStore { // coverage-ignore
@@ -58,7 +72,7 @@ func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.Checkp
 	cluster.DisableInitialHostLookup = true
 
 	if config.UseIRSA {
-		cluster.Authenticator = config.getIRSAAuth()
+		cluster.Authenticator = config.getIRSAAuth(config.Region)
 	} else {
 		cluster.Authenticator = config.getIsolatedKeyspacesAuth()
 	}
