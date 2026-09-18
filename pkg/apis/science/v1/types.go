@@ -279,6 +279,10 @@ func (template *NexusAlgorithmTemplate) GetSecretNames() []string {
 		}
 	}
 
+	for secretSource := range template.Spec.RuntimeEnvironment.SecretFileMounts {
+		subset[secretSource] = true
+	}
+
 	return slices.Collect(maps.Keys(subset))
 }
 
@@ -295,6 +299,10 @@ func (template *NexusAlgorithmTemplate) GetConfigMapNames() []string {
 		if ref.ValueFrom != nil && ref.ValueFrom.ConfigMapKeyRef != nil {
 			subset[ref.ValueFrom.ConfigMapKeyRef.Name] = true
 		}
+	}
+
+	for configSource := range template.Spec.RuntimeEnvironment.ConfigurationFileMounts {
+		subset[configSource] = true
 	}
 
 	return slices.Collect(maps.Keys(subset))
