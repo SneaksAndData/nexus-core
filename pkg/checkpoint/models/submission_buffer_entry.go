@@ -6,24 +6,9 @@ import (
 
 	v1 "github.com/SneaksAndData/nexus-core/pkg/apis/science/v1"
 	"github.com/SneaksAndData/nexus-core/pkg/buildmeta"
-	"github.com/scylladb/gocqlx/v3/table"
 	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-var SubmissionBufferTable = table.New(table.Metadata{
-	Name: "nexus.submission_buffer",
-	Columns: []string{
-		"algorithm",
-		"id",
-		"template",
-	},
-	PartKey: []string{
-		"algorithm",
-		"id",
-	},
-	SortKey: []string{},
-})
 
 type SubmissionBufferEntry struct {
 	Algorithm string `json:"algorithm"`

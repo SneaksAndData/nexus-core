@@ -18,6 +18,7 @@ const (
 	checkpointByHostTableName = "%s.checkpoints_by_host"
 	checkpointByTagTableName  = "%s.checkpoints_by_tag"
 	payloadBufferTable        = "%s.payload_buffer"
+	submissionBufferTableName = "%s.submission_buffer"
 	EncodePrefix              = "b64__"
 )
 
@@ -118,6 +119,23 @@ func CheckpointedRequestTableByTag(keyspace string) *table.Table {
 			"tag",
 		},
 		SortKey: []string{"id"},
+	})
+}
+
+func SubmissionBufferTable(keyspace string) *table.Table {
+	return table.New(table.Metadata{
+		Name: fmt.Sprintf(submissionBufferTableName, keyspace),
+		Columns: []string{
+			"algorithm",
+			"id",
+			"cluster",
+			"template",
+		},
+		PartKey: []string{
+			"algorithm",
+			"id",
+		},
+		SortKey: []string{},
 	})
 }
 

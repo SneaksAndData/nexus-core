@@ -107,7 +107,7 @@ func (ics *IndexedCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.
 }
 
 func (ics *IndexedCassandraStore) UpsertMetadata(entry *models.SubmissionBufferEntry) error {
-	var query = ics.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Insert()).BindStruct(*entry)
+	var query = ics.cassandraStore.cqlSession.Query(SubmissionBufferTable(ics.cassandraStore.cluster.Keyspace).Insert()).BindStruct(*entry)
 	if err := query.ExecRelease(); err != nil { // coverage-ignore
 		ics.cassandraStore.logger.V(1).Error(err, "error when inserting buffered checkpoint metadata", "algorithm", entry.Algorithm, "id", entry.Id)
 		return err
@@ -122,7 +122,7 @@ func (ics *IndexedCassandraStore) ReadMetadata(checkpoint *models.CheckpointedRe
 		Id:        checkpoint.Id,
 	}
 
-	var query = ics.cassandraStore.cqlSession.Query(models.SubmissionBufferTable.Get()).BindStruct(*result)
+	var query = ics.cassandraStore.cqlSession.Query(SubmissionBufferTable(ics.cassandraStore.cluster.Keyspace).Get()).BindStruct(*result)
 	if err := query.GetRelease(result); err != nil { // coverage-ignore
 		if errors.Is(err, gocql.ErrNotFound) {
 			return nil, nil
