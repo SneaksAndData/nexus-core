@@ -1,14 +1,16 @@
 package v1
 
 import (
-	"github.com/aws/smithy-go/ptr"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/util/diff"
 	"reflect"
 	"slices"
 	"testing"
+
+	"github.com/aws/smithy-go/ptr"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/diff"
 )
 
 func newFakeTemplate(withConfigs bool) *NexusAlgorithmTemplate {
@@ -249,8 +251,16 @@ func TestNexusAlgorithmSpec_Merge(t *testing.T) {
 			ServiceAccountName: "test-sa",
 		},
 		ComputeResources: &NexusAlgorithmResources{
-			CpuLimit:        specOverride.ComputeResources.CpuLimit,
-			MemoryLimit:     specOverride.ComputeResources.MemoryLimit,
+			CpuLimit:    specOverride.ComputeResources.CpuLimit,
+			MemoryLimit: specOverride.ComputeResources.MemoryLimit,
+			Requests: &corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse(specOverride.ComputeResources.MemoryLimit),
+			},
+			Limits: &corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse(specOverride.ComputeResources.CpuLimit),
+				corev1.ResourceMemory: resource.MustParse(specOverride.ComputeResources.MemoryLimit),
+			},
 			CustomResources: map[string]string{},
 		},
 		WorkgroupRef: &NexusAlgorithmWorkgroupRef{
@@ -269,7 +279,7 @@ func TestNexusAlgorithmSpec_Merge(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("Incorrect merge result returned (result vs expected) %s", diff.ObjectGoPrintSideBySide(result, expected))
+		t.Fatalf("Incorrect merge result returned (result vs expected) %s", diff.ObjectGoPrintSideBySide(result, expected))
 	}
 	t.Log("Merge correctly merges base configuration and overrides")
 }
