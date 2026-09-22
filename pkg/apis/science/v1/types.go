@@ -202,13 +202,15 @@ func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithm
 	if otherCloned.ComputeResources != nil {
 		cloned.ComputeResources.CpuLimit = util.CoalesceString(otherCloned.ComputeResources.CpuLimit, cloned.ComputeResources.CpuLimit)
 		cloned.ComputeResources.MemoryLimit = util.CoalesceString(otherCloned.ComputeResources.MemoryLimit, cloned.ComputeResources.MemoryLimit)
-		cloned.ComputeResources.Requests = &corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse("100m"),
-			corev1.ResourceMemory: resource.MustParse(cloned.ComputeResources.MemoryLimit),
-		}
-		cloned.ComputeResources.Limits = &corev1.ResourceList{
-			corev1.ResourceCPU:    resource.MustParse(cloned.ComputeResources.CpuLimit),
-			corev1.ResourceMemory: resource.MustParse(cloned.ComputeResources.MemoryLimit),
+		if cloned.ComputeResources.CpuLimit != "" && cloned.ComputeResources.MemoryLimit != "" {
+			cloned.ComputeResources.Requests = &corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse("100m"),
+				corev1.ResourceMemory: resource.MustParse(cloned.ComputeResources.MemoryLimit),
+			}
+			cloned.ComputeResources.Limits = &corev1.ResourceList{
+				corev1.ResourceCPU:    resource.MustParse(cloned.ComputeResources.CpuLimit),
+				corev1.ResourceMemory: resource.MustParse(cloned.ComputeResources.MemoryLimit),
+			}
 		}
 		// CustomResources override is always ignored
 	}
