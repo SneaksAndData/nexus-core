@@ -70,6 +70,7 @@ func NewKeyspacesStore(logger klog.Logger, config *KeyspacesConfig) store.Checkp
 	cluster.IgnorePeerAddr = true
 	cluster.ProtoVersion = 4
 	cluster.DisableInitialHostLookup = true
+	cluster.DisableShardAwarePort = true
 
 	if config.UseIRSA {
 		cluster.Authenticator = config.getIRSAAuth(config.Region)
