@@ -29,3 +29,6 @@ VALUES ('test-algorithm', '9c5b1e7b-4d1c-4f5b-a3f7-1e7b3c8d8a9f','deadline_excee
 
 INSERT INTO nexus.checkpoints_by_tag (algorithm, id, tag)
 VALUES ('test-algorithm', '4d5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f','cancelled_tag');
+
+INSERT INTO nexus.checkpoints_by_tag (algorithm, id, tag)
+VALUES ('test-algorithm', '7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f','tag_to_update');

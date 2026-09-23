@@ -362,6 +362,72 @@ func TestDefaultBuffer_GetMetadata(t *testing.T) {
 	}
 }
 
+func TestDefaultBuffer_UpdateTag(t *testing.T) {
+	cases := []struct {
+		name    string
+		fixture *fixture
+	}{
+		{"update tag with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
+		{"update tag with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			checkpoint, err := tc.fixture.buffer.Get("7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "test-algorithm")
+
+			if err != nil {
+				t.Fatalf("error when reading checkpoints by tag: %v", err)
+			}
+
+			if checkpoint == nil {
+				t.Fatalf("checkpoint test-algorithm/7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f not found in the test store")
+			}
+
+			err = tc.fixture.buffer.UpdateTag(checkpoint, "tag_updated")
+
+			if err != nil {
+				t.Fatalf("error when updating tag: %v", err)
+			}
+
+			expectedCheckpoints, err := tc.fixture.buffer.GetTagged("tag_updated")
+
+			result := []*models.CheckpointedRequest{}
+
+			for checkpoint, err := range expectedCheckpoints {
+				if err != nil {
+					t.Fatalf("error when deserializing a checkpoint: %v", err)
+				}
+
+				result = append(result, checkpoint)
+			}
+
+			if len(result) != 1 {
+				t.Fatalf("expected only one checkpoint to have its tag updated, but got %d", len(result))
+			}
+
+			if result[0].Id != "7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f" {
+				t.Fatalf("Only a checkpoint with id 7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f should have its tag updated, but found %s", result[0].Id)
+			}
+
+			shouldBeEmptyCheckpoints, err := tc.fixture.buffer.GetTagged("tag_to_update")
+
+			if err != nil {
+				t.Fatalf("error when reading by old tag: %v", err)
+			}
+
+			for shouldNotExistCheckpoint, err := range shouldBeEmptyCheckpoints {
+				if err != nil {
+					t.Fatalf("error when reading a checkpoint: %v", err)
+				}
+
+				if shouldNotExistCheckpoint != nil {
+					t.Fatalf("checkpoints with old tag should not exist, but found %s", shouldNotExistCheckpoint.Id)
+				}
+			}
+		})
+	}
+}
+
 func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 	cases := []struct {
 		name              string

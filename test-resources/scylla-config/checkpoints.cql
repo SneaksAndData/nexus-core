@@ -92,3 +92,12 @@ VALUES ('test-algorithm', '4d5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f', 'CANCELLED', '
         'http://localhost/result', 'cancelled_by_user', 'The job was cancelled by the user.', 'host111',
         '2023-10-08T13:00:00.000Z', '2023-10-08T13:30:00.000Z', '{}', '{}', 'cancelled_hash',
         '2023-10-08T13:45:00.000Z', 'cancelled_tag', 'v8.0', '8a9f4a0c-1e7b-3c8d-4d5b9f2c7f1e', '{}');
+
+INSERT INTO nexus.checkpoints (algorithm, id, lifecycle_stage, payload_uri, result_uri, algorithm_failure_cause,
+                               algorithm_failure_details, received_by_host, received_at, sent_at, applied_configuration,
+                               configuration_overrides, content_hash, last_modified, tag, api_version,
+                               job_uid, parent)
+VALUES ('test-algorithm', '7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f', 'COMPLETED', 'http://localhost/payload',
+        'http://localhost/result', 'cancelled_by_user', 'The job was cancelled by the user.', 'host111',
+        '2023-10-08T13:00:00.000Z', '2023-10-08T13:30:00.000Z', '{}', '{}', 'cancelled_hash',
+        '2023-10-08T13:45:00.000Z', 'tag_to_update', 'v8.0', '8a9f4a0c-1e7b-3c8d-4d5b9f2c7f1e', '{}');
