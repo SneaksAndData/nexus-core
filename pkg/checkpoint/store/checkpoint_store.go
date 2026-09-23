@@ -9,6 +9,7 @@ import (
 // CheckpointStore defines behaviours for checkpointing operations
 type CheckpointStore interface {
 	UpsertCheckpoint(checkpoint *models.CheckpointedRequest) error
+	UpdateCheckpointTag(checkpoint *models.CheckpointedRequest, newTagValue string) error
 	ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error)
 	ReadCheckpointsByHost(host string, lifecycleStage models.LifecycleStage) (iter.Seq2[*models.CheckpointedRequest, error], error)
 	ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error)

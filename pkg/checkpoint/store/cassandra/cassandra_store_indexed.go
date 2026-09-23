@@ -43,6 +43,12 @@ func (ics *IndexedCassandraStore) UpsertCheckpoint(checkpoint *models.Checkpoint
 	}
 }
 
+func (ics *IndexedCassandraStore) UpdateCheckpointTag(checkpoint *models.CheckpointedRequest, newTagValue string) error {
+	cloned := checkpoint.DeepCopy()
+	cloned.Tag = newTagValue
+	return ics.UpsertCheckpoint(cloned)
+}
+
 func (ics *IndexedCassandraStore) ReadCheckpoint(algorithm string, id string) (*models.CheckpointedRequest, error) {
 	result := &CheckpointCassandraModel{
 		Algorithm: algorithm,

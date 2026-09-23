@@ -164,6 +164,10 @@ func (buffer *DefaultBuffer) Update(checkpoint *models.CheckpointedRequest) erro
 	return buffer.checkpointStore.UpsertCheckpoint(checkpoint)
 }
 
+func (buffer *DefaultBuffer) UpdateTag(checkpoint *models.CheckpointedRequest, newTagValue string) error {
+	return buffer.checkpointStore.UpdateCheckpointTag(checkpoint, newTagValue)
+}
+
 func (buffer *DefaultBuffer) GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
 	return buffer.checkpointStore.ReadMetadata(checkpoint)
 }

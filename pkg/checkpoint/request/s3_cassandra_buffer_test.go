@@ -362,6 +362,79 @@ func TestDefaultBuffer_GetMetadata(t *testing.T) {
 	}
 }
 
+func TestDefaultBuffer_UpdateTag(t *testing.T) {
+	cases := []struct {
+		name         string
+		fixture      *fixture
+		checkpointId string
+		initialTag   string
+		newTag       string
+	}{
+		{"update tag with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig()), "ad5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "tag_to_update_indexed", "tag_indexed_updated"},
+		{"update tag with bare Cassandra store", newFixture(t, newBareCassandraConfig()), "7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "tag_to_update", "tag_bare_updated"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			checkpoint, err := tc.fixture.buffer.Get(tc.checkpointId, "test-algorithm")
+
+			if err != nil {
+				t.Fatalf("error when reading checkpoints by tag: %v", err)
+			}
+
+			if checkpoint == nil {
+				t.Fatalf("checkpoint test-algorithm/%s not found in the test store", tc.checkpointId)
+			}
+
+			err = tc.fixture.buffer.UpdateTag(checkpoint, tc.newTag)
+
+			if err != nil {
+				t.Fatalf("error when updating tag: %v", err)
+			}
+
+			expectedCheckpoints, err := tc.fixture.buffer.GetTagged(tc.newTag)
+
+			if err != nil {
+				t.Fatalf("error when reading checkpoints by tag: %v", err)
+			}
+
+			result := []*models.CheckpointedRequest{}
+
+			for checkpoint, err := range expectedCheckpoints {
+				if err != nil {
+					t.Fatalf("error when deserializing a checkpoint: %v", err)
+				}
+
+				result = append(result, checkpoint)
+			}
+
+			if len(result) != 1 {
+				t.Fatalf("expected one checkpoint to have its tag updated, but got %d", len(result))
+			}
+
+			if result[0].Id != tc.checkpointId {
+				t.Fatalf("Only a checkpoint with id %s should have its tag updated, but found %s", tc.checkpointId, result[0].Id)
+			}
+
+			shouldBeEmptyCheckpoints, err := tc.fixture.buffer.GetTagged(tc.initialTag)
+
+			if err != nil {
+				t.Fatalf("error when reading by old tag: %v", err)
+			}
+
+			for shouldNotExistCheckpoint, err := range shouldBeEmptyCheckpoints {
+				if err != nil {
+					t.Fatalf("error when reading a checkpoint: %v", err)
+				}
+
+				if shouldNotExistCheckpoint != nil {
+					t.Fatalf("checkpoints with old tag should not exist, but found %s", shouldNotExistCheckpoint.Id)
+				}
+			}
+		})
+	}
+}
+
 func TestDefaultBuffer_Add_Retrieve(t *testing.T) {
 	cases := []struct {
 		name              string
