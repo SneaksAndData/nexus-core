@@ -96,6 +96,18 @@ func (buffer *MemoryPassthroughBuffer) Update(checkpoint *models.CheckpointedReq
 	return nil
 }
 
+func (buffer *MemoryPassthroughBuffer) UpdateTag(checkpoint *models.CheckpointedRequest, newTagValue string) error {
+	var checkpointToUpdate int
+	for _, bufferedCheckpoint := range buffer.Checkpoints {
+		if checkpoint.Id == bufferedCheckpoint.Id && checkpoint.Algorithm == bufferedCheckpoint.Algorithm {
+			buffer.Checkpoints[checkpointToUpdate].Tag = newTagValue
+			break
+		}
+	}
+
+	return nil
+}
+
 func (buffer *MemoryPassthroughBuffer) GetBufferedEntry(checkpoint *models.CheckpointedRequest) (*models.SubmissionBufferEntry, error) {
 	for _, entry := range buffer.BufferedEntries {
 		if checkpoint.Id == entry.Id && checkpoint.Algorithm == entry.Algorithm {
