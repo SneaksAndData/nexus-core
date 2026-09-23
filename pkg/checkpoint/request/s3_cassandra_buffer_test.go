@@ -364,32 +364,35 @@ func TestDefaultBuffer_GetMetadata(t *testing.T) {
 
 func TestDefaultBuffer_UpdateTag(t *testing.T) {
 	cases := []struct {
-		name    string
-		fixture *fixture
+		name         string
+		fixture      *fixture
+		checkpointId string
+		initialTag   string
+		newTag       string
 	}{
-		{"update tag with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig())},
-		{"update tag with bare Cassandra store", newFixture(t, newBareCassandraConfig())},
+		{"update tag with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig()), "7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "tag_to_update", "tag_bare_updated"},
+		{"update tag with bare Cassandra store", newFixture(t, newBareCassandraConfig()), "ad5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "tag_to_update_indexed", "tag_indexed_updated"},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			checkpoint, err := tc.fixture.buffer.Get("7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "test-algorithm")
+			checkpoint, err := tc.fixture.buffer.Get(tc.checkpointId, "test-algorithm")
 
 			if err != nil {
 				t.Fatalf("error when reading checkpoints by tag: %v", err)
 			}
 
 			if checkpoint == nil {
-				t.Fatalf("checkpoint test-algorithm/7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f not found in the test store")
+				t.Fatalf("checkpoint test-algorithm/%s not found in the test store", tc.checkpointId)
 			}
 
-			err = tc.fixture.buffer.UpdateTag(checkpoint, "tag_updated")
+			err = tc.fixture.buffer.UpdateTag(checkpoint, tc.newTag)
 
 			if err != nil {
 				t.Fatalf("error when updating tag: %v", err)
 			}
 
-			expectedCheckpoints, err := tc.fixture.buffer.GetTagged("tag_updated")
+			expectedCheckpoints, err := tc.fixture.buffer.GetTagged(tc.newTag)
 
 			result := []*models.CheckpointedRequest{}
 
@@ -402,14 +405,14 @@ func TestDefaultBuffer_UpdateTag(t *testing.T) {
 			}
 
 			if len(result) != 1 {
-				t.Fatalf("expected only one checkpoint to have its tag updated, but got %d", len(result))
+				t.Fatalf("expected one checkpoint to have its tag updated, but got %d", len(result))
 			}
 
-			if result[0].Id != "7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f" {
-				t.Fatalf("Only a checkpoint with id 7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f should have its tag updated, but found %s", result[0].Id)
+			if result[0].Id != tc.checkpointId {
+				t.Fatalf("Only a checkpoint with id %s should have its tag updated, but found %s", tc.checkpointId, result[0].Id)
 			}
 
-			shouldBeEmptyCheckpoints, err := tc.fixture.buffer.GetTagged("tag_to_update")
+			shouldBeEmptyCheckpoints, err := tc.fixture.buffer.GetTagged(tc.initialTag)
 
 			if err != nil {
 				t.Fatalf("error when reading by old tag: %v", err)

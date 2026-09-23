@@ -90,7 +90,7 @@ func (bcs *BareCassandraStore) UpdateCheckpointTag(checkpoint *models.Checkpoint
 	cloned.LastModified = time.Now()
 	cloned.Tag = newTagValue
 	if serialized, err := ToCassandraModel(cloned); err == nil {
-		bcs.cassandraStore.logger.V(1).Info("upserting tag for checkpoint", "checkpoint", serialized, "tag", newTagValue)
+		bcs.cassandraStore.logger.V(1).Info("updating a tag for checkpoint", "checkpoint", serialized, "tag", newTagValue)
 
 		// tag update consists of:
 		// 1 - update/insert into the checkpoints table
@@ -104,17 +104,17 @@ func (bcs *BareCassandraStore) UpdateCheckpointTag(checkpoint *models.Checkpoint
 		var upsertByTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag(bcs.cassandraStore.cluster.Keyspace).Insert()).Strict()
 
 		// 3
-		var removeOldTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTable(bcs.cassandraStore.cluster.Keyspace).Delete()).Strict()
+		var removeOldTagQuery = bcs.cassandraStore.cqlSession.Query(CheckpointedRequestTableByTag(bcs.cassandraStore.cluster.Keyspace).Delete()).Strict()
 
 		bcs.cassandraStore.logger.V(1).Info("adding main query to batch", "query", upsertQuery.String())
 
 		if bindErr := updateBatch.BindStruct(upsertQuery, *serialized); bindErr != nil {
-			bcs.cassandraStore.logger.V(0).Error(err, "error when preparing a checkpoint insert", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+			bcs.cassandraStore.logger.V(0).Error(err, "error when preparing a checkpoint index update", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 			return bindErr
 		}
 
 		if bindErr := updateBatch.BindStruct(upsertByTagQuery, serialized.ByTagModel()); bindErr != nil {
-			bcs.cassandraStore.logger.V(0).Error(err, "error when preparing a checkpoint insert", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+			bcs.cassandraStore.logger.V(0).Error(err, "error when preparing a checkpoint index update", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 			return bindErr
 		}
 
@@ -124,7 +124,7 @@ func (bcs *BareCassandraStore) UpdateCheckpointTag(checkpoint *models.Checkpoint
 		}
 
 		if execErr := bcs.cassandraStore.cqlSession.ExecuteBatch(updateBatch); execErr != nil {
-			bcs.cassandraStore.logger.V(0).Error(err, "error when inserting a checkpoint", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
+			bcs.cassandraStore.logger.V(0).Error(err, "error when updating a checkpoint index", "algorithm", checkpoint.Algorithm, "id", checkpoint.Id)
 			return execErr
 		}
 
