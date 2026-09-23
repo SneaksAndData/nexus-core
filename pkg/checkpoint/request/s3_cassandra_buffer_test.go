@@ -370,8 +370,8 @@ func TestDefaultBuffer_UpdateTag(t *testing.T) {
 		initialTag   string
 		newTag       string
 	}{
-		{"update tag with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig()), "7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "tag_to_update", "tag_bare_updated"},
-		{"update tag with bare Cassandra store", newFixture(t, newBareCassandraConfig()), "ad5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "tag_to_update_indexed", "tag_indexed_updated"},
+		{"update tag with indexed Cassandra store", newFixture(t, newIndexedCassandraConfig()), "ad5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "tag_to_update_indexed", "tag_indexed_updated"},
+		{"update tag with bare Cassandra store", newFixture(t, newBareCassandraConfig()), "7f5b9f2c-1e7b-3c8d-8a9f-4a0c8b1e7b3f", "tag_to_update", "tag_bare_updated"},
 	}
 
 	for _, tc := range cases {
