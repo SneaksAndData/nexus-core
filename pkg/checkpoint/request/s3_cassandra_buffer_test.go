@@ -394,6 +394,10 @@ func TestDefaultBuffer_UpdateTag(t *testing.T) {
 
 			expectedCheckpoints, err := tc.fixture.buffer.GetTagged(tc.newTag)
 
+			if err != nil {
+				t.Fatalf("error when reading checkpoints by tag: %v", err)
+			}
+
 			result := []*models.CheckpointedRequest{}
 
 			for checkpoint, err := range expectedCheckpoints {
