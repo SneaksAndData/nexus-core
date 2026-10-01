@@ -2,7 +2,7 @@ set shell := ["bash", "-c"]
 
 # images
 SCYLLA_IMAGE := "scylladb/scylla"
-MINIO_IMAGE  := "quay.io/minio/minio"
+MINIO_IMAGE  := "mojatter/s2-server"
 
 # configurations
 SCYLLA_CONFIG := invocation_directory() / "test-resources/scylla-config"
@@ -30,7 +30,7 @@ scylla:
       --smp 1 \
       --developer-mode 1
 
-# Start Minio with health checks
+# Start Minio (s2-server image has no shell/curl, so it can't run container-internal health checks)
 minio:
     @echo "📦 Starting Minio..."
     docker run -d \
@@ -38,21 +38,16 @@ minio:
       -p 9000:9000 \
       -p 9123:9123 \
       --restart always \
-      --health-cmd "curl -f http://localhost:9000/minio/health/live" \
-      --health-interval 5s \
-      {{MINIO_IMAGE}} \
-      server /data --console-address :9123
+      -e S2_SERVER_CONSOLE_LISTEN=:9123 \
+      -e S2_SERVER_USER=minioadmin \
+      -e S2_SERVER_PASSWORD=minioadmin \
+      -e S2_SERVER_BUCKETS=tmp,nexus \
+      {{MINIO_IMAGE}}
 
-# Create Minio buckets using built-in health waiting
+# Wait for Minio to become reachable (buckets are created at startup via S2_SERVER_BUCKETS)
 prepare-buckets:
     @echo "⏳ Waiting for Minio..."
-    until [ "$(docker inspect -f '{{ "{{" }}.State.Health.Status{{ "}}" }}' minio)" == "healthy" ]; do sleep 2; done
-    docker run --rm \
-      --network host \
-      --entrypoint "/bin/sh" \
-      {{MINIO_IMAGE}} \
-      -c "mc alias set e2e http://localhost:9000 minioadmin minioadmin && \
-          mc mb --ignore-existing e2e/tmp e2e/nexus"
+    until curl -sf http://localhost:9000/healthz > /dev/null; do sleep 2; done
 
 # Run Scylla initialization
 prepare-scylla:
