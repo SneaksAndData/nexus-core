@@ -164,12 +164,12 @@ type NexusDatadogIntegrationSettings struct {
 
 // NexusAlgorithmSpec is the spec for a NexusAlgorithmTemplate resource
 type NexusAlgorithmSpec struct {
-	Container *NexusAlgorithmContainer `json:"container"`
+	Container *NexusAlgorithmContainer `json:"container,omitempty"`
 	// +optional
 	ComputeResources *NexusAlgorithmResources `json:"computeResources,omitempty"`
 	// +optional
 	WorkgroupRef *NexusAlgorithmWorkgroupRef `json:"workgroupRef,omitempty"`
-	Command      string                      `json:"command"`
+	Command      string                      `json:"command,omitempty"`
 	// +optional
 	Args []string `json:"args,omitempty"`
 
@@ -211,7 +211,11 @@ func (spec *NexusAlgorithmSpec) Merge(other *NexusAlgorithmSpec) *NexusAlgorithm
 				corev1.ResourceCPU:    resource.MustParse(cloned.ComputeResources.CpuLimit),
 				corev1.ResourceMemory: resource.MustParse(cloned.ComputeResources.MemoryLimit),
 			}
+		} else {
+			cloned.ComputeResources.Limits = util.CoalescePointer(otherCloned.ComputeResources.Limits, cloned.ComputeResources.Limits)
+			cloned.ComputeResources.Requests = util.CoalescePointer(otherCloned.ComputeResources.Requests, cloned.ComputeResources.Requests)
 		}
+
 		// CustomResources override is always ignored
 	}
 
