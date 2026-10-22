@@ -194,7 +194,8 @@ func (bcs *BareCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq
 
 	return func(yield func(*models.CheckpointedRequest, error) bool) {
 		for _, byTagResult := range *byTagResults {
-			if !yield(byTagResult, nil) {
+			fullResult, err := bcs.ReadCheckpoint(byTagResult.Algorithm, byTagResult.Id)
+			if !yield(fullResult, err) {
 				return
 			}
 		}
