@@ -324,6 +324,18 @@ func TestDefaultBuffer_GetTagged(t *testing.T) {
 			if result[0].Id != "8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f" {
 				t.Fatalf("Only a checkpoint with id 8a0c8aa9-fc9d-4b2e-9c5c-2c8d7f1e7a3f should be RUNNING with tag running_tag, but found %s", result[0].Id)
 			}
+
+			if result[0].LifecycleStage != models.LifecycleStageRunning {
+				t.Fatalf("expected LifecycleStage to be %s, but got %s", models.LifecycleStageRunning, result[0].LifecycleStage)
+			}
+
+			if result[0].JobUid != "dfc7e9b5-8c3a-429b-9a33-d4a0a1f4b8d3" {
+				t.Fatalf("expected JobUid to be dfc7e9b5-8c3a-429b-9a33-d4a0a1f4b8d3, but got %s", result[0].JobUid)
+			}
+
+			if result[0].PayloadUri != "http://localhost/payload" {
+				t.Fatalf("expected PayloadUri to be http://localhost/payload, but got %s", result[0].PayloadUri)
+			}
 		})
 	}
 }

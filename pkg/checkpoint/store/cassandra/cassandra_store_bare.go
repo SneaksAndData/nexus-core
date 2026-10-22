@@ -183,7 +183,11 @@ func (bcs *BareCassandraStore) ReadCheckpointsByHost(host string, lifecycleStage
 }
 
 func (bcs *BareCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq2[*models.CheckpointedRequest, error], error) {
-	byTagResults := &[]*models.CheckpointedRequest{}
+	byTagResults := &[]*struct {
+		Tag       string `db:"tag"`
+		Algorithm string `db:"algorithm"`
+		Id        string `db:"id"`
+	}{}
 	var byTagQuery = CheckpointedRequestTableByTag(bcs.cassandraStore.cluster.Keyspace).SelectQuery(bcs.cassandraStore.cqlSession).BindMap(qb.M{
 		"tag": requestTag,
 	})
@@ -194,7 +198,7 @@ func (bcs *BareCassandraStore) ReadCheckpointsByTag(requestTag string) (iter.Seq
 
 	return func(yield func(*models.CheckpointedRequest, error) bool) {
 		for _, byTagResult := range *byTagResults {
-			if !yield(byTagResult, nil) {
+			if !yield(bcs.ReadCheckpoint(byTagResult.Algorithm, byTagResult.Id)) {
 				return
 			}
 		}
